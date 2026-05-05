@@ -1,0 +1,536 @@
+/* ============================================
+   ОКОННЫЙ ЗАВОД — B2B ПРЕЗЕНТАЦИЯ
+   Premium Design System
+   ============================================ */
+
+:root {
+    --primary-blue: #2568a9;
+    --light-blue: #4bd3f8;
+    --mint: #4cffb4;
+    --green: #18c366;
+    --turquoise: #21c59e;
+    --white: #ffffff;
+    --dark-bg: #0b192c;
+    --text-dark: #1e293b;
+    --text-light: #f8fafc;
+    --gray-light: #f1f5f9;
+    --gray-border: #cbd5e1;
+    --shadow-color: rgba(37, 104, 169, 0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #dde4ec 100%);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 50px;
+    padding: 50px 0;
+    color: var(--text-dark);
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+
+/* ── Базовый слайд ── */
+.slide {
+    width: 1280px;
+    height: 720px;
+    min-height: 720px;
+    max-height: 720px;
+    background-color: var(--white);
+    border-radius: 16px;
+    box-shadow:
+        0 25px 60px rgba(0,0,0,0.12),
+        0 0 0 1px rgba(255,255,255,0.8) inset;
+    overflow: hidden;
+    position: relative;
+    padding: 45px 60px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+/* ── Номер слайда ── */
+.slide-number {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    font-size: 72px;
+    font-weight: 900;
+    color: rgba(37,104,169,0.06);
+    line-height: 1;
+    z-index: 1;
+    letter-spacing: -3px;
+    user-select: none;
+}
+
+/* ── Декоративные углы ── */
+.corner-accent {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    z-index: 0;
+}
+.corner-accent.top-right {
+    top: 0; right: 0;
+    background: linear-gradient(225deg, rgba(75,211,248,0.15) 0%, transparent 70%);
+    border-bottom-left-radius: 100%;
+}
+.corner-accent.top-left {
+    top: 0; left: 0;
+    background: linear-gradient(135deg, rgba(75,211,248,0.15) 0%, transparent 70%);
+    border-bottom-right-radius: 100%;
+}
+.corner-accent-light {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    z-index: 0;
+}
+.corner-accent-light.top-right {
+    top: 0; right: 0;
+    background: linear-gradient(225deg, rgba(76,255,180,0.1) 0%, transparent 70%);
+    border-bottom-left-radius: 100%;
+}
+.corner-accent-light.top-left {
+    top: 0; left: 0;
+    background: linear-gradient(135deg, rgba(76,255,180,0.1) 0%, transparent 70%);
+    border-bottom-right-radius: 100%;
+}
+
+/* ── Типографика ── */
+h1, h2, h3, h4 { font-weight: 700; line-height: 1.2; }
+
+.slide-title {
+    color: var(--primary-blue);
+    font-size: 34px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+    z-index: 2;
+    position: relative;
+    padding-bottom: 12px;
+}
+.slide-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--turquoise), var(--light-blue));
+    border-radius: 2px;
+}
+
+.slide-subtitle {
+    font-size: 18px;
+    color: var(--turquoise);
+    font-weight: 600;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+.text-body {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-dark);
+    z-index: 2;
+}
+
+.chart-title {
+    color: var(--primary-blue);
+    margin: 10px 0 10px;
+    font-size: 16px;
+}
+
+.section-heading {
+    color: var(--primary-blue);
+    margin-bottom: 8px;
+    font-size: 18px;
+}
+
+.feature-list {
+    list-style: none;
+    margin-bottom: 15px;
+}
+.feature-list li {
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.feature-list li i { width: 25px; flex-shrink: 0; }
+
+.check-list {
+    list-style: none;
+    font-size: 14px;
+}
+.check-list li {
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Макеты слайдов ── */
+.slide-body {
+    display: flex;
+    flex: 1;
+    gap: 40px;
+    min-height: 0;
+    z-index: 2;
+}
+.slide-body.row-reverse { flex-direction: row-reverse; }
+
+.slide-body-vertical {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 20px;
+    z-index: 2;
+}
+
+.col-main {
+    flex: 1.4;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+.col-img {
+    flex: 1;
+    height: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 3px solid var(--turquoise);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+    position: relative;
+    background-color: var(--gray-border);
+}
+.col-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(37,104,169,0.15) 100%);
+    pointer-events: none;
+}
+
+.banner-img {
+    width: 100%;
+    height: 220px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 3px solid var(--turquoise);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+.banner-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.gallery-row {
+    display: flex;
+    gap: 20px;
+    height: 200px;
+    margin-top: auto;
+}
+.gallery-item {
+    flex: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid var(--light-blue);
+    position: relative;
+    background-color: var(--gray-border);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(75,211,248,0.2);
+}
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg, rgba(37,104,169,0.95), rgba(37,104,169,0.7));
+    color: var(--white);
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(4px);
+}
+
+/* ── Полноэкранный фон ── */
+.bg-image-slide {
+    background-size: cover;
+    background-position: center;
+    color: var(--white);
+    background-color: var(--primary-blue);
+}
+.bg-image-slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(11,25,44,0.92) 0%, rgba(37,104,169,0.75) 100%);
+    z-index: 1;
+}
+.bg-image-slide .slide-title::after { background: linear-gradient(90deg, var(--mint), var(--light-blue)); }
+
+.glass-panel {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 30px;
+    z-index: 2;
+    margin-top: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+/* ── Таблицы ── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 14px;
+    z-index: 2;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+}
+th, td { padding: 9px 12px; text-align: left; }
+th {
+    background: linear-gradient(135deg, var(--primary-blue), #1e5a96);
+    color: var(--white);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+}
+tr:nth-child(even) { background-color: rgba(75,211,248,0.05); }
+tr:nth-child(odd) { background-color: var(--white); }
+td { border-bottom: 1px solid rgba(75,211,248,0.15); color: var(--text-dark); }
+
+.dark-table th { background: linear-gradient(135deg, var(--turquoise), #18a07d); color: var(--white); }
+.dark-table td { border-bottom: 1px solid rgba(255,255,255,0.15); color: var(--white); }
+.dark-table tr:nth-child(even) { background-color: rgba(255,255,255,0.05); }
+.dark-table tr:nth-child(odd) { background-color: transparent; }
+
+.header-mint th { background: linear-gradient(135deg, var(--mint), var(--turquoise)); color: var(--primary-blue); }
+
+/* ── Темная тема ── */
+.slide.dark-theme { background: linear-gradient(135deg, var(--primary-blue), #1a4f8a); color: var(--text-light); }
+.slide.dark-theme .slide-title { color: var(--white); }
+.slide.dark-theme .slide-title::after { background: linear-gradient(90deg, var(--mint), var(--light-blue)); }
+.slide.dark-theme .text-body { color: var(--gray-light); }
+
+/* ── Бейджи ── */
+.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-green { background-color: rgba(24,195,102,0.15); color: var(--green); border: 1px solid var(--green); }
+
+/* ── Графики ── */
+.chart-container { width: 100%; height: 180px; margin-top: 15px; position: relative; z-index: 2; }
+
+/* ── СЛАЙД 1: Титульный ── */
+#slide-1 {
+    background: radial-gradient(ellipse at 30% 50%, #1a4f8a 0%, var(--dark-bg) 100%);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+#slide-1::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 80%, rgba(76,255,180,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(75,211,248,0.08) 0%, transparent 50%);
+    z-index: 0;
+}
+.particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+}
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(76,255,180,0.3);
+    border-radius: 50%;
+    animation: float-particle 8s ease-in-out infinite;
+}
+@keyframes float-particle {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+    50% { transform: translateY(-30px) scale(1.5); opacity: 0.8; }
+}
+
+.title-content { z-index: 2; display: flex; flex-direction: column; align-items: center; }
+.main-logo {
+    width: 340px;
+    margin-bottom: 35px;
+    filter: drop-shadow(0 0 25px rgba(76,255,180,0.2));
+    animation: logo-glow 4s ease-in-out infinite;
+}
+@keyframes logo-glow {
+    0%, 100% { filter: drop-shadow(0 0 25px rgba(76,255,180,0.15)); }
+    50% { filter: drop-shadow(0 0 40px rgba(76,255,180,0.3)); }
+}
+
+#slide-1 h1 {
+    color: var(--white);
+    font-size: 52px;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+    font-weight: 800;
+}
+.tagline {
+    font-size: 22px;
+    color: var(--gray-light);
+    margin-bottom: 20px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+.title-geo {
+    font-size: 18px;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.accent-text { color: var(--turquoise); font-weight: 600; }
+#slide-1 .slide-number { color: rgba(255,255,255,0.06); }
+
+/* ── Контакты ── */
+.contact-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; margin-top: 30px; z-index: 2; }
+.contact-info { display: flex; flex-direction: column; gap: 20px; }
+.contact-item { display: flex; align-items: center; gap: 20px; font-size: 22px; color: var(--white); }
+.contact-item i { color: var(--mint); font-size: 28px; width: 35px; text-align: center; }
+.qr-box {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 22px;
+    border: 4px solid var(--light-blue);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    font-weight: 700;
+    box-shadow: 0 12px 40px rgba(75,211,248,0.15);
+}
+
+/* ── Навигация ── */
+.slide-nav {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+    padding: 12px 8px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.9);
+}
+.nav-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--gray-border);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+.nav-dot:hover {
+    background: var(--light-blue);
+    transform: scale(1.3);
+}
+.nav-dot.active {
+    background: linear-gradient(135deg, var(--turquoise), var(--light-blue));
+    transform: scale(1.4);
+    box-shadow: 0 0 10px rgba(75,211,248,0.4);
+}
+.nav-dot:hover::before {
+    content: attr(title);
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--dark-bg);
+    color: var(--white);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ── Кнопка печати ── */
+.print-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, var(--mint), var(--turquoise));
+    color: var(--dark-bg);
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(76,255,180,0.35);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+.print-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 14px 40px rgba(76,255,180,0.45);
+}
+
+/* ── Анимации (отключены для печати) ── */
+.anim-fade-up,
+.anim-fade-right,
+.anim-fade-left,
+.anim-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ── Печать ── */
+@media print {
+    @page { size: 1280px 720px; margin: 0; }
+    body { background: var(--white) !important; margin: 0 !important; padding: 0 !important; gap: 0 !important; }
+    .slide {
+        width: 1280px !important; height: 720px !important; margin: 0 !important;
+        padding: 45px 60px !important; box-shadow: none !important; border-radius: 0 !important;
+        page-break-after: always !important; page-break-inside: avoid !important;
+    }
+    #slide-1, .slide.dark-theme {
+        background: #2568a9 !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+    #slide-1 h1, #slide-1 p, .slide.dark-theme h2, .slide.dark-theme p,
+    .slide.dark-theme .slide-subtitle, .bg-image-slide h2, .bg-image-slide .text-body {
+        color: #ffffff !important;
+    }
+    .bg-image-slide { background-image: none !important; background-color: #0b192c !important; }
+    .bg-image-slide::before { display: none !important; }
+    .print-btn, .slide-nav { display: none !important; }
+    .anim-fade-up, .anim-fade-right, .anim-fade-left { opacity: 1 !important; transform: none !important; }
+    .particles { display: none !important; }
+    .slide-number { color: rgba(0,0,0,0.04) !important; }
+}

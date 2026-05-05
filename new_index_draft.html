@@ -1,0 +1,3052 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Око - Оконный Завод</title>
+    <link rel="icon" type="image/png" href="./3D логотип без фона.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @media print {
+            @page {
+                margin: 10mm;
+                size: A4 portrait;
+            }
+
+            body,
+            html {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #calculator-screen {
+                display: none !important;
+            }
+
+            #proposal-screen {
+                display: block !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .bg-brand-light {
+                background-color: #E6F6F4 !important;
+            }
+
+            .bg-slate-50 {
+                background-color: #f8fafc !important;
+            }
+
+            .bg-slate-100 {
+                background-color: #f1f5f9 !important;
+            }
+
+            .text-brand-primary {
+                color: #13A389 !important;
+            }
+
+            .break-inside-avoid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            table {
+                width: 100% !important;
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+
+            img,
+            canvas {
+                max-width: 100% !important;
+                page-break-inside: avoid;
+            }
+        }
+
+        .proposal-view {
+            display: none;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .tab-btn {
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .tab-btn:hover {
+            color: #334155;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #13A389;
+            color: #13A389;
+            font-weight: 700;
+            background-color: #F0FDF8;
+        }
+
+        .category-content {
+            display: none;
+        }
+
+        .category-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { primary: '#5BC2E7', secondary: '#29B489', dark: '#3daadd', light: '#eaf8f3' } }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-[#eaf8f3] min-h-screen text-slate-800 pb-10">
+
+    <!-- PASSWORD SCREEN -->
+    <div id="password-screen"
+        style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;">
+        <div
+            style="background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:48px 40px;max-width:400px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+            <div
+                style="width:72px;height:72px;margin:0 auto 24px;border-radius:50%;background:linear-gradient(135deg,#5BC2E7,#29B489);display:flex;align-items:center;justify-content:center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                    <circle cx="12" cy="16" r="1" />
+                </svg>
+            </div>
+            <h2 style="color:white;font-size:24px;font-weight:800;margin:0 0 8px;">Oko</h2>
+            <p style="color:rgba(255,255,255,0.5);font-size:14px;margin:0 0 32px;">Введите пароль для доступа</p>
+            <input type="password" id="pwd-input" placeholder="Пароль" onkeydown="if(event.key==='Enter')checkPwd()"
+                style="width:100%;box-sizing:border-box;padding:14px 20px;border-radius:14px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:white;font-size:16px;outline:none;margin-bottom:16px;text-align:center;letter-spacing:4px;transition:border-color 0.3s;"
+                onfocus="this.style.borderColor='#5BC2E7'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <div id="pwd-error" style="color:#ef4444;font-size:13px;margin-bottom:12px;display:none;">Неверный пароль
+            </div>
+            <button onclick="checkPwd()"
+                style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#5BC2E7,#29B489);color:white;font-size:16px;font-weight:700;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 20px rgba(91,194,231,0.3);"
+                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(91,194,231,0.4)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(91,194,231,0.3)'">Войти</button>
+        </div>
+    </div>
+    <script>
+        // === ПАРОЛЬ: измените здесь ===
+        const APP_PASSWORD = '47474';
+        // ==============================
+        function checkPwd() {
+            const input = document.getElementById('pwd-input');
+            if (input.value === APP_PASSWORD) {
+                document.getElementById('password-screen').style.display = 'none';
+                sessionStorage.setItem('oko_auth', '1');
+            } else {
+                document.getElementById('pwd-error').style.display = 'block';
+                input.style.borderColor = '#ef4444';
+                input.value = '';
+                setTimeout(() => { input.style.borderColor = 'rgba(255,255,255,0.1)'; }, 1500);
+            }
+        }
+        // Если уже авторизован в этой сессии, пропускаем экран
+        if (sessionStorage.getItem('oko_auth') === '1') {
+            document.getElementById('password-screen').style.display = 'none';
+        } else {
+            setTimeout(() => document.getElementById('pwd-input').focus(), 100);
+        }
+    </script>
+
+    <div class="max-w-[1200px] mx-auto p-2 sm:p-4" id="app">
+        <!-- CALCULATOR SCREEN -->
+        <div id="calculator-screen">
+            <!-- Header Section -->
+            <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-20 md:w-28 lg:w-40 flex-shrink-0">
+                        <img src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Logo"
+                            class="w-full h-auto object-contain">
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <h1
+                            class="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight text-center md:text-left">
+                            Oko</h1>
+                        <p class="text-brand-secondary font-medium text-sm md:text-base mt-1 text-center md:text-left">
+                            Профессиональный калькулятор для просчета стоимости остекления</p>
+                    </div>
+                </div>
+
+                <!-- Global Settings (Company & Markup) -->
+                <div class="flex flex-col gap-3 w-full md:w-auto bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div
+                        class="flex items-center justify-between md:justify-end gap-3 text-sm border-b border-slate-200 pb-2 mb-1">
+                        <span class="text-slate-600 font-bold uppercase tracking-wide text-xs">Прайс-листы</span>
+                        <button onclick="toggleSettingsModal()"
+                            class="bg-white border border-slate-200 hover:border-brand-primary hover:text-brand-primary text-slate-600 px-3 py-1.5 rounded-lg flex items-center gap-2 font-medium transition-all shadow-sm">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                            Загрузка цен
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
+                        <span class="text-slate-500 font-medium whitespace-nowrap">Компания:</span>
+                        <select id="select-company"
+                            class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            onchange="handleSettingsChange()">
+                            <option value="daneliya">ИП Данелия Д.Т.</option>
+                            <option value="alex">ООО Алексстрой</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
+                        <span class="text-slate-500 font-medium whitespace-nowrap">Наценка (%):</span>
+                        <select id="select-global-markup"
+                            class="bg-brand-light border border-brand-primary rounded-lg px-3 py-1.5 text-brand-dark font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            onchange="handleSettingsChange()">
+                            <option value="1.0">0% (Базовая)</option>
+                            <option value="1.1">10%</option>
+                            <option value="1.2">20%</option>
+                            <option value="1.25">25%</option>
+                            <option value="1.3">30%</option>
+                            <option value="1.4">40%</option>
+                            <option value="1.5">50%</option>
+                            <option value="1.75">75%</option>
+                            <option value="2.0" selected>100%</option>
+                            <option value="2.25">125%</option>
+                            <option value="2.5">150%</option>
+                            <option value="3.0">200%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- LEFT COLUMN: TABS & INPUTS -->
+                <div class="lg:col-span-8 flex flex-col gap-6">
+
+                    <!-- Tabs Navigation -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div
+                            class="flex flex-nowrap overflow-x-auto custom-scrollbar bg-slate-50 border-b border-slate-100 pl-2">
+                            <button class="tab-btn active px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('glass')">
+                                <i data-lucide="layout-grid" class="w-5 h-5"></i> Стеклопакеты
+                            </button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('nets')">
+                                <i data-lucide="grid-3x3" class="w-5 h-5"></i> Москитные сетки
+                            </button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('frameless')">
+                                <i data-lucide="blinds" class="w-5 h-5"></i> Безрамное остекление
+                            </button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('sills')">
+                                <i data-lucide="align-horizontal-justify-end" class="w-5 h-5"></i> Подоконники
+                            </button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('shower')">
+                                <i data-lucide="droplets" class="w-5 h-5"></i> Душевые
+                            </button>
+                        </div>
+
+                        <div class="p-4 sm:p-6">
+
+                            <!-- TAB: GLASS -->
+                            <div id="tab-glass" class="category-content active">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label>
+                                        <input type="number" id="glass-w"
+                                            class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                                            placeholder="1000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label>
+                                        <input type="number" id="glass-h"
+                                            class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                                            placeholder="1200">
+                                    </div>
+                                </div>
+
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Тип
+                                        стеклопакета</label>
+                                    <select id="glass-type"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="loading">Загрузка цен из базы...</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Сложность формы</label>
+                                    <select id="glass-shape"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="loading">Загрузка...</option>
+                                    </select>
+                                </div>
+
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-5 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-primary"></div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Декоративная раскладка
+                                        (шпросы)</label>
+                                    <select id="glass-layout"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary mb-3"
+                                        onchange="toggleGlassLayoutInputs()">
+                                        <option value="none">Без раскладки</option>
+                                    </select>
+                                    <div id="glass-layout-inputs"
+                                        class="grid grid-cols-3 gap-3 hidden mt-3 pt-3 border-t border-slate-200">
+                                        <div><label class="text-xs text-slate-500 block mb-1">Длина (мм)</label><input
+                                                type="number" id="glass-layout-len"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                        <div><label class="text-xs text-slate-500 block mb-1">Крестовин</label><input
+                                                type="number" id="glass-layout-cross"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                        <div><label class="text-xs text-slate-500 block mb-1">Торцевых</label><input
+                                                type="number" id="glass-layout-end"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                    </div>
+                                </div>
+
+                                <button onclick="addGlassItem()"
+                                    class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(19,163,137,0.39)] hover:shadow-[0_6px_20px_rgba(19,163,137,0.23)] active:scale-[0.98]">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Добавить стеклопакет
+                                </button>
+                            </div>
+                            <!-- /TAB: GLASS -->
+
+                            <!-- TAB: NETS -->
+                            <div id="tab-nets" class="category-content">
+                                <div
+                                    class="bg-blue-50 text-blue-800 text-sm p-3 rounded-lg flex items-start gap-2 mb-5">
+                                    <i data-lucide="info" class="w-5 h-5 mt-0.5 flex-shrink-0"></i>
+                                    <p>Указывайте размеры <b>готового изделия</b> или вводите <b>размеры светового
+                                            проема</b>, нажав соответствующую галочку ниже.</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label>
+                                        <input type="number" id="net-w"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="600">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label>
+                                        <input type="number" id="net-h"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="1300">
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="flex flex-col gap-2 mb-5 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="net-is-lumen"
+                                            class="w-4 h-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
+                                            onchange="calcNetPreview()">
+                                        <span class="text-sm text-slate-700 font-medium select-none">Это размеры
+                                            светового проема</span>
+                                    </label>
+                                    <div id="net-lumen-hint" class="text-xs text-brand-secondary ml-6 hidden">
+                                        К введенным размерам будет автоматически прибавлено: для оконных +50мм, для
+                                        дверей 32 +64мм, для дверей 52 +84мм.
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Тип москитной
+                                        сетки</label>
+                                    <select id="net-type"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                                        onchange="toggleNetOptions()">
+                                        <option value="loading">Загрузка цен...</option>
+                                    </select>
+                                </div>
+
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-5 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-secondary"></div>
+                                    <h3 class="text-sm font-medium text-slate-700 mb-3">Дополнительные опции:</h3>
+
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="net-opt-pet"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Полотно
+                                                    Антикошка / Антипыль</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+1000 ₽/м²</span>
+                                        </label>
+
+                                        <label class="flex items-center justify-between cursor-pointer group"
+                                            id="net-opt-corners-wrapper">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="net-opt-corners"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Металлические
+                                                    уголки (4 шт.)</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+200 ₽</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button onclick="addNetItem()"
+                                    class="w-full bg-brand-secondary hover:bg-[#3ba2b8] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(72,184,208,0.39)] hover:shadow-[0_6px_20px_rgba(72,184,208,0.23)] active:scale-[0.98]">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Добавить москитную сетку
+                                </button>
+                            </div>
+                            <!-- /TAB: NETS -->
+
+                            <!-- TAB: FRAMELESS -->
+                            <div id="tab-frameless" class="category-content">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Общая ширина
+                                            (мм)</label>
+                                        <input type="number" id="fl-w"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="3000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label>
+                                        <input type="number" id="fl-h"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="2500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Кол-во
+                                            панелей</label>
+                                        <input type="number" id="fl-panels"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="5" oninput="updateDoorSelectionOptions()">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Дверная
+                                            панель</label>
+                                        <select id="fl-door-panel"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="none">Без двери</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Открывание
+                                            двери</label>
+                                        <select id="fl-door-dir"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="right">Вправо</option>
+                                            <option value="left">Влево</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Система</label>
+                                    <select id="fl-system"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="F1_F2">Salinox F1-F2 (закал. стекло 10мм)</option>
+                                        <option value="F4">Salinox F4 (стеклопакет 35мм, с покраской)</option>
+                                        <option value="F5">Salinox F5 (триплекс или закал. стекло 10мм)</option>
+                                        <option value="F6">Salinox F6 (закал. стекло 10мм, парковка, зажим пластик)
+                                        </option>
+                                        <option value="FB_cr">Salinox FB-cr (триплекс или закал. стекло 10мм)</option>
+                                        <option value="Elroz">Elroz (ожидается прайс)</option>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цвет покраски
+                                            (RAL)</label>
+                                        <select id="fl-ral"
+                                            onchange="document.getElementById('fl-ral-custom-wrap').style.display = this.value==='custom' ? 'block' : 'none'"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="Стандартный (Анодированный)">Стандартный
+                                                (безопасный/анодированный)</option>
+                                            <option value="RAL 9005 (Черный)">RAL 9005 (Черный)</option>
+                                            <option value="RAL 7016 (Антрацит)">RAL 7016 (Антрацит)</option>
+                                            <option value="RAL 9016 (Белый)">RAL 9016 (Белый)</option>
+                                            <option value="RAL 8014 (Коричневый)">RAL 8014 (Коричневый)</option>
+                                            <option value="custom">Свой цвет (указать)</option>
+                                        </select>
+                                        <div id="fl-ral-custom-wrap" style="display:none" class="mt-2">
+                                            <input type="text" id="fl-ral-custom"
+                                                placeholder="Введите номер RAL, напр. RAL 3020"
+                                                class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-5 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-800"></div>
+                                    <h3 class="text-sm font-medium text-slate-700 mb-3">Опции Salinox (дилерская цена
+                                        уже со скидкой):</h3>
+
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="fl-painting"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Покраска
+                                                    профиля (+15% к базовой цене)</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">кроме F4</span>
+                                        </label>
+                                    </div>
+
+                                    <h3
+                                        class="text-sm font-medium text-slate-700 mb-3 mt-4 pt-3 border-t border-slate-200">
+                                        Дополнительные элементы:</h3>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="fl-opt-mech"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Механизм
+                                                    для открывания двери F2</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+26 496 ₽</span>
+                                        </label>
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="fl-opt-handle"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Шестигранная
+                                                    ручка переключения</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+2 520 ₽</span>
+                                        </label>
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="fl-opt-closer"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Напольный
+                                                    доводчик Usaf 600A (F1, F2, F4)</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+9 000 ₽</span>
+                                        </label>
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="fl-opt-park"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Дополнительная
+                                                    парковка</span>
+                                            </div>
+                                            <span class="text-xs text-brand-primary font-bold">+10 800 ₽</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-5 p-3 rounded-lg border border-slate-200 bg-white shadow-sm">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Стекло для системы
+                                        <span class="text-slate-400 font-normal">*по желанию</span></label>
+                                    <p class="text-[11px] text-slate-500 mb-2">В прайс Salinox стоимость самих стекол не
+                                        входит. Выберите тип стекла для автоматического расчета его стоимости (по
+                                        квадратуре проема). К базовой цене стекла также применяется наценка из
+                                        глобальных настроек.</p>
+                                    <select id="fl-glass-type"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="none">Без стекла (только система)</option>
+                                        <option value="clear10">10мм прозрачное закаленное (4500 ₽/м²)</option>
+                                        <option value="tint10">10мм тонированное закаленное (6000 ₽/м²)</option>
+                                    </select>
+                                </div>
+
+                                <button onclick="addFramelessItem()"
+                                    class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Добавить систему остекления
+                                </button>
+                            </div>
+                            <!-- /TAB: FRAMELESS -->
+
+                            <!-- TAB: SILLS -->
+                            <div id="tab-sills" class="category-content p-4 md:p-6 space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Бренд</label>
+                                        <select id="sill-brand" onchange="updateSillColors()"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Цвет
+                                            / Группа</label>
+                                        <select id="sill-color" onchange="updateSillWidths()"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Ширина
+                                            подоконника</label>
+                                        <select id="sill-width"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Длина
+                                            (мм)</label>
+                                        <input type="number" id="sill-length" placeholder="напр. 1500"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Кол-во
+                                            (шт)</label>
+                                        <input type="number" id="sill-qty" value="1" min="1"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                </div>
+
+                                <!-- Accessories -->
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3">
+                                        Комплектующие</h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1">Заглушка торцевая
+                                                (шт)</label>
+                                            <input type="number" id="sill-cap" min="0" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1">Соединитель 90°/135°
+                                                (шт)</label>
+                                            <input type="number" id="sill-conn90" min="0" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1">Соединитель 150°/180°
+                                                (шт)</label>
+                                            <input type="number" id="sill-conn150" min="0" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button onclick="addSillItem()"
+                                    class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Добавить подоконник
+                                </button>
+                            </div>
+                            <!-- /TAB: SILLS -->
+
+                            <!-- TAB: SHOWER -->
+                            <div id="tab-shower" class="category-content p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <i data-lucide="droplets" class="w-5 h-5 text-brand-primary"></i>
+                                    Душевые кабины
+                                </h2>
+
+                                <!-- Configuration Selection -->
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Конфигурация</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="shower-configs">
+                                        <!-- Config 1: Перегородка -->
+                                        <div class="shower-config-card selected cursor-pointer border-2 border-brand-primary bg-brand-light rounded-xl p-3 text-center transition-all hover:shadow-md"
+                                            data-config="partition" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="25" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <line x1="8" y1="5" x2="33" y2="5" stroke="#334155" stroke-width="2" />
+                                                <line x1="8" y1="55" x2="33" y2="55" stroke="#334155"
+                                                    stroke-width="2" />
+                                                <line x1="8" y1="5" x2="8" y2="55" stroke="#334155" stroke-width="2" />
+                                                <line x1="33" y1="5" x2="33" y2="55" stroke="#334155"
+                                                    stroke-width="2" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Перегородка</span>
+                                        </div>
+                                        <!-- Config 2: Перегородка + дверь -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="partition_door" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="20" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <line x1="28" y1="5" x2="28" y2="55" stroke="#334155" stroke-width="1"
+                                                    stroke-dasharray="3,2" />
+                                                <rect x="28" y="5" width="18" height="50" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="43" cy="30" r="2" fill="#334155" />
+                                                <path d="M 28 55 Q 42 50 46 30" stroke="#475569" stroke-width="1"
+                                                    fill="none" stroke-dasharray="2,2" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Перегородка + дверь</span>
+                                        </div>
+                                        <!-- Config 3: Угловая (90°) -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="corner" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="30" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="38" y="45" width="30" height="10" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="68" y="45" width="3" height="10" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Угловая (90°)</span>
+                                        </div>
+                                        <!-- Config 4: Угловая + дверь -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="corner_door" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="18" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <line x1="26" y1="5" x2="26" y2="55" stroke="#334155" stroke-width="1"
+                                                    stroke-dasharray="3,2" />
+                                                <rect x="26" y="5" width="14" height="50" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="37" cy="30" r="1.5" fill="#334155" />
+                                                <rect x="40" y="45" width="25" height="10" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="65" y="45" width="3" height="10" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Угловая + дверь</span>
+                                        </div>
+                                        <!-- Config 5: П-образная -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="u_shape" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="10" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="13" y="5" width="50" height="8" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="13" y="5" width="8" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="55" y="5" width="8" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="63" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">П-образная</span>
+                                        </div>
+                                        <!-- Config 6: П-образная + дверь -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="u_shape_door" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="10" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="13" y="5" width="50" height="8" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="13" y="13" width="8" height="42" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="13" y="5" width="8" height="8" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="55" y="5" width="8" height="25" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <line x1="55" y1="30" x2="55" y2="55" stroke="#334155" stroke-width="1"
+                                                    stroke-dasharray="3,2" />
+                                                <rect x="55" y="30" width="8" height="25" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="60" cy="42" r="1.5" fill="#334155" />
+                                                <rect x="63" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">П-образная + дверь</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Glass Type -->
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
+                                    <select id="shower-glass"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="clear">Прозрачное (8мм закалённое)</option>
+                                        <option value="graphite">Тонированное «Графит» (8мм зак.)</option>
+                                        <option value="bronze">Тонированное «Бронза» (8мм зак.)</option>
+                                        <option value="extra_clear">Осветлённое (8мм зак.)</option>
+                                        <option value="frosted">Матовое (8мм зак.)</option>
+                                        <option value="sandblast">Пескоструй (8мм зак.)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dimensions -->
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-2">Размеры панелей
+                                        (мм)</label>
+                                    <div id="shower-dimensions" class="space-y-3">
+                                        <!-- Dynamically generated based on selected configuration -->
+                                        <div
+                                            class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <div>
+                                                <label class="text-xs text-slate-500 block mb-1">Ширина стенки</label>
+                                                <input type="number" id="shower-w1" placeholder="800"
+                                                    class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-slate-500 block mb-1">Высота</label>
+                                                <input type="number" id="shower-h" placeholder="2000"
+                                                    class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hardware placeholder -->
+                                <div class="mb-5 p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
+                                    <p class="text-sm text-slate-500 flex items-center gap-2">
+                                        <i data-lucide="wrench" class="w-4 h-4"></i>
+                                        Фурнитура будет добавлена позже
+                                    </p>
+                                </div>
+
+                                <!-- Add Button -->
+                                <button onclick="addShowerItem()"
+                                    class="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold py-3.5 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 shadow-md">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    Добавить душевую
+                                </button>
+                            </div>
+                            <!-- /TAB: SHOWER -->
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: ESTIMATE / CART -->
+                <div class="lg:col-span-4">
+                    <div
+                        class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col md:sticky md:top-4">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="receipt" class="w-5 h-5 text-brand-primary"></i>
+                                Смета заказа
+                            </h2>
+                            <span id="items-count-badge"
+                                class="bg-brand-light text-brand-dark text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+                        </div>
+
+                        <!-- ITEMS LIST -->
+                        <div id="cart-items"
+                            class="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4 space-y-3 min-h-[200px]">
+                            <!-- items injected here via JS -->
+                            <div class="text-center text-slate-400 py-12 flex flex-col items-center gap-3">
+                                <i data-lucide="package-open" class="w-10 h-10 text-slate-200"></i>
+                                <span class="text-sm">Смета пуста.<br>Добавьте изделия слева.</span>
+                            </div>
+                        </div>
+
+                        <!-- SERVICES & ADDITIONAL CHARGES -->
+                        <div class="border-t border-slate-200 pt-4 space-y-4">
+
+                            <!-- Uslugi Block -->
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <h3
+                                    class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <i data-lucide="wrench" class="w-4 h-4 text-slate-400"></i> Дополнительные услуги
+                                </h3>
+                                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Монтаж
+                                            (₽)</label><input type="number" id="srv-install" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Доставка
+                                            (₽)</label><input type="number" id="srv-delivery" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Подъём
+                                            (₽)</label><input type="number" id="srv-lifting" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Утилизация
+                                            (₽)</label><input type="number" id="srv-util" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Дренажи
+                                            (₽)</label><input type="number" id="srv-drainage" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                    <div><label
+                                            class="block text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">Штапики
+                                            (₽)</label><input type="number" id="srv-shtapiki" oninput="renderCart()"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                            placeholder="0"></div>
+                                </div>
+                            </div>
+
+                            <!-- Adjustments Block -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <!-- Manual Markup -->
+                                <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                    <h3
+                                        class="text-[11px] font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Доп. Наценка
+                                    </h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-blue-600/70 uppercase tracking-wider mb-1">Суммой
+                                                (₽)</label>
+                                            <input type="number" id="manual-markup-rub" oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                placeholder="0">
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-blue-600/70 uppercase tracking-wider mb-1">Процентом
+                                                (%)</label>
+                                            <input type="number" id="manual-markup-pct" oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Manual Discount -->
+                                <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                    <h3
+                                        class="text-[11px] font-bold text-emerald-800 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i data-lucide="tags" class="w-3.5 h-3.5"></i> Скидка
+                                    </h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-emerald-600/70 uppercase tracking-wider mb-1">Суммой
+                                                (₽)</label>
+                                            <input type="number" id="manual-discount-rub" oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-emerald-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                placeholder="0">
+                                        </div>
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-emerald-600/70 uppercase tracking-wider mb-1">Процентом
+                                                (%)</label>
+                                            <input type="number" id="manual-discount-pct" oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-emerald-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex justify-between items-end pb-2 pt-3 border-t border-dashed border-slate-200">
+                                <span class="text-slate-500 font-medium">Итого:</span>
+                                <span id="cart-total-display"
+                                    class="text-2xl font-black text-slate-900 tracking-tight">0 ₽</span>
+                            </div>
+
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="kp-number-input" placeholder="№ КП"
+                                    class="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-sm">
+                                <input type="text" id="client-name" placeholder="Имя клиента"
+                                    class="w-2/3 p-2 bg-white border border-slate-200 rounded-lg text-sm">
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <button onclick="showProposal()"
+                                    class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md">
+                                    <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                                    КП и Смета
+                                </button>
+                                <div id="print-error" class="text-red-500 text-sm text-center font-medium hidden">
+                                    Смета пуста! Добавьте изделия.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROPOSAL SCREEN (PRINT) -->
+        <div id="proposal-screen"
+            class="proposal-view bg-white min-h-[100vh] p-0 sm:p-8 max-w-[210mm] mx-auto rounded-none sm:rounded-lg sm:shadow-2xl print:shadow-none print:p-0">
+            <!-- Back/Print Header -->
+            <div
+                class="no-print mb-8 flex flex-col sm:flex-row justify-between items-center bg-slate-100 p-4 rounded-xl gap-4 border border-slate-200">
+                <button onclick="hideProposal()"
+                    class="flex items-center gap-2 text-slate-600 hover:text-black font-medium transition-colors bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i> Назад
+                </button>
+                <div class="text-sm text-slate-600 font-medium hidden md:block">
+                    💡 Совет: в окне печати выберите <b>«Сохранить как PDF»</b>. Масштаб по умолчанию 100%.
+                </div>
+                <button onclick="window.print()"
+                    class="flex items-center gap-2 bg-brand-primary text-white px-6 py-2 rounded-lg hover:bg-brand-dark font-bold shadow-md transition-all">
+                    <i data-lucide="printer" class="w-5 h-5"></i> Печать / PDF
+                </button>
+            </div>
+
+            <div id="proposal-content" class="bg-white">
+                <!-- Proposal Header -->
+                <div class="flex justify-between items-start border-b-2 border-brand-primary pb-3 mb-4 mt-2">
+                    <!-- Left: Logo & Contacts -->
+                    <div class="flex items-center gap-4">
+                        <img src="./логотип для меню сайта.png" alt="Логотип"
+                            class="w-52 sm:w-60 print:w-52 h-auto object-contain shrink-0">
+                        <div class="flex flex-col justify-center border-l-2 border-slate-200 pl-4 shrink-0">
+                            <p
+                                class="text-[11px] font-bold text-slate-800 uppercase tracking-wide leading-snug whitespace-nowrap">
+                                Комплексные решения<br>для дома и бизнеса</p>
+                            <div class="text-[10px] text-slate-600 mt-1.5 space-y-1 font-medium whitespace-nowrap"
+                                id="company-contacts">
+                                <!-- injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Title & Client -->
+                    <div class="text-right flex flex-col items-end shrink-0 pl-4 max-w-[45%]">
+                        <div class="flex items-baseline justify-end flex-wrap gap-x-2 w-full">
+                            <h2
+                                class="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">
+                                Коммерческое предложение
+                            </h2>
+                            <h3 class="text-base sm:text-lg md:text-xl font-black text-brand-primary"
+                                id="kp-number-display-right">
+                            </h3>
+                        </div>
+                        <p class="text-xs font-bold text-slate-500 uppercase mt-1">Счет-договор (Оферта)</p>
+                        <p class="text-slate-500 text-xs mt-1">Дата: <span id="kp-date"
+                                class="text-slate-900 font-bold"></span></p>
+
+                        <div class="mt-3 bg-slate-50 border border-slate-200 rounded p-2 text-left w-[220px]">
+                            <p class="text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Заказчик</p>
+                            <p id="kp-client-display" class="font-bold text-slate-800 text-xs break-words">
+                                _______________</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proposal Body (Table) -->
+                <table class="w-full text-sm mb-6 border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-left border-b border-slate-300">
+                            <th class="p-3 font-semibold text-slate-700 w-10">№</th>
+                            <th class="p-3 font-semibold text-slate-700 w-32 text-center">Эскиз</th>
+                            <th class="p-3 font-semibold text-slate-700">Наименование / Параметры</th>
+                            <th class="p-3 font-semibold text-slate-700 text-center">Кол-во</th>
+                            <th class="p-3 font-semibold text-slate-700 text-right">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kp-table-body">
+                        <!-- Items injected here -->
+                    </tbody>
+                </table>
+
+                <!-- Summary Section -->
+                <div
+                    class="break-inside-avoid mt-2 border-t-2 border-slate-200 pt-3 flex flex-col md:flex-row gap-6 items-center">
+                    <!-- Left empty area (Legal text fills the gap) -->
+                    <div
+                        class="w-full md:w-1/2 text-[10px] text-justify text-slate-600 bg-slate-50 p-3 rounded border-l-[3px] border-brand-primary my-auto">
+                        <p class="font-bold mb-1 text-slate-800">Внимание! Настоящее Коммерческое предложение так же
+                            является счёт-офертой (ст. 435 Гражданского кодекса РФ).</p>
+                        <p class="mb-1">Оплата данного счета означает согласие Заказчика с условиями поставки товара
+                            и/или оказания услуг, и приравнивается к заключению договора (акцепт оферты).</p>
+                        <p>В цену товара включены все расходы Исполнителя, связанные с осуществлением своих обязательств
+                            в полном объеме, в том числе все обязательные платежи.</p>
+                    </div>
+
+                    <!-- Right totals area -->
+                    <div class="w-full md:w-1/2 flex flex-col items-end">
+                        <div class="w-full" id="kp-services-list">
+                            <!-- Services injected here -->
+                        </div>
+                        <div
+                            class="bg-brand-light p-3 rounded-xl flex items-center justify-between w-full border border-brand-primary mt-2">
+                            <span class="font-bold text-base text-slate-800 uppercase tracking-wider">Итого к
+                                оплате:</span>
+                            <span class="font-black text-xl text-brand-dark" id="kp-total-sum">0 ₽</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signatures -->
+                <div class="break-inside-avoid mt-16 pb-8">
+                    <div class="flex justify-between items-start text-sm gap-8">
+                        <div class="w-1/2">
+                            <div
+                                class="font-bold mb-4 border-b-2 border-slate-800 pb-2 text-slate-800 uppercase tracking-wider text-xs">
+                                Заказчик</div>
+                            <div class="mt-12">
+                                <div class="border-b border-slate-400 mb-1"></div>
+                                <div class="text-[10px] text-slate-500 text-center">(подпись / ФИО)</div>
+                            </div>
+                        </div>
+                        <div class="w-1/2">
+                            <div
+                                class="font-bold mb-4 border-b-2 border-brand-primary pb-2 text-slate-800 uppercase tracking-wider text-xs">
+                                Исполнитель</div>
+                            <div class="text-[10px] text-slate-600 mb-8 space-y-1.5" id="company-requisites">
+                                <!-- Requisites injected here based on company choice -->
+                            </div>
+                            <div>
+                                <div class="border-b border-slate-400 mb-1 relative">
+                                    <div
+                                        class="absolute -top-6 right-10 text-brand-primary opacity-20 transform -rotate-12 italic text-2xl font-serif">
+                                        М.П.</div>
+                                </div>
+                                <div class="text-[10px] text-slate-500 text-center" id="company-sign-name">ИП Данелия
+                                    Д.Т. (подпись)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="database" class="w-6 h-6 text-brand-primary"></i>
+                    Настройки прайс-листов
+                </h2>
+                <button onclick="toggleSettingsModal()"
+                    class="text-slate-400 hover:text-red-500 transition-colors bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+
+                <!-- Google Sheets Method -->
+                <div class="mb-8 relative">
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-brand-primary/20"></div>
+                    <div class="pl-8 relative">
+                        <div
+                            class="absolute w-8 h-8 rounded-full bg-brand-light border-2 border-brand-primary text-brand-primary flex items-center justify-center font-bold left-0 top-[-4px]">
+                            1</div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Загрузка из Google Таблиц (Онлайн)</h3>
+                        <p class="text-sm text-slate-500 mb-4">Автоматическое обновление цен по ссылке на опубликованную
+                            Google Таблицу.</p>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Ссылка на Google Таблицу
+                                (CSV)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="g-sheets-url"
+                                    class="flex-1 p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                    placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv">
+                                <button onclick="syncGoogleSheets()" id="btn-sync-gsheets"
+                                    class="bg-brand-primary hover:bg-brand-dark text-white px-5 py-3 rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-sync-gsheets"></i> Обновить
+                                </button>
+                            </div>
+                            <div id="gsheets-status" class="mt-2 text-xs font-medium text-slate-500 hidden"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Excel Method -->
+                <div class="relative">
+                    <div class="pl-8 relative">
+                        <div
+                            class="absolute w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-300 text-slate-500 flex items-center justify-center font-bold left-0 top-[-4px]">
+                            2</div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Загрузка из Excel файла (Офлайн)</h3>
+                        <p class="text-sm text-slate-500 mb-4">Если нет интернета, выберите файл прайс-листа
+                            <b>.xlsx</b> с компьютера.
+                        </p>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-dashed">
+                            <input type="file" id="excel-file-upload" accept=".xlsx, .xls" class="hidden"
+                                onchange="handleExcelUpload(event)">
+                            <label for="excel-file-upload"
+                                class="flex flex-col items-center justify-center w-full min-h-[120px] bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                                <i data-lucide="file-spreadsheet" class="w-8 h-8 text-slate-400 mb-2"></i>
+                                <span class="text-sm font-medium text-slate-700">Нажмите, чтобы выбрать файл
+                                    Excel</span>
+                                <span class="text-xs text-slate-400 mt-1">Ожидается файл нужного шаблона</span>
+                            </label>
+                            <div id="excel-status" class="mt-3 text-xs font-medium text-slate-500 text-center hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="text-xs text-slate-500">
+                    <div>Текущие цены: <strong id="current-prices-source" class="text-slate-700">Встроенные
+                            (по-умолчанию)</strong></div>
+                    <div id="current-prices-date" class="mt-0.5"></div>
+                </div>
+                <button onclick="downloadExcelTemplate()"
+                    class="text-sm text-brand-primary hover:text-brand-dark font-medium underline underline-offset-2 flex items-center gap-1">
+                    <i data-lucide="download" class="w-4 h-4"></i> Скачать шаблон Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // GLOBALS & STATE — Все цены ДИЛЕРСКИЕ (от поставщика). Глобальная наценка компании накладывается сверху.
+        let GLASS_TYPES = [
+            { name: 'Ст/п 24мм (4/16/4)', price: 2000 },
+            { name: 'Ст/п 32мм (4/24/4)', price: 2100 },
+            { name: 'Ст/п 24-26мм (6/14/4)', price: 2500 },
+            { name: 'Ст/п 24-26мм (6/12/6)', price: 3000 },
+            { name: 'Ст/п 24мм (4/16/4 Энерго)', price: 2300 },
+            { name: 'Ст/п 32мм (4/10/4/10/4) двухкамерный', price: 2500 },
+            { name: 'Ст/п 24мм (4/16/4 Бронза Евро)', price: 2900 },
+            { name: 'Ст/п 32мм (4/10/4/10/4 Solar)', price: 3000 },
+            { name: 'Ст/п 32мм (6 Solar/22/4)', price: 3000 },
+            { name: 'Ст/п 24мм (4/16/4) SOLAR', price: 2400 },
+            { name: 'Ст/п 24мм Сатинат/Кризет/Диамант б/цв', price: 2800 },
+            { name: 'Ст/п 24мм SOLAR Light Bronze/Silver/Blue/Sky Grey', price: 3000 }
+        ];
+        let SHAPES = [
+            { name: 'Прямоугольник', multiplier: 0 },
+            { name: 'Треугольник / Трапеция', multiplier: 0.25 },
+            { name: 'Арка / Круг', multiplier: 0.50 },
+            { name: 'По шаблону', multiplier: 0.50 }
+        ];
+        let LAYOUTS = [
+            { name: 'Раскладка 8мм белая', price: 450 },
+            { name: 'Раскладка 10мм золотая', price: 450 },
+            { name: 'Раскладка 18мм белая', price: 450 },
+            { name: 'Раскладка 18мм коричневая', price: 450 }
+        ];
+        let NET_TYPES = [
+            { id: 'window_white', name: 'Оконная москитная сетка (Белая)', price_min: 650, price_sqm: 800 },
+            { id: 'window_brown', name: 'Оконная москитная сетка (Коричневая)', price_min: 650, price_sqm: 800 },
+            { id: 'window_ant', name: 'Оконная москитная сетка (Антрацит)', price_min: 650, price_sqm: 1100 },
+            { id: 'door_32', name: 'Москитная дверь (Профиль 32мм)', price_min: 0, price_sqm: 2000 },
+            { id: 'door_42', name: 'Москитная дверь (42мм Антрацит/Белый)', price_min: 0, price_sqm: 2200 },
+            { id: 'door_52', name: 'Москитная дверь (Профиль 52мм)', price_min: 4500, price_sqm: 5000 },
+            { id: 'vsn', name: 'Москитная сетка VSN (вставная)', price_min: 1600, price_sqm: 2000 },
+            { id: 'rollet', name: 'Москитная сетка под роллет', price_min: 0, price_sqm: 1200 },
+            { id: 'pleated', name: 'Москитная сетка Плиссе', price_min: 0, price_sqm: 5200 }
+        ];
+        let SALINOX_PRICES = {
+            'F1_F2': [{ max: 34, p: 34104 }, { max: 40, p: 35280 }, { max: 45, p: 35520 }, { max: 50, p: 35880 }, { max: 55, p: 36360 }, { max: 60, p: 37080 }, { max: 65, p: 37680 }, { max: 70, p: 38280 }, { max: 75, p: 38800 }, { max: 80, p: 39480 }, { max: 85, p: 40080 }, { max: 90, p: 40560 }, { max: 95, p: 41160 }, { max: 100, p: 41760 }, { max: 105, p: 42360 }, { max: 110, p: 42960 }],
+            'F4': [{ max: 34, p: 0 }, { max: 40, p: 40020 }, { max: 45, p: 41880 }, { max: 50, p: 42504 }, { max: 55, p: 42996 }, { max: 60, p: 43332 }, { max: 65, p: 44280 }, { max: 70, p: 45300 }, { max: 75, p: 46250 }, { max: 80, p: 47210 }, { max: 85, p: 48170 }, { max: 90, p: 49150 }, { max: 95, p: 50100 }, { max: 100, p: 51050 }, { max: 105, p: 52010 }, { max: 110, p: 52970 }, { max: 115, p: 53930 }],
+            'F5': [{ max: 34, p: 0 }, { max: 40, p: 0 }, { max: 45, p: 30000 }, { max: 50, p: 30360 }, { max: 55, p: 30720 }, { max: 60, p: 31100 }, { max: 65, p: 31440 }, { max: 70, p: 31800 }, { max: 75, p: 32160 }, { max: 80, p: 32520 }, { max: 85, p: 33880 }, { max: 90, p: 33240 }, { max: 95, p: 33600 }, { max: 100, p: 33960 }],
+            'F6': [{ max: 34, p: 0 }, { max: 40, p: 32160 }, { max: 45, p: 32760 }, { max: 50, p: 33360 }, { max: 55, p: 34000 }, { max: 60, p: 34560 }, { max: 65, p: 35160 }, { max: 70, p: 35760 }, { max: 75, p: 37440 }, { max: 80, p: 38050 }, { max: 85, p: 38760 }, { max: 90, p: 39360 }, { max: 95, p: 39840 }, { max: 100, p: 40440 }, { max: 105, p: 41010 }, { max: 110, p: 41640 }, { max: 115, p: 42240 }, { max: 120, p: 42840 }],
+            'FB_cr': [{ max: 34, p: 0 }, { max: 40, p: 23160 }, { max: 45, p: 23520 }, { max: 50, p: 23880 }, { max: 55, p: 24240 }, { max: 60, p: 24600 }, { max: 65, p: 24840 }, { max: 70, p: 25200 }, { max: 75, p: 25560 }]
+        };
+        let OPTIONS = {
+            fl_mech: 36800,
+            fl_handle: 3500,
+            fl_closer: 12500,
+            fl_park: 15000,
+            net_pet_sqm: 800,
+            net_corners: 150,
+            glass_cross: 400,
+            glass_end: 70,
+            glass_oversize_pct: 25,
+            glass_min_area: 0.35
+        };
+        const SALINOX_DISCOUNT = 0.28;
+
+        // --- SILLS (Подоконники) DATA ---
+        let SILLS_DATA = [
+            {
+                brand: 'Crystallit',
+                groups: [
+                    {
+                        name: 'Белый (глянц./мат./сатин)',
+                        widths: { 100: 810, 150: 1215, 200: 1620, 250: 2025, 300: 2430, 350: 2835, 400: 3240, 450: 3645, 500: 4050, 550: 4860, 600: 4860 },
+                        cap: 210, conn90: 286, conn150: 286
+                    },
+                    {
+                        name: 'Цветной (антрацит, бетон, дуб и др.)',
+                        widths: { 100: 850, 150: 1275, 200: 1700, 250: 2125, 300: 2550, 350: 2975, 400: 3400, 450: 3825, 500: 4250, 550: 5100, 600: 5100 },
+                        cap: 210, conn90: 286, conn150: 286
+                    },
+                    {
+                        name: 'Премиум (венге, орех, золотой дуб и др.)',
+                        widths: { 100: 1730, 150: 1730, 200: 1730, 250: 2163, 300: 2595, 350: 3028, 400: 3460, 450: 3893, 500: 4325, 550: 5190, 600: 5190 },
+                        cap: 210, conn90: 286, conn150: 286
+                    }
+                ]
+            },
+            {
+                brand: 'Витраж Дизайн',
+                groups: [
+                    {
+                        name: 'Белый',
+                        widths: { 100: 1240, 150: 1240, 200: 1240, 250: 1550, 300: 1860, 350: 2170, 400: 2790, 450: 2790 },
+                        cap: 300, conn90: 475, conn150: 475
+                    },
+                    {
+                        name: 'Цветной (серый, чёрный, синий, мокко)',
+                        widths: { 100: 1380, 150: 1380, 200: 1380, 250: 1725, 300: 2070, 350: 2415, 400: 3105, 450: 3105 },
+                        cap: 330, conn90: 500, conn150: 500
+                    }
+                ]
+            },
+            {
+                brand: 'Витраж+',
+                groups: [
+                    {
+                        name: 'Белый сатин',
+                        widths: { 100: 620, 150: 620, 200: 620, 250: 775, 300: 930, 350: 1085, 400: 1395, 450: 1395, 500: 1550, 550: 1860, 600: 1860 },
+                        cap: 133, conn90: 245, conn150: 245
+                    }
+                ]
+            },
+            {
+                brand: 'Простые',
+                groups: [
+                    {
+                        name: 'Белый',
+                        widths: { 100: 400, 150: 500, 200: 600, 250: 750, 300: 900, 350: 1050, 400: 1200, 450: 1350, 500: 1500, 550: 1650, 600: 1800 },
+                        cap: 100, conn90: 200, conn150: 200
+                    },
+                    {
+                        name: 'Антрацит',
+                        widths: { 100: 500, 150: 620, 200: 740, 250: 930, 300: 1100, 350: 1300, 400: 1480, 450: 1670, 500: 1850, 550: 2040, 600: 2220 },
+                        cap: 120, conn90: 220, conn150: 220
+                    },
+                    {
+                        name: 'Коричневый',
+                        widths: { 100: 500, 150: 620, 200: 740, 250: 930, 300: 1100, 350: 1300, 400: 1480, 450: 1670, 500: 1850, 550: 2040, 600: 2220 },
+                        cap: 120, conn90: 220, conn150: 220
+                    }
+                ]
+            }
+        ];
+
+        let ITEMS = [];
+
+        const COMPANIES = {
+            daneliya: {
+                name_short: "ИП Данелия Д.Т.",
+                name_full: "Индивидуальный предприниматель Данелия Дмитрий Тезикович",
+                req: "ИНН: 230410343285<br>ОГРНИП: 317237500425682<br>Расчетный счет: 40802810430000046903<br>Банк: КРАСНОДАРСКОЕ ОТДЕЛЕНИЕ N8619 ПАО СБЕРБАНК<br>БИК: 040349602<br>Корр. счет: 30101810100000000602<br>Адрес: 353460, Краснодарский край, г Геленджик, ул. Волнухина, д.18, кв. 4",
+                sign_name: "ИП Данелия Д.Т.",
+                contacts: "<p>📞 +7 (918) 370-47-47</p><p>✉️ oknazavod-gel@yandex.ru</p>"
+            },
+            alex: {
+                name_short: "ООО Алексстрой",
+                name_full: "ООО \"АЛЕКССТРОЙ\"",
+                req: "ИНН: 2312328954 | КПП: 231201001<br>ОГРН: 1242300041785<br>Расчетный счет: 40702810947900000107<br>Банк: ФИЛИАЛ \"ЮЖНЫЙ\" ПАО \"БАНК УРАЛСИБ\"<br>БИК: 040349700<br>Корр. счет: 30101810400000000700<br>Юр. адрес: 350065, Краснодарский край, г. Краснодар, ул им. Валерия Гассия, д. 26, кв. 19",
+                sign_name: "Ген. директор Крюков А.А.",
+                contacts: "<p>📞 +7 (918) 370-47-47</p><p>✉️ oknazavod-gel@yandex.ru</p>"
+            }
+        };
+
+        const DEFAULT_GLASS_TYPES = JSON.parse(JSON.stringify(GLASS_TYPES));
+        const DEFAULT_SHAPES = JSON.parse(JSON.stringify(SHAPES));
+        const DEFAULT_LAYOUTS = JSON.parse(JSON.stringify(LAYOUTS));
+        const DEFAULT_NET_TYPES = JSON.parse(JSON.stringify(NET_TYPES));
+        const DEFAULT_SALINOX_PRICES = JSON.parse(JSON.stringify(SALINOX_PRICES));
+        const DEFAULT_OPTIONS = JSON.parse(JSON.stringify(OPTIONS));
+
+        // Settings State
+        let currentPricesSource = 'built-in';
+        let currentPricesDate = null;
+        let googleSheetsUrl = localStorage.getItem('oko_gsheets_url') || '';
+
+        // --- INIT ---
+        window.onload = function () {
+            lucide.createIcons();
+            document.getElementById('kp-date').innerText = new Date().toLocaleDateString('ru-RU');
+
+            document.getElementById('g-sheets-url').value = googleSheetsUrl;
+            loadPricesFromStorage();
+
+            // Populate select boxes with test data
+            let shapeSelect = document.getElementById('glass-shape');
+            shapeSelect.innerHTML = '';
+            SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+
+            updateDropdownPrices();
+            initSillsTab();
+            handleSettingsChange();
+            setupEnterKeys();
+        };
+
+        function setupEnterKeys() {
+            // Glass Tab
+            document.getElementById('glass-w').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('glass-h').focus();
+            });
+            document.getElementById('glass-h').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('glass-w').focus();
+                    addGlassItem();
+                }
+            });
+
+            // Nets Tab
+            document.getElementById('net-w').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('net-h').focus();
+            });
+            document.getElementById('net-h').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('net-w').focus();
+                    addNetItem();
+                }
+            });
+
+            // Frameless Tab
+            document.getElementById('fl-w').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('fl-h').focus();
+            });
+            document.getElementById('fl-h').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('fl-panels').focus();
+            });
+            document.getElementById('fl-panels').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('fl-w').focus();
+                    addFramelessItem();
+                }
+            });
+
+            // Sills Tab
+            document.getElementById('sill-length').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('sill-qty').focus();
+            });
+            document.getElementById('sill-qty').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('sill-cap').focus();
+            });
+            document.getElementById('sill-cap').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('sill-conn90').focus();
+            });
+            document.getElementById('sill-conn90').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') document.getElementById('sill-conn150').focus();
+            });
+            document.getElementById('sill-conn150').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('sill-length').focus();
+                    addSillItem();
+                }
+            });
+        }
+
+        // --- UI & TAB LOGIC ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.querySelectorAll('.category-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        function handleSettingsChange() {
+            updateDropdownPrices();
+            updateSillWidths();
+            renderCart();
+
+            // Switch company reqs
+            const comp = COMPANIES[document.getElementById('select-company').value];
+            document.getElementById('company-requisites').innerHTML = `<p class="font-bold text-slate-800 text-xs">${comp.name_full}</p><p>${comp.req}</p>`;
+            document.getElementById('company-sign-name').innerText = comp.sign_name + " (подпись)";
+            document.getElementById('company-contacts').innerHTML = comp.contacts;
+        }
+
+        function getGlobalMarkup() { return parseFloat(document.getElementById('select-global-markup').value); }
+
+        function updateDropdownPrices() {
+            if (GLASS_TYPES.length === 0) return;
+            const markup = getGlobalMarkup();
+
+            let gSel = document.getElementById('glass-type'); let prevG = gSel.value; gSel.innerHTML = '';
+            // Sort: all 24mm first, then 32mm, then others
+            let sortedIndices = GLASS_TYPES.map((g, i) => ({ g, i }));
+            sortedIndices.sort((a, b) => {
+                // Extract first number after 'Ст/п ' — this is the actual glass thickness
+                let aMatch = a.g.name.match(/Ст\/п\s+(\d+)/);
+                let bMatch = b.g.name.match(/Ст\/п\s+(\d+)/);
+                let aThick = aMatch ? parseInt(aMatch[1]) : 999;
+                let bThick = bMatch ? parseInt(bMatch[1]) : 999;
+                return aThick - bThick;
+            });
+            sortedIndices.forEach(({ g, i }) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
+            if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+
+            let lSel = document.getElementById('glass-layout'); let prevL = lSel.value; lSel.innerHTML = '<option value="none">Без раскладки</option>';
+            LAYOUTS.forEach((l, i) => lSel.innerHTML += `<option value="${i}">${l.name} ${l.price > 0 ? `(+${Math.ceil(l.price * markup)} ₽/м)` : ''}</option>`);
+            if (prevL) lSel.value = prevL;
+
+            let nSel = document.getElementById('net-type'); let prevN = nSel.value; nSel.innerHTML = '';
+            NET_TYPES.forEach((n, i) => {
+                let priceText = '';
+                let minP = Math.ceil(n.price_min * markup);
+                let sqmP = Math.ceil(n.price_sqm * markup);
+                if (n.price_min > 0 && n.price_sqm > 0) priceText = `мин. ${minP}₽, далее ${sqmP}₽/м²`;
+                else if (n.price_min > 0) priceText = `${minP}₽ за шт.`;
+                else priceText = `${sqmP}₽/м²`;
+                nSel.innerHTML += `<option value="${i}">${n.name} — ${priceText}</option>`;
+            });
+            if (prevN && prevN !== 'loading') nSel.value = prevN;
+        }
+
+        function toggleGlassLayoutInputs() {
+            const inputs = document.getElementById('glass-layout-inputs');
+            if (document.getElementById('glass-layout').value === 'none') inputs.classList.add('hidden');
+            else inputs.classList.remove('hidden');
+        }
+
+        // --- GLASS LOGIC ---
+        function addGlassItem() {
+            let w = parseFloat(document.getElementById('glass-w').value);
+            let h = parseFloat(document.getElementById('glass-h').value);
+            if (!w || !h) { alert('Введите ширину и высоту!'); return; }
+
+            let glass = GLASS_TYPES[document.getElementById('glass-type').value];
+            let shape = SHAPES[document.getElementById('glass-shape').value];
+
+            let area = (w * h) / 1000000;
+            let calcArea = area < OPTIONS.glass_min_area ? OPTIONS.glass_min_area : area;
+
+            let baseCost = glass.price * calcArea;
+            let markupAdd = 0;
+            if (shape.multiplier > 0) markupAdd += baseCost * shape.multiplier;
+
+            let isLarge = false;
+            if (area > 3) { markupAdd += baseCost * (OPTIONS.glass_oversize_pct / 100); isLarge = true; }
+
+            let lVal = document.getElementById('glass-layout').value;
+            let layoutCost = 0; let layoutDesc = null;
+            if (lVal !== 'none') {
+                let layout = LAYOUTS[lVal];
+                let lenMm = parseFloat(document.getElementById('glass-layout-len').value) || 0;
+                let lenM = lenMm / 1000; // mm → m for pricing
+                let cr = parseFloat(document.getElementById('glass-layout-cross').value) || 0;
+                let en = parseFloat(document.getElementById('glass-layout-end').value) || 0;
+                layoutCost = (lenM * layout.price) + (cr * OPTIONS.glass_cross) + (en * OPTIONS.glass_end);
+                layoutDesc = `${layout.name} (${lenMm}мм)`;
+            }
+
+            ITEMS.push({
+                id: Date.now(),
+                category: 'glass',
+                type: glass.name,
+                w: w, h: h, area: area, calcArea: calcArea,
+                shape: shape.name,
+                isLarge: isLarge,
+                layoutCross: lVal !== 'none' ? (parseFloat(document.getElementById('glass-layout-cross').value) || 0) : 0,
+                layoutEnd: lVal !== 'none' ? (parseFloat(document.getElementById('glass-layout-end').value) || 0) : 0,
+                layoutName: lVal !== 'none' ? LAYOUTS[lVal].name : null,
+                optionsDesc: [
+                    shape.name !== 'Прямоугольник' ? `Сложная форма: ${shape.name}` : null,
+                    isLarge ? `Негабарит (>3м²)` : null,
+                    layoutDesc ? `Шпросы: ${layoutDesc}` : null
+                ].filter(Boolean),
+                baseTotal: baseCost + markupAdd + layoutCost
+            });
+
+            document.getElementById('glass-w').value = '';
+            document.getElementById('glass-h').value = '';
+            document.getElementById('glass-w').focus();
+            renderCart();
+        }
+
+        // --- NETS LOGIC ---
+        function toggleNetOptions() {
+            let typeIdx = document.getElementById('net-type').value;
+            let netType = NET_TYPES[typeIdx];
+            if (!netType) return;
+            let isWindow = netType.id.startsWith('window_');
+
+            let corners = document.getElementById('net-opt-corners-wrapper');
+            corners.style.opacity = isWindow ? '1' : '0.4';
+            document.getElementById('net-opt-corners').disabled = !isWindow;
+            if (!isWindow) document.getElementById('net-opt-corners').checked = false;
+        }
+
+        function calcNetPreview() {
+            let isLumen = document.getElementById('net-is-lumen').checked;
+            document.getElementById('net-lumen-hint').style.display = isLumen ? 'block' : 'none';
+        }
+
+        function addNetItem() {
+            let wIn = parseFloat(document.getElementById('net-w').value);
+            let hIn = parseFloat(document.getElementById('net-h').value);
+            if (!wIn || !hIn) { alert('Введите размеры сетки!'); return; }
+
+            let isLumen = document.getElementById('net-is-lumen').checked;
+            let typeIdx = document.getElementById('net-type').value;
+            let netDef = NET_TYPES[typeIdx];
+            if (!netDef) return;
+            let type = netDef.id;
+
+            let isPet = document.getElementById('net-opt-pet').checked;
+            let isCorners = document.getElementById('net-opt-corners').checked;
+
+            // Calc actual size
+            let w = wIn, h = hIn;
+            if (isLumen) {
+                if (type.startsWith('window_') || type === 'vsn') { w += 50; h += 50; }
+                else if (type === 'door_32') { w += 64; h += 64; }
+                else if (type === 'door_42') { w += 84; h += 84; }
+                else if (type === 'door_52') { w += 84; h += 84; }
+            }
+
+            let area = (w * h) / 1000000;
+            let itemName = netDef.name;
+            let baseRetailCost = 0;
+
+            if (type === 'door_52') {
+                baseRetailCost = netDef.price_min;
+                if (area > 1.68 && netDef.price_sqm > netDef.price_min) baseRetailCost = netDef.price_sqm;
+            } else if (netDef.price_min > 0 && netDef.price_sqm > 0) {
+                let calcByArea = area * netDef.price_sqm;
+                baseRetailCost = calcByArea > netDef.price_min ? calcByArea : netDef.price_min;
+            } else if (netDef.price_min > 0) {
+                baseRetailCost = netDef.price_min;
+            } else {
+                baseRetailCost = area * netDef.price_sqm;
+            }
+
+            let optionsDesc = [];
+            if (isLumen) optionsDesc.push(`Световой проем (${wIn}x${hIn}мм)`);
+            if (isPet) {
+                baseRetailCost += (OPTIONS.net_pet_sqm * area);
+                optionsDesc.push('Антикошка/Антипыль');
+            }
+            if (isCorners) {
+                baseRetailCost += OPTIONS.net_corners;
+                optionsDesc.push('Металлические углы');
+            }
+
+            // We use baseRetailCost, but we apply the global markup to EVERYTHING uniformly in renderCart.
+            // That means baseRetailCost is essentially treated as dictating the "supplier" ratio.
+            // If user wants 0% markup, it equals retail.
+            // Actually, user wants THEIR markup. 
+            // So we treat baseRetailCost as "BasePrice"
+
+            ITEMS.push({
+                id: Date.now(),
+                category: 'net',
+                type: itemName,
+                w: w, h: h, area: area, calcArea: area,
+                shape: 'Прямоугольник',
+                isLarge: false,
+                optionsDesc: optionsDesc,
+                baseTotal: baseRetailCost // treating extracted retail prices as the baseline before markup
+            });
+
+            document.getElementById('net-w').value = '';
+            document.getElementById('net-h').value = '';
+            document.getElementById('net-w').focus();
+            renderCart();
+        }
+
+        // --- FRAMELESS LOGIC ---
+        function updateDoorSelectionOptions() {
+            let panelsInput = document.getElementById('fl-panels');
+            let doorSelect = document.getElementById('fl-door-panel');
+            let panels = parseInt(panelsInput.value) || 0;
+
+            // Keep current selection if possible
+            let currentVal = doorSelect.value;
+
+            doorSelect.innerHTML = '<option value="none">Без двери</option>';
+            for (let i = 1; i <= panels; i++) {
+                doorSelect.innerHTML += `<option value="${i}">Панель ${i} (дверь)</option>`;
+            }
+
+            if (currentVal !== 'none' && parseInt(currentVal) <= panels) {
+                doorSelect.value = currentVal;
+            }
+        }
+
+        function addFramelessItem() {
+            let totalW = parseFloat(document.getElementById('fl-w').value);
+            let h = parseFloat(document.getElementById('fl-h').value);
+            let panels = parseInt(document.getElementById('fl-panels').value);
+
+            if (!totalW || !h || !panels || panels < 1) {
+                alert('Введите корректные размеры и количество панелей!');
+                return;
+            }
+
+            let system = document.getElementById('fl-system').value;
+            let isPainting = document.getElementById('fl-painting').checked;
+
+            let panelWidthCm = (totalW / panels) / 10;
+
+            let priceTable = SALINOX_PRICES[system] || [];
+            let basePricePerPanel = 0;
+
+            if (system === 'Elroz') {
+                basePricePerPanel = 0; // Плейсхолдер до получения цен
+            } else {
+                for (let i = 0; i < priceTable.length; i++) {
+                    if (panelWidthCm <= priceTable[i].max) {
+                        basePricePerPanel = priceTable[i].p;
+                        break;
+                    }
+                }
+
+                if (basePricePerPanel === 0) {
+                    alert(`Ширина панели (${panelWidthCm.toFixed(1)} см) превышает максимально допустимую для системы ${system}!`);
+                    return;
+                }
+            }
+
+            // Apply 28% discount from Salinox (Elroz and others will have their own logic later)
+            let discountedPricePerPanel = system === 'Elroz' ? basePricePerPanel : basePricePerPanel * (1 - SALINOX_DISCOUNT);
+
+            let paintingPricePerPanel = 0;
+            if (isPainting && system !== 'F4') {
+                paintingPricePerPanel = discountedPricePerPanel * 0.15;
+            }
+
+            let totalSystemPrice = (discountedPricePerPanel + paintingPricePerPanel) * panels;
+
+            let optMech = document.getElementById('fl-opt-mech').checked;
+            let optHandle = document.getElementById('fl-opt-handle').checked;
+            let optCloser = document.getElementById('fl-opt-closer').checked;
+            let optPark = document.getElementById('fl-opt-park').checked;
+
+            let doorPanel = document.getElementById('fl-door-panel').value;
+            let doorDir = document.getElementById('fl-door-dir').value;
+
+            let ralColor = document.getElementById('fl-ral').value;
+            if (ralColor === 'custom') {
+                ralColor = document.getElementById('fl-ral-custom').value || 'Свой цвет (не указан)';
+            }
+            let drawView = 'Изнутри';
+
+            let optionsCost = 0;
+            let optionsDesc = [];
+
+            optionsDesc.push(`Цвет профиля: ${ralColor}`);
+            optionsDesc.push(`Вид на эскизе: ${drawView}`);
+
+            if (doorPanel !== 'none') {
+                optionsDesc.push(`Дверь: Панель ${doorPanel} (откр. ${doorDir === 'right' ? 'Вправо' : 'Влево'})`);
+            }
+
+            if (isPainting && system !== 'F4') {
+                optionsDesc.push('Покраска профиля (+15%)');
+            }
+
+            // Допы: берем базовую цену из массива оций и применяем дилерскую скидку
+            if (optMech) {
+                optionsCost += OPTIONS.fl_mech * (1 - SALINOX_DISCOUNT);
+                optionsDesc.push('Механизм откр. двери F2');
+            }
+            if (optHandle) {
+                optionsCost += OPTIONS.fl_handle * (1 - SALINOX_DISCOUNT);
+                optionsDesc.push('Шестигранная ручка');
+            }
+            if (optCloser) {
+                optionsCost += OPTIONS.fl_closer * (1 - SALINOX_DISCOUNT);
+                optionsDesc.push('Доводчик Usaf 600A');
+            }
+            if (optPark) {
+                optionsCost += OPTIONS.fl_park * (1 - SALINOX_DISCOUNT);
+                optionsDesc.push('Доп. парковка');
+            }
+
+            let glassType = document.getElementById('fl-glass-type').value;
+            let area = (totalW * h) / 1000000;
+            let glassCost = 0;
+
+            if (glassType !== 'none') {
+                let glassPricePerM2 = glassType === 'clear10' ? 4500 : 6000;
+                glassCost = glassPricePerM2 * area;
+                let glassName = glassType === 'clear10' ? '10мм прозр.' : '10мм тонир.';
+                // Cost added to baseTotal so the global markup will be applied
+                optionsDesc.push(`Стекло: ${glassName} (${glassPricePerM2} ₽/м²)`);
+            }
+
+            let baseTotalCost = totalSystemPrice + optionsCost + glassCost;
+
+            let systemDisplayNames = {
+                'F1_F2': 'Salinox F1-F2', 'F4': 'Salinox F4', 'F5': 'Salinox F5', 'F6': 'Salinox F6', 'FB_cr': 'Salinox FB-cr', 'Elroz': 'Elroz'
+            };
+
+            ITEMS.push({
+                id: Date.now(),
+                category: 'frameless',
+                type: `Безрамное остекление (${systemDisplayNames[system]})`,
+                w: totalW, h: h, area: area, calcArea: area,
+                shape: `Панелей: ${panels} шт. по ${panelWidthCm.toFixed(1)} см`,
+                isLarge: false,
+                doorPanel: doorPanel,
+                doorDir: doorDir,
+                optionsDesc: optionsDesc,
+                baseTotal: baseTotalCost
+            });
+
+            document.getElementById('fl-w').value = '';
+            document.getElementById('fl-h').value = '';
+            document.getElementById('fl-panels').value = '';
+            document.getElementById('fl-door-panel').value = 'none';
+            document.getElementById('fl-w').focus();
+            renderCart();
+        }
+
+        // --- SILLS (Подоконники) LOGIC ---
+        function initSillsTab() {
+            let sel = document.getElementById('sill-brand');
+            sel.innerHTML = '';
+            SILLS_DATA.forEach((b, i) => {
+                sel.innerHTML += `<option value="${i}">${b.brand}</option>`;
+            });
+            updateSillColors();
+        }
+
+        function updateSillColors() {
+            let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+            let brand = SILLS_DATA[brandIdx];
+            if (!brand) return;
+            let sel = document.getElementById('sill-color');
+            sel.innerHTML = '';
+            brand.groups.forEach((g, i) => {
+                sel.innerHTML += `<option value="${i}">${g.name}</option>`;
+            });
+            updateSillWidths();
+        }
+
+        function updateSillWidths() {
+            let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+            let colorIdx = parseInt(document.getElementById('sill-color').value) || 0;
+            let brand = SILLS_DATA[brandIdx];
+            if (!brand || !brand.groups[colorIdx]) return;
+            let group = brand.groups[colorIdx];
+            let markup = getGlobalMarkup();
+            let sel = document.getElementById('sill-width');
+            sel.innerHTML = '';
+            Object.keys(group.widths).sort((a, b) => parseInt(a) - parseInt(b)).forEach(w => {
+                let pricePerM = Math.ceil(group.widths[w] * markup);
+                sel.innerHTML += `<option value="${w}">${w} мм — ${pricePerM} ₽/пог.м</option>`;
+            });
+        }
+
+        function addSillItem() {
+            let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+            let colorIdx = parseInt(document.getElementById('sill-color').value) || 0;
+            let widthVal = document.getElementById('sill-width').value;
+            let lengthMm = parseFloat(document.getElementById('sill-length').value);
+            let qty = parseInt(document.getElementById('sill-qty').value) || 1;
+
+            if (!lengthMm || lengthMm <= 0) {
+                alert('Введите длину подоконника в мм!');
+                return;
+            }
+
+            let brand = SILLS_DATA[brandIdx];
+            let group = brand.groups[colorIdx];
+            let widthMm = parseInt(widthVal);
+            let pricePerRunM = group.widths[widthMm]; // дилерская цена за пог. метр
+
+            if (!pricePerRunM) {
+                alert('Не найдена цена для выбранной ширины!');
+                return;
+            }
+
+            let lengthM = lengthMm / 1000;
+            let sillCost = pricePerRunM * lengthM * qty;
+
+            // Accessories
+            let capQty = parseInt(document.getElementById('sill-cap').value) || 0;
+            let conn90Qty = parseInt(document.getElementById('sill-conn90').value) || 0;
+            let conn150Qty = parseInt(document.getElementById('sill-conn150').value) || 0;
+
+            let accCost = (capQty * group.cap) + (conn90Qty * group.conn90) + (conn150Qty * group.conn150);
+            let optionsDesc = [];
+            if (capQty > 0) optionsDesc.push(`Заглушка торцевая × ${capQty}`);
+            if (conn90Qty > 0) optionsDesc.push(`Соединитель 90°/135° × ${conn90Qty}`);
+            if (conn150Qty > 0) optionsDesc.push(`Соединитель 150°/180° × ${conn150Qty}`);
+
+            let baseTotalCost = sillCost + accCost;
+
+            ITEMS.push({
+                id: Date.now(),
+                category: 'sill',
+                type: `Подоконник ${brand.brand}`,
+                qty: qty,
+                w: widthMm, h: lengthMm, area: 0, calcArea: 0,
+                shape: `${group.name}, ${widthMm}мм × ${lengthMm}мм${qty > 1 ? ` × ${qty} шт.` : ''}`,
+                isLarge: false,
+                optionsDesc: optionsDesc,
+                baseTotal: baseTotalCost
+            });
+
+            document.getElementById('sill-length').value = '';
+            document.getElementById('sill-qty').value = '1';
+            document.getElementById('sill-cap').value = '';
+            document.getElementById('sill-conn90').value = '';
+            document.getElementById('sill-conn150').value = '';
+            document.getElementById('sill-length').focus();
+            renderCart();
+        }
+
+        // --- SHOWER CABIN LOGIC ---
+        let SHOWER_GLASS_TYPES = {
+            clear: { name: 'Прозрачное (8мм зак.)', price_sqm: 4500 },
+            graphite: { name: 'Тонированное «Графит» (8мм зак.)', price_sqm: 6000 },
+            bronze: { name: 'Тонированное «Бронза» (8мм зак.)', price_sqm: 6000 },
+            extra_clear: { name: 'Осветлённое (8мм зак.)', price_sqm: 5500 },
+            frosted: { name: 'Матовое (8мм зак.)', price_sqm: 6500 },
+            sandblast: { name: 'Пескоструй (8мм зак.)', price_sqm: 7000 }
+        };
+
+        let SHOWER_CONFIGS = {
+            partition: {
+                name: 'Перегородка',
+                panels: [{ id: 'w1', label: 'Ширина стенки', type: 'fixed' }]
+            },
+            partition_door: {
+                name: 'Перегородка + дверь',
+                panels: [
+                    { id: 'w1', label: 'Ширина стенки', type: 'fixed' },
+                    { id: 'w2', label: 'Ширина двери', type: 'door' }
+                ]
+            },
+            corner: {
+                name: 'Угловая (90°)',
+                panels: [
+                    { id: 'w1', label: 'Фронтальная стенка', type: 'fixed' },
+                    { id: 'w2', label: 'Боковая стенка', type: 'fixed' }
+                ]
+            },
+            corner_door: {
+                name: 'Угловая + дверь',
+                panels: [
+                    { id: 'w1', label: 'Стенка (фронт)', type: 'fixed' },
+                    { id: 'w2', label: 'Дверь', type: 'door' },
+                    { id: 'w3', label: 'Боковая стенка', type: 'fixed' }
+                ]
+            },
+            u_shape: {
+                name: 'П-образная',
+                panels: [
+                    { id: 'w1', label: 'Левая стенка', type: 'fixed' },
+                    { id: 'w2', label: 'Задняя стенка', type: 'fixed' },
+                    { id: 'w3', label: 'Правая стенка', type: 'fixed' }
+                ]
+            },
+            u_shape_door: {
+                name: 'П-образная + дверь',
+                panels: [
+                    { id: 'w1', label: 'Левая стенка', type: 'fixed' },
+                    { id: 'w2', label: 'Задняя стенка', type: 'fixed' },
+                    { id: 'w3', label: 'Правая стенка', type: 'fixed' },
+                    { id: 'w4', label: 'Дверь', type: 'door' }
+                ]
+            }
+        };
+
+        let currentShowerConfig = 'partition';
+
+        function selectShowerConfig(el) {
+            document.querySelectorAll('.shower-config-card').forEach(c => {
+                c.classList.remove('selected', 'border-brand-primary', 'bg-brand-light');
+                c.classList.add('border-slate-200', 'bg-white');
+            });
+            el.classList.add('selected', 'border-brand-primary', 'bg-brand-light');
+            el.classList.remove('border-slate-200', 'bg-white');
+            currentShowerConfig = el.getAttribute('data-config');
+            updateShowerDimensions();
+        }
+
+        function updateShowerDimensions() {
+            let config = SHOWER_CONFIGS[currentShowerConfig];
+            let container = document.getElementById('shower-dimensions');
+            let html = '';
+
+            config.panels.forEach((p, idx) => {
+                if (idx === 0) {
+                    html += `<div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                            <label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' 🚪' : ''}</label>
+                            <input type="number" id="shower-${p.id}" placeholder="800"
+                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 block mb-1">Высота</label>
+                            <input type="number" id="shower-h" placeholder="2000"
+                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                        </div>
+                    </div>`;
+                } else {
+                    html += `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' 🚪' : ''}</label>
+                        <input type="number" id="shower-${p.id}" placeholder="600"
+                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                    </div>`;
+                }
+            });
+
+            container.innerHTML = html;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function addShowerItem() {
+            let config = SHOWER_CONFIGS[currentShowerConfig];
+            let glassKey = document.getElementById('shower-glass').value;
+            let glass = SHOWER_GLASS_TYPES[glassKey];
+            let h = parseFloat(document.getElementById('shower-h').value);
+
+            if (!h) { alert('Введите высоту!'); return; }
+
+            let panelWidths = [];
+            let totalArea = 0;
+            let panelDescs = [];
+
+            for (let p of config.panels) {
+                let pw = parseFloat(document.getElementById('shower-' + p.id).value);
+                if (!pw) { alert(`Введите ширину: ${p.label}!`); return; }
+                panelWidths.push({ id: p.id, w: pw, type: p.type, label: p.label });
+                let area = (pw * h) / 1000000;
+                totalArea += area;
+                panelDescs.push(`${p.label}: ${pw}мм${p.type === 'door' ? ' (дверь)' : ''}`);
+            }
+
+            let glassCost = totalArea * glass.price_sqm;
+
+            let totalW = panelWidths.reduce((s, p) => s + p.w, 0);
+
+            let optionsDesc = [];
+            optionsDesc.push(`Конфигурация: ${config.name}`);
+            optionsDesc.push(`Стекло: ${glass.name}`);
+            panelDescs.forEach(d => optionsDesc.push(d));
+
+            ITEMS.push({
+                id: Date.now(),
+                category: 'shower',
+                type: `Душевая: ${config.name}`,
+                w: totalW, h: h, area: totalArea, calcArea: totalArea,
+                shape: `${config.name}`,
+                isLarge: false,
+                showerConfig: currentShowerConfig,
+                showerPanels: panelWidths,
+                showerGlass: glassKey,
+                optionsDesc: optionsDesc,
+                baseTotal: glassCost
+            });
+
+            // Clear inputs
+            config.panels.forEach(p => {
+                let el = document.getElementById('shower-' + p.id);
+                if (el) el.value = '';
+            });
+            document.getElementById('shower-h').value = '';
+            renderCart();
+        }
+
+        // --- CART & PROPOSAL LOGIC ---
+        function remove(id) { ITEMS = ITEMS.filter(i => i.id !== id); renderCart(); }
+
+        function renderCart() {
+            let list = document.getElementById('cart-items');
+            list.innerHTML = '';
+            let markup = getGlobalMarkup();
+            let sum = 0;
+
+            if (ITEMS.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-4 00 py-12 flex flex-col items-center gap-3"><i data-lucide="package-open" class="w-10 h-10 text-slate-200"></i><span class="text-sm">Смета пуста.<br>Добавьте изделия обойдя категории.</span></div>';
+            } else {
+                ITEMS.forEach((it, idx) => {
+                    let cost = Math.ceil(it.baseTotal * markup);
+                    sum += cost;
+
+                    let icon = { glass: 'layout-grid', net: 'grid-3x3', frameless: 'blinds', sill: 'align-horizontal-justify-end', shower: 'droplets' }[it.category] || 'box';
+                    let col = { glass: 'brand-primary', net: 'brand-secondary', frameless: 'slate-800', sill: 'amber-700', shower: 'blue-500' }[it.category] || 'slate-600';
+                    let opts = it.optionsDesc.length > 0 ? `<div class="mt-1.5 space-y-0.5">${it.optionsDesc.map(o => `<p class="text-[11px] text-slate-500">• ${o}</p>`).join('')}</div>` : '';
+
+                    list.innerHTML += `
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative group">
+                            <button onclick="remove(${it.id})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <div class="flex gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-${col}/10 flex items-center justify-center flex-shrink-0 text-${col}">
+                                    <i data-lucide="${icon}" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm text-slate-800 pr-6">${idx + 1}. ${it.type}</div>
+                                    <div class="text-xs text-slate-500 font-medium">${it.w} × ${it.h} мм | ${it.area.toFixed(2)} м²</div>
+                                    ${opts}
+                                </div>
+                            </div>
+                            <div class="mt-2 text-right font-black text-${col}">${cost.toLocaleString()} ₽</div>
+                        </div>
+                    `;
+                });
+            }
+
+            let srvInst = parseFloat(document.getElementById('srv-install').value) || 0;
+            let srvDel = parseFloat(document.getElementById('srv-delivery').value) || 0;
+            let srvLift = parseFloat(document.getElementById('srv-lifting').value) || 0;
+            let srvDrain = parseFloat(document.getElementById('srv-drainage').value) || 0;
+            let srvUtil = parseFloat(document.getElementById('srv-util').value) || 0;
+            let srvShtapiki = parseFloat(document.getElementById('srv-shtapiki').value) || 0;
+
+            let servSum = srvInst + srvDel + srvLift + srvDrain + srvUtil + srvShtapiki;
+
+            // Manual markup/discount calculations for local display
+            let manMarkupRub = parseFloat(document.getElementById('manual-markup-rub').value) || 0;
+            let manMarkupPct = parseFloat(document.getElementById('manual-markup-pct').value) || 0;
+            let manDiscRub = parseFloat(document.getElementById('manual-discount-rub').value) || 0;
+            let manDiscPct = parseFloat(document.getElementById('manual-discount-pct').value) || 0;
+
+            let totalManualMarkup = manMarkupRub + (sum * (manMarkupPct / 100));
+            // Apply markup factor directly to the sum so that the user sees it reflected in the cart total
+            let sumWithMarkup = sum + totalManualMarkup;
+
+            // Calculate discount on the original sum before markup to make a 10% markup and 10% discount cancel each other out
+            let totalDiscount = manDiscRub + (sum * (manDiscPct / 100));
+
+            let finalTotal = sumWithMarkup + servSum - totalDiscount;
+
+            document.getElementById('items-count-badge').innerText = ITEMS.length;
+            document.getElementById('cart-total-display').innerText = Math.ceil(finalTotal).toLocaleString() + ' ₽';
+            lucide.createIcons();
+        }
+
+        function showProposal() {
+            if (ITEMS.length === 0) {
+                document.getElementById('print-error').classList.remove('hidden');
+                setTimeout(() => document.getElementById('print-error').classList.add('hidden'), 3000);
+                return;
+            }
+
+            // Set Header Date/Num/Client
+            let kpNum = document.getElementById('kp-number-input').value;
+            document.getElementById('kp-number-display-right').innerText = kpNum ? `№ ${kpNum}` : '';
+            document.getElementById('kp-client-display').innerText = document.getElementById('client-name').value || 'Не указан';
+
+            // Build Table
+            let tbody = document.getElementById('kp-table-body');
+            tbody.innerHTML = '';
+            let markup = getGlobalMarkup();
+
+            // Calculate base sum without manual markup
+            let baseSumItems = 0;
+            ITEMS.forEach(it => { baseSumItems += Math.ceil(it.baseTotal * markup); });
+
+            // Calculate manual markup amount to distribute into item prices
+            let manMarkupRub = parseFloat(document.getElementById('manual-markup-rub').value) || 0;
+            let manMarkupPct = parseFloat(document.getElementById('manual-markup-pct').value) || 0;
+            let totalManualMarkupAmount = manMarkupRub + (baseSumItems * (manMarkupPct / 100));
+
+            // Factor to multiply each item's price by to hide the manual markup
+            let markupFactor = baseSumItems > 0 ? 1 + (totalManualMarkupAmount / baseSumItems) : 1;
+
+            let sumItems = 0; let totalArea = 0;
+
+            ITEMS.forEach((it, idx) => {
+                let cost = Math.ceil(Math.ceil(it.baseTotal * markup) * markupFactor);
+                sumItems += cost; totalArea += it.area;
+
+                let opts = it.optionsDesc.length > 0 ? `<div class="mt-1 space-y-[2px]">${it.optionsDesc.map(o => `<div class="text-[10px] text-slate-500">• ${o}</div>`).join('')}</div>` : '';
+
+                // Canvas Container ID
+                let canvasId = `sketch-${it.id}`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-200 hover:bg-slate-50">
+                        <td class="p-3 text-slate-500 align-middle">${idx + 1}</td>
+                        <td class="p-3 align-middle text-center">
+                            <canvas id="${canvasId}" class="sketch-container mx-auto" width="200" height="200" style="width: 100px; height: 100px;"></canvas>
+                        </td>
+                        <td class="p-3 align-middle">
+                            <div class="font-bold text-slate-800 text-sm">${it.type}</div>
+                            <div class="text-xs text-slate-500 font-medium opacity-80 mt-0.5">Размеры: ${it.w} × ${it.h} мм (S = ${it.area.toFixed(2)} м²)</div>
+                            ${opts}
+                        </td>
+                        <td class="p-3 align-middle text-center font-medium text-slate-700">${it.qty || 1} шт.</td>
+                        <td class="p-3 align-middle text-right font-bold text-slate-800 whitespace-nowrap">${cost.toLocaleString()} ₽</td>
+                    </tr>
+                `;
+            });
+
+            // Draw sketches after inserting canvases into DOM
+            setTimeout(() => {
+                ITEMS.forEach(it => drawSketch(`sketch-${it.id}`, it));
+            }, 50);
+
+            // Cost of Items & Discount Logic
+            let sList = document.getElementById('kp-services-list');
+            sList.innerHTML = `<div class="flex justify-between text-sm mb-2 pb-2 border-b border-slate-100"><span class="text-slate-500">Общая площадь изделий:</span><span class="font-bold text-slate-800">${totalArea.toFixed(2)} м²</span></div>`;
+            sList.innerHTML += `<div class="flex justify-between text-base mb-1"><span class="text-slate-700 font-bold uppercase tracking-wide">Стоимость изделий:</span><span class="font-black text-slate-900">${sumItems.toLocaleString()} ₽</span></div>`;
+
+            // Calculate Discount
+            let manDiscRub = parseFloat(document.getElementById('manual-discount-rub').value) || 0;
+            let manDiscPct = parseFloat(document.getElementById('manual-discount-pct').value) || 0;
+            let totalDiscountAmount = Math.ceil(manDiscRub + (baseSumItems * (manDiscPct / 100)));
+
+            if (totalDiscountAmount > 0) {
+                sList.innerHTML += `<div class="flex justify-between text-sm mb-2 text-emerald-700"><span class="font-bold uppercase tracking-wider">Скидка на изделия:</span><span class="font-bold">-${totalDiscountAmount.toLocaleString()} ₽</span></div>`;
+            }
+
+            let discountedSumItems = sumItems - totalDiscountAmount;
+
+            // Subtotal for items after discount
+            if (totalDiscountAmount > 0) {
+                sList.innerHTML += `<div class="flex justify-between text-sm mb-3 pb-3 border-b border-slate-300"><span class="text-slate-600 font-medium tracking-wide">Итого за изделия:</span><span class="font-bold text-slate-800"><span class="line-through text-slate-400 mr-2 text-xs">${sumItems.toLocaleString()} ₽</span>${discountedSumItems.toLocaleString()} ₽</span></div>`;
+            } else {
+                sList.innerHTML += `<div class="w-full mb-3 pb-3 border-b border-slate-300"></div>`;
+            }
+
+            // Services
+            const addSrv = (id, name) => {
+                let v = parseFloat(document.getElementById(id).value) || 0;
+                if (v > 0) sList.innerHTML += `<div class="flex justify-between text-sm mb-1"><span class="text-slate-600">${name}:</span><span class="font-medium text-slate-800">${v.toLocaleString()} ₽</span></div>`;
+                return v;
+            }
+
+            let servSum = 0;
+            servSum += addSrv('srv-install', 'Монтажные работы');
+            servSum += addSrv('srv-delivery', 'Доставка');
+            servSum += addSrv('srv-lifting', 'Подъём');
+            servSum += addSrv('srv-util', 'Утилизация');
+            servSum += addSrv('srv-drainage', 'Дренажи');
+            servSum += addSrv('srv-shtapiki', 'Штапики');
+
+            let finalKpTotal = discountedSumItems + servSum;
+            document.getElementById('kp-total-sum').innerText = finalKpTotal.toLocaleString() + ' ₽';
+
+            // НДС 22% для ООО
+            let selectedCompany = document.getElementById('select-company').value;
+            if (selectedCompany === 'alex') {
+                let ndsAmount = finalKpTotal * 0.22; // НДС начисляется сверху по просьбе или можно считать 22/122 если внутри. Используем просто *0.22 как стандартную надбавку или выделение (обычно НДС в РФ 20%, но если 22%, то считаем * 0.22)
+                sList.innerHTML += `<div class="flex justify-between text-xs mt-3 text-slate-500 font-medium"><span>В том числе НДС (22%):</span><span>${Math.ceil(ndsAmount).toLocaleString()} ₽</span></div>`;
+            }
+
+            // Switch views
+            document.getElementById('calculator-screen').style.display = 'none';
+            document.getElementById('proposal-screen').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function hideProposal() {
+            document.getElementById('calculator-screen').style.display = 'block';
+            document.getElementById('proposal-screen').style.display = 'none';
+        }
+
+        // --- SKETCH DRAWING ENGINE ---
+        function drawSketch(canvasId, item) {
+            let canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            let ctx = canvas.getContext('2d');
+
+            // Increase internal resolution (drawn at 200x200, styled at 100x100)
+            let cSize = 200;
+            let padding = 40;
+
+            let mw = cSize - padding * 2;
+            let mh = cSize - padding * 2;
+
+            // Calculate proportional drawing rect
+            // For sills: swap dimensions so it draws horizontally (length = width on screen)
+            let drawW = item.category === 'sill' ? item.h : item.w;
+            let drawH = item.category === 'sill' ? item.w : item.h;
+            let ratio = drawW / drawH;
+            let w = 0, h = 0;
+            if (ratio > 1) { w = mw; h = mw / ratio; }
+            else { h = mh; w = mh * ratio; }
+
+            // Minimum thickness so very narrow items are visible
+            if (w < 40) w = 40; if (h < 40) h = 40;
+
+            // Center in canvas
+            let x = (cSize - w) / 2;
+            let y = (cSize - h) / 2;
+
+            ctx.clearRect(0, 0, cSize, cSize);
+
+            // Drawing Base Rectangle
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#000000'; // Pure black for printing
+
+            if (item.category === 'glass') {
+                // Glass Style
+                ctx.fillStyle = '#f0f9ff'; // light blue tint
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeRect(x, y, w, h);
+
+                // Draw inner frame (glass packet spacer)
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000000'; // Pure black
+                ctx.strokeRect(x + 6, y + 6, w - 12, h - 12);
+
+                // Draw glare
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = w / 4;
+                ctx.moveTo(x + w * 0.2, y + h - 10);
+                ctx.lineTo(x + w - 10, y + h * 0.2);
+                ctx.stroke();
+
+                // Draw layout (шпросы / crosshairs) if present
+                let totalCross = (item.layoutCross || 0) + (item.layoutEnd || 0);
+                if (totalCross > 0) {
+                    ctx.lineWidth = 2;
+                    // Pick color based on layout name
+                    let layoutColor = '#c8a84e'; // default golden
+                    if (item.layoutName) {
+                        let ln = item.layoutName.toLowerCase();
+                        if (ln.includes('коричнев')) layoutColor = '#6b4226';
+                        else if (ln.includes('бел')) layoutColor = '#b0b0b0';
+                        else if (ln.includes('золот')) layoutColor = '#c8a84e';
+                    }
+                    ctx.strokeStyle = layoutColor;
+                    let innerX = x + 8;
+                    let innerY = y + 8;
+                    let innerW = w - 16;
+                    let innerH = h - 16;
+                    // Cross = intersections → creates (cross+1) columns & rows
+                    let cols = item.layoutCross + 1;
+                    let rows = item.layoutCross + 1;
+                    // Vertical bars
+                    for (let i = 1; i < cols; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(innerX + (innerW / cols) * i, innerY);
+                        ctx.lineTo(innerX + (innerW / cols) * i, innerY + innerH);
+                        ctx.stroke();
+                    }
+                    // Horizontal bars
+                    for (let j = 1; j < rows; j++) {
+                        ctx.beginPath();
+                        ctx.moveTo(innerX, innerY + (innerH / rows) * j);
+                        ctx.lineTo(innerX + innerW, innerY + (innerH / rows) * j);
+                        ctx.stroke();
+                    }
+                }
+            } else if (item.category === 'frameless') {
+                // Frameless Style
+                ctx.fillStyle = '#f8fafc'; // very light gray
+                ctx.fillRect(x, y, w, h);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#000000'; // Pure black
+                ctx.strokeRect(x, y, w, h);
+
+                // Draw panels
+                let match = item.shape.match(/Панелей: (\d+)/);
+                let pCount = match ? parseInt(match[1]) : 1;
+
+                if (pCount > 1) {
+                    let pWidth = w / pCount;
+
+                    // Draw door indicator if applicable
+                    if (item.doorPanel && item.doorPanel !== 'none') {
+                        let doorIdx = parseInt(item.doorPanel) - 1; // 0-indexed
+                        let dLeft = x + doorIdx * pWidth;
+
+                        // Fill door panel slightly darker
+                        ctx.fillStyle = '#e2e8f0';
+                        ctx.fillRect(dLeft, y, pWidth, h);
+
+                        // Draw opening triangle
+                        ctx.beginPath();
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#475569';
+
+                        if (item.doorDir === 'right') {
+                            // Triangle pointing right: Left edge stays, right edge moves
+                            // Like >
+                            ctx.moveTo(dLeft, y);
+                            ctx.lineTo(dLeft + pWidth, y + h / 2);
+                            ctx.lineTo(dLeft, y + h);
+                        } else {
+                            // Triangle pointing left: Right edge stays, left edge moves
+                            // Like <
+                            ctx.moveTo(dLeft + pWidth, y);
+                            ctx.lineTo(dLeft, y + h / 2);
+                            ctx.lineTo(dLeft + pWidth, y + h);
+                        }
+                        ctx.stroke();
+                    }
+
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#000000';
+                    for (let i = 1; i < pCount; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + i * pWidth, y);
+                        ctx.lineTo(x + i * pWidth, y + h);
+                        ctx.stroke();
+                    }
+                }
+            } else if (item.category === 'net') {
+                // Net Style
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x, y, w, h);
+                // Draw frame
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = '#000000'; // Pure black
+                ctx.strokeRect(x, y, w, h);
+
+                // Draw mesh pattern
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#000000'; // Pure black
+                let step = 8;
+                for (let i = x + step; i < x + w; i += step) { ctx.beginPath(); ctx.moveTo(i, y); ctx.lineTo(i, y + h); ctx.stroke(); }
+                for (let j = y + step; j < y + h; j += step) { ctx.beginPath(); ctx.moveTo(x, j); ctx.lineTo(x + w, j); ctx.stroke(); }
+
+                // Draw middle brace if height is large
+                if (item.h >= 1000) {
+                    ctx.beginPath();
+                    ctx.lineWidth = 6;
+                    ctx.strokeStyle = '#000000'; // Pure black
+                    ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2);
+                    ctx.stroke();
+                }
+            } else if (item.category === 'sill') {
+                // Sill Style — simple brown rectangle with horizontal grain lines
+                ctx.fillStyle = '#fef3c7';
+                ctx.fillRect(x, y, w, h);
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#000000';
+                ctx.strokeRect(x, y, w, h);
+                // Horizontal grain lines
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#d4a574';
+                let grainStep = 12;
+                for (let j = y + grainStep; j < y + h; j += grainStep) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + 4, j);
+                    ctx.lineTo(x + w - 4, j);
+                    ctx.stroke();
+                }
+            } else if (item.category === 'shower') {
+                // Shower — top-down plan view
+                ctx.clearRect(0, 0, cSize, cSize);
+                let pad = 30;
+                let drawArea = cSize - pad * 2;
+                let cfg = item.showerConfig;
+                let panels = item.showerPanels || [];
+                let totalH = item.h || 2000;
+
+                // Colors
+                let wallColor = '#64748b';
+                let glassColor = '#93c5fd';
+                let glassFill = '#dbeafe';
+                let doorColor = '#60a5fa';
+                let handleColor = '#1e293b';
+
+                ctx.lineWidth = 2;
+
+                if (cfg === 'partition') {
+                    // Single glass wall: wall stub left, glass panel right
+                    let gw = panels[0] ? panels[0].w : 800;
+                    // Draw wall stub
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    // Glass panel
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad, drawArea * 0.5, drawArea);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad, drawArea * 0.5, drawArea);
+                    // Label
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(gw + ' мм', pad + 8 + drawArea * 0.25, cSize - 10);
+                    ctx.save();
+                    ctx.translate(cSize - 12, pad + drawArea / 2);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.fillText(totalH + ' мм', 0, 0);
+                    ctx.restore();
+                } else if (cfg === 'partition_door') {
+                    let pw1 = panels[0] ? panels[0].w : 500;
+                    let pw2 = panels[1] ? panels[1].w : 600;
+                    let totalPW = pw1 + pw2;
+                    let glassW1 = (pw1 / totalPW) * drawArea * 0.6;
+                    let doorW = (pw2 / totalPW) * drawArea * 0.6;
+                    // Wall stub
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    // Fixed glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad, glassW1, drawArea);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad, glassW1, drawArea);
+                    // Door
+                    let doorX = pad + 8 + glassW1;
+                    ctx.fillStyle = '#eff6ff';
+                    ctx.fillRect(doorX, pad, doorW, drawArea);
+                    ctx.strokeStyle = doorColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(doorX, pad, doorW, drawArea);
+                    // Door arc
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.arc(doorX, pad + drawArea, doorW, -Math.PI / 2, 0);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    // Handle
+                    ctx.fillStyle = handleColor;
+                    ctx.beginPath();
+                    ctx.arc(doorX + doorW - 8, pad + drawArea / 2, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Labels
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(pw1 + '', pad + 8 + glassW1 / 2, cSize - 8);
+                    ctx.fillText(pw2 + '', doorX + doorW / 2, cSize - 8);
+                } else if (cfg === 'corner') {
+                    // L-shape: front + side
+                    let pw1 = panels[0] ? panels[0].w : 800;
+                    let pw2 = panels[1] ? panels[1].w : 800;
+                    let total = pw1 + pw2;
+                    let frontW = (pw1 / total) * drawArea * 0.8;
+                    let sideH = (pw2 / total) * drawArea * 0.8;
+                    // Wall stubs
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    ctx.fillRect(pad, pad + drawArea - 8, drawArea, 8);
+                    // Front glass (vertical)
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad, frontW, drawArea - 8);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad, frontW, drawArea - 8);
+                    // Side glass (horizontal)
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8 + frontW, pad + drawArea - 8 - sideH, drawArea - 8 - frontW, sideH);
+                    ctx.strokeStyle = glassColor;
+                    ctx.strokeRect(pad + 8 + frontW, pad + drawArea - 8 - sideH, drawArea - 8 - frontW, sideH);
+                    // Labels
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(pw1 + '', pad + 8 + frontW / 2, pad - 5);
+                    ctx.save();
+                    ctx.translate(cSize - 8, pad + drawArea - sideH / 2);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.fillText(pw2 + '', 0, 0);
+                    ctx.restore();
+                } else if (cfg === 'corner_door') {
+                    // L-shape with door
+                    let pw1 = panels[0] ? panels[0].w : 400;
+                    let pw2 = panels[1] ? panels[1].w : 600;
+                    let pw3 = panels[2] ? panels[2].w : 800;
+                    // Wall stubs
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    ctx.fillRect(pad, pad + drawArea - 8, drawArea, 8);
+                    let frontTotal = drawArea * 0.7;
+                    let f1W = (pw1 / (pw1 + pw2)) * frontTotal;
+                    let dW = (pw2 / (pw1 + pw2)) * frontTotal;
+                    // Fixed glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad, f1W, drawArea - 8);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad, f1W, drawArea - 8);
+                    // Door
+                    let doorX = pad + 8 + f1W;
+                    ctx.fillStyle = '#eff6ff';
+                    ctx.fillRect(doorX, pad, dW, drawArea - 8);
+                    ctx.strokeStyle = doorColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(doorX, pad, dW, drawArea - 8);
+                    ctx.fillStyle = handleColor;
+                    ctx.beginPath();
+                    ctx.arc(doorX + dW - 6, pad + (drawArea - 8) / 2, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Side glass
+                    let sideW = drawArea * 0.25;
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(doorX + dW, pad + drawArea - 8 - sideW, drawArea - 8 - f1W - dW, sideW);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(doorX + dW, pad + drawArea - 8 - sideW, drawArea - 8 - f1W - dW, sideW);
+                    // Labels
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(pw1 + '', pad + 8 + f1W / 2, pad - 4);
+                    ctx.fillText(pw2 + '🚪', doorX + dW / 2, pad - 4);
+                } else if (cfg === 'u_shape') {
+                    // U-shape: 3 walls
+                    let pw1 = panels[0] ? panels[0].w : 600;
+                    let pw2 = panels[1] ? panels[1].w : 1200;
+                    let pw3 = panels[2] ? panels[2].w : 600;
+                    // Wall stubs
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    ctx.fillRect(pad + drawArea - 8, pad, 8, drawArea);
+                    ctx.fillRect(pad, pad, drawArea, 8);
+                    // Left glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
+                    // Back glass (top)
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
+                    ctx.strokeStyle = glassColor;
+                    ctx.strokeRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
+                    // Right glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, drawArea - 8);
+                    ctx.strokeStyle = glassColor;
+                    ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, drawArea - 8);
+                    // Labels
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(pw1, pad + 8 + drawArea * 0.075, cSize - 8);
+                    ctx.fillText(pw2, pad + drawArea / 2, pad + 8 + drawArea * 0.06 + 12);
+                    ctx.fillText(pw3, pad + drawArea - 8 - drawArea * 0.075, cSize - 8);
+                } else if (cfg === 'u_shape_door') {
+                    // U-shape + door on right side
+                    let pw1 = panels[0] ? panels[0].w : 600;
+                    let pw2 = panels[1] ? panels[1].w : 1200;
+                    let pw3 = panels[2] ? panels[2].w : 400;
+                    let pw4 = panels[3] ? panels[3].w : 500;
+                    // Wall stubs
+                    ctx.fillStyle = wallColor;
+                    ctx.fillRect(pad, pad, 8, drawArea);
+                    ctx.fillRect(pad + drawArea - 8, pad, 8, drawArea);
+                    ctx.fillRect(pad, pad, drawArea, 8);
+                    // Left glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
+                    ctx.strokeStyle = glassColor;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
+                    // Back glass
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
+                    ctx.strokeStyle = glassColor;
+                    ctx.strokeRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
+                    // Right fixed
+                    let rightGlassH = drawArea * 0.4;
+                    ctx.fillStyle = glassFill;
+                    ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, rightGlassH);
+                    ctx.strokeStyle = glassColor;
+                    ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, rightGlassH);
+                    // Right door
+                    let doorY = pad + 8 + rightGlassH;
+                    let doorH = drawArea - 8 - rightGlassH;
+                    ctx.fillStyle = '#eff6ff';
+                    ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, doorY, drawArea * 0.15, doorH);
+                    ctx.strokeStyle = doorColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, doorY, drawArea * 0.15, doorH);
+                    ctx.fillStyle = handleColor;
+                    ctx.beginPath();
+                    ctx.arc(pad + drawArea - 8 - drawArea * 0.075, doorY + doorH / 2, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Labels
+                    ctx.fillStyle = '#334155';
+                    ctx.font = 'bold 8px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(pw1, pad + 8 + drawArea * 0.075, cSize - 6);
+                    ctx.fillText(pw2, pad + drawArea / 2, pad + 8 + drawArea * 0.06 + 11);
+                }
+                // Skip standard dimensions for shower — labels are drawn inline
+                return;
+            }
+
+            // Draw Dimensions (Bottom = W, Right = H)
+            // For sills: bottom=length(h), right=width(w)
+            ctx.fillStyle = '#000000'; // Pure black
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+
+            // Width text (bottom) — for sills this is length
+            let bottomLabel = item.category === 'sill' ? item.h + ' мм' : item.w + ' мм';
+            ctx.fillText(bottomLabel, x + w / 2, y + h + 28);
+
+            // Height text (right, rotated) — for sills this is width
+            let rightLabel = item.category === 'sill' ? item.w + ' мм' : item.h + ' мм';
+            ctx.save();
+            ctx.translate(x + w + 22, y + h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(rightLabel, 0, 0);
+            ctx.restore();
+            // Draw dimension lines H
+            ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = '#000000';
+            ctx.moveTo(x + w + 4, y); ctx.lineTo(x + w + 16, y);
+            ctx.moveTo(x + w + 4, y + h); ctx.lineTo(x + w + 16, y + h);
+            ctx.moveTo(x + w + 10, y); ctx.lineTo(x + w + 10, y + h);
+            ctx.stroke();
+        }
+
+        // --- SETTINGS AND PRICING LOGIC ---
+        function toggleSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateSettingsUI() {
+            let srcText = "Встроенные (по-умолчанию)";
+            if (currentPricesSource === 'excel') srcText = "Из файла Excel";
+            if (currentPricesSource === 'google') srcText = "Google Таблицы";
+
+            document.getElementById('current-prices-source').innerText = srcText;
+            document.getElementById('current-prices-date').innerText = currentPricesDate ? `Обновлено: ${currentPricesDate}` : '';
+        }
+
+        function setStatus(id, msg, isError = false) {
+            const el = document.getElementById(id);
+            el.innerHTML = msg;
+            el.className = `mt-2 text-xs font-medium ${isError ? 'text-red-500' : 'text-emerald-600'}`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        const PRICES_VERSION = 'v2_dealer'; // Bump this when default prices change
+
+        function loadPricesFromStorage() {
+            try {
+                const saved = localStorage.getItem('oko_prices_data');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    // If version mismatch, discard old cache
+                    if (data.version !== PRICES_VERSION) {
+                        localStorage.removeItem('oko_prices_data');
+                        return;
+                    }
+                    applyPrices(data.glass, data.shapes, data.layouts, data.nets, data.salinox, data.options);
+                    currentPricesSource = data.source;
+                    currentPricesDate = data.date;
+                    updateSettingsUI();
+                }
+            } catch (e) { console.error("Error loading prices", e); }
+        }
+
+        function savePricesToStorage() {
+            const data = {
+                version: PRICES_VERSION,
+                glass: GLASS_TYPES,
+                shapes: SHAPES,
+                layouts: LAYOUTS,
+                nets: NET_TYPES,
+                salinox: SALINOX_PRICES,
+                options: OPTIONS,
+                source: currentPricesSource,
+                date: new Date().toLocaleString('ru-RU')
+            };
+            localStorage.setItem('oko_prices_data', JSON.stringify(data));
+            currentPricesDate = data.date;
+            updateSettingsUI();
+        }
+
+        function applyPrices(glassData, shapesData, layoutsData, netsData, salinoxData, optionsData) {
+            if (glassData) GLASS_TYPES = glassData;
+            if (shapesData) SHAPES = shapesData;
+            if (layoutsData) LAYOUTS = layoutsData;
+            if (netsData) NET_TYPES = netsData;
+            if (salinoxData) SALINOX_PRICES = salinoxData;
+            if (optionsData) OPTIONS = optionsData;
+
+            const glassShape = document.getElementById('glass-shape');
+            if (glassShape) {
+                glassShape.innerHTML = '';
+                SHAPES.forEach((s, i) => glassShape.innerHTML += `<option value="${i}">${s.name}</option>`);
+            }
+
+            updateDropdownPrices();
+            renderCart();
+        }
+
+        // --- Google Sheets Sync ---
+        async function syncGoogleSheets() {
+            let urlInp = document.getElementById('g-sheets-url').value.trim();
+            if (!urlInp) return setStatus('gsheets-status', 'Введите ссылку.', true);
+
+            // Auto transform pub link to export link if user pastes the wrong one
+            if (urlInp.includes('/pub') || urlInp.includes('output=csv')) {
+                const match = urlInp.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                if (match) {
+                    urlInp = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=xlsx`;
+                    document.getElementById('g-sheets-url').value = urlInp;
+                }
+            }
+
+            localStorage.setItem('oko_gsheets_url', urlInp);
+            const btnIcon = document.getElementById('icon-sync-gsheets');
+            btnIcon.classList.add('animate-spin');
+
+            try {
+                const response = await fetch(urlInp);
+                if (!response.ok) throw new Error("Network response was not ok");
+                const arrayBuffer = await response.arrayBuffer();
+
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                if (parseWorkbook(workbook)) {
+                    currentPricesSource = 'google';
+                    savePricesToStorage();
+                    setStatus('gsheets-status', 'Цены успешно обновлены из Google!');
+                    updateDropdownPrices();
+                    handleSettingsChange();
+                } else {
+                    setStatus('gsheets-status', 'Ошибка формата таблицы. Проверьте шаблон.', true);
+                }
+            } catch (e) {
+                console.error(e);
+                setStatus('gsheets-status', 'Ошибка загрузки. Проверьте ссылку и доступ.', true);
+            } finally {
+                btnIcon.classList.remove('animate-spin');
+            }
+        }
+
+        // --- Excel Upload ---
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    if (parseWorkbook(workbook)) {
+                        currentPricesSource = 'excel';
+                        savePricesToStorage();
+                        setStatus('excel-status', `Успешно загружено из ${file.name}`);
+                        updateDropdownPrices();
+                        handleSettingsChange();
+                    } else {
+                        setStatus('excel-status', 'Неверный формат шаблона.', true);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    setStatus('excel-status', 'Произошла ошибка при чтении файла.', true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // reset
+        }
+
+        // --- Parser Logic ---
+        function parseWorkbook(workbook) {
+            let hasValidData = false;
+            let newGlass = [], newLayouts = [];
+            let newShapes = JSON.parse(JSON.stringify(DEFAULT_SHAPES));
+            let newNets = JSON.parse(JSON.stringify(DEFAULT_NET_TYPES));
+            let newSalinox = { 'F1_F2': [], 'F4': [], 'F5': [], 'F6': [], 'FB_cr': [] };
+            let newOptions = JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
+
+            workbook.SheetNames.forEach(sheetName => {
+                let sheet = workbook.Sheets[sheetName];
+                let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                if (!rows || rows.length < 2) return;
+
+                let sn = sheetName.toLowerCase();
+
+                if (sn.includes('стеклопакет')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0]) continue;
+                        let val = parseFloat(String(rows[i][1]).replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(val)) { newGlass.push({ name: String(rows[i][0]).trim(), price: val }); hasValidData = true; }
+                    }
+                }
+                else if (sn.includes('раскладк') || sn.includes('шпрос')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0]) continue;
+                        let val = parseFloat(String(rows[i][1]).replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(val)) { newLayouts.push({ name: String(rows[i][0]).trim(), price: val }); hasValidData = true; }
+                    }
+                }
+                else if (sn.includes('безрам') || sn.includes('salinox')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0] || !rows[i][1]) continue;
+                        let sys = String(rows[i][0]).trim();
+                        let maxW = parseFloat(String(rows[i][1]).replace(/[^0-9.-]+/g, ""));
+                        let val = parseFloat(String(rows[i][2]).replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(maxW) && !isNaN(val)) {
+                            if (newSalinox[sys]) { newSalinox[sys].push({ max: maxW, p: val }); hasValidData = true; }
+                        }
+                    }
+                }
+                else if (sn.includes('сетк')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0]) continue;
+                        let id = String(rows[i][0]).trim(); // internal ID
+                        let name = String(rows[i][1]).trim();
+                        let p1 = parseFloat(String(rows[i][2] || "0").replace(/[^0-9.-]+/g, ""));
+                        let p2 = parseFloat(String(rows[i][3] || "0").replace(/[^0-9.-]+/g, ""));
+
+                        let existing = newNets.find(n => n.id === id);
+                        if (existing) {
+                            existing.name = name;
+                            if (!isNaN(p1)) existing.price_min = p1;
+                            if (!isNaN(p2)) existing.price_sqm = p2;
+                            hasValidData = true;
+                        }
+                    }
+                }
+                else if (sn.includes('опци') || sn.includes('услуг')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0]) continue;
+                        let key = String(rows[i][0]).trim();
+                        let val = parseFloat(String(rows[i][1]).replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(val)) {
+                            if (newOptions[key] !== undefined) {
+                                newOptions[key] = val;
+                                hasValidData = true;
+                            }
+                        }
+                    }
+                }
+                else if (sn.includes('форм')) {
+                    for (let i = 1; i < rows.length; i++) {
+                        if (!rows[i][0]) continue;
+                        let name = String(rows[i][0]).trim();
+                        let val = parseFloat(String(rows[i][1]).replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(val)) {
+                            let existing = newShapes.find(s => s.name === name);
+                            if (existing) existing.multiplier = val;
+                            else newShapes.push({ name: name, multiplier: val });
+                            hasValidData = true;
+                        }
+                    }
+                }
+            });
+
+            if (!hasValidData) return false;
+
+            if (newGlass.length > 0) GLASS_TYPES = newGlass;
+            if (newLayouts.length > 0) LAYOUTS = newLayouts;
+            SHAPES = newShapes;
+            NET_TYPES = newNets;
+            OPTIONS = newOptions;
+
+            for (let sys in newSalinox) {
+                if (newSalinox[sys].length > 0) {
+                    newSalinox[sys].sort((a, b) => a.max - b.max);
+                    SALINOX_PRICES[sys] = newSalinox[sys];
+                }
+            }
+            return true;
+        }
+
+        // --- Template Generator ---
+        function downloadExcelTemplate() {
+            const wb = XLSX.utils.book_new();
+
+            const addSheet = (name, rows, colWidths) => {
+                let ws = XLSX.utils.aoa_to_sheet(rows);
+                if (colWidths) ws['!cols'] = colWidths.map(w => ({ wch: w }));
+                XLSX.utils.book_append_sheet(wb, ws, name);
+            };
+
+            // 1. Стеклопакеты
+            let ws1 = [["Наименование стеклопакета", "Цена за м² (₽)"]];
+            DEFAULT_GLASS_TYPES.forEach(g => ws1.push([g.name, g.price]));
+            addSheet("Стеклопакеты", ws1, [40, 20]);
+
+            // 2. Раскладка
+            let ws2 = [["Тип раскладки (Шпросы)", "Цена за пог.м. (₽)"]];
+            DEFAULT_LAYOUTS.forEach(g => ws2.push([g.name, g.price]));
+            addSheet("Раскладка_Шпросы", ws2, [40, 20]);
+
+            // 3. Формы
+            let ws3 = [["Сложность формы", "Коэффициент наценки (0.5 = +50%)"]];
+            DEFAULT_SHAPES.forEach(g => ws3.push([g.name, g.multiplier]));
+            addSheet("Формы_окон", ws3, [30, 30]);
+
+            // 4. Москитные сетки
+            let ws4 = [["Идентификатор (не менять!)", "Наименование", "Мин. цена / Базовая (₽)", "Цена за м² / Большая (₽)"]];
+            DEFAULT_NET_TYPES.forEach(n => ws4.push([n.id, n.name, n.price_min, n.price_sqm]));
+            addSheet("Москитные_сетки", ws4, [25, 45, 25, 25]);
+
+            // 5. Безрамное
+            let ws5 = [["Система", "Макс. Ширина Панели (см)", "Базовая Цена (₽)"]];
+            for (let sys in DEFAULT_SALINOX_PRICES) {
+                DEFAULT_SALINOX_PRICES[sys].forEach(p => ws5.push([sys, p.max, p.p]));
+            }
+            addSheet("Безрамное_Salinox", ws5, [20, 30, 20]);
+
+            // 6. Опции
+            let ws6 = [["Системный ключ (не менять!)", "Значение (₽)"]];
+            for (let k in DEFAULT_OPTIONS) {
+                ws6.push([k, DEFAULT_OPTIONS[k]]);
+            }
+            addSheet("Опции_и_Услуги", ws6, [30, 20]);
+
+            XLSX.writeFile(wb, "oko_price_template.xlsx");
+        }
+    </script>
+</body>
+
+</html>

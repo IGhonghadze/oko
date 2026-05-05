@@ -1,0 +1,154 @@
+/* ==========================================
+   Oko Calculator — Основные стили
+   ========================================== */
+
+/* === PRINT STYLES === */
+@media print {
+    @page {
+        margin: 10mm;
+        size: A4 portrait;
+    }
+
+    body,
+    html {
+        background: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #calculator-screen {
+        display: none !important;
+    }
+
+    #proposal-screen {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .bg-brand-light {
+        background-color: #E6F6F4 !important;
+    }
+
+    .bg-slate-50 {
+        background-color: #f8fafc !important;
+    }
+
+    .bg-slate-100 {
+        background-color: #f1f5f9 !important;
+    }
+
+    .text-brand-primary {
+        color: #13A389 !important;
+    }
+
+    .break-inside-avoid {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    table {
+        width: 100% !important;
+        page-break-inside: auto;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    img,
+    canvas {
+        max-width: 100% !important;
+        page-break-inside: avoid;
+    }
+}
+
+/* === GENERAL === */
+.proposal-view {
+    display: none;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* === SCROLLBAR === */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* === INPUT NUMBER ARROWS HIDE === */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* === TABS === */
+.tab-btn {
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.tab-btn:hover {
+    color: #334155;
+}
+
+.tab-btn.active {
+    border-bottom-color: #13A389;
+    color: #13A389;
+    font-weight: 700;
+    background-color: #F0FDF8;
+}
+
+/* === CATEGORY TABS === */
+.category-content {
+    display: none;
+}
+
+.category-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

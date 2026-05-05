@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Око - Оконный Завод</title>
+    <link rel="icon" type="image/png" href="./3D логотип без фона.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { primary: '#5BC2E7', secondary: '#29B489', dark: '#3daadd', light: '#eaf8f3' } }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-[#eaf8f3] min-h-screen text-slate-800 pb-10">
+
+    <!-- ЭКРАН ВХОДА С ЭКОСИСТЕМНЫМ ДИЗАЙНОМ -->
+    <div id="pwd-screen" class="fixed inset-0 min-h-screen z-50 flex items-center justify-center bg-slate-50 font-sans px-4" style="display: flex;">
+        <!-- Background decorations -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-40 -right-40 w-[500px] h-[500px] bg-brand-primary/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 -left-20 w-[300px] h-[300px] bg-brand-secondary/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <!-- Login Card -->
+        <div class="relative w-full max-w-[420px] bg-white rounded-3xl shadow-xl border border-slate-100 p-8 sm:p-10 transform opacity-0 translate-y-4 animate-[fadeInUp_0.6s_ease-out_forwards]">
+            
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-primary to-blue-600 mb-6 shadow-lg shadow-brand-primary/30 relative">
+                    <i data-lucide="calculator" class="w-10 h-10 text-white relative z-10"></i>
+                    <div class="absolute inset-0 bg-white/20 rounded-2xl blur-sm mix-blend-overlay"></div>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-2">Око</h1>
+                <p class="text-slate-500 font-medium">Калькулятор остекления</p>
+            </div>
+
+            <!-- Form -->
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <label for="pwd-input" class="block text-sm font-bold text-slate-700">Код доступа</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                        </div>
+                        <input type="password" id="pwd-input" 
+                               class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                               placeholder="Пароль администратора"
+                               onkeypress="if(event.key === 'Enter') checkPwd()">
+                    </div>
+                    <p id="pwd-error" class="hidden text-red-500 text-sm font-medium pl-1 mt-1 animate-[shake_0.4s_ease-in-out]">Неверный код доступа</p>
+                </div>
+
+                <button onclick="checkPwd()" 
+                        class="w-full relative group overflow-hidden bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-slate-900/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Войти в калькулятор
+                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    </style>
+
+    <div class="max-w-[1200px] mx-auto p-2 sm:p-4" id="app" style="display: none;">
+        
+
+
+        <!-- CALCULATOR SCREEN -->
+        <div id="calculator-screen">
+            <!-- НАВИГАЦИЯ ПО ПРИЛОЖЕНИЯМ -->
+            <div class="flex flex-wrap gap-3 mb-4 no-print">
+                <a href="http://127.0.0.1:5000" class="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-all text-sm shadow-sm"><i data-lucide="package" class="w-4 h-4"></i> Перейти на Склад</a>
+                <a href="http://127.0.0.1:5001" class="bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 hover:text-blue-800 font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-all text-sm shadow-sm"><i data-lucide="users" class="w-4 h-4"></i> Перейти в CRM</a>
+            </div>
+            <!-- Header Section -->
+            <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-20 md:w-28 lg:w-40 flex-shrink-0">
+                        <img src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Logo"
+                            class="w-full h-auto object-contain">
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <h1
+                            class="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight text-center md:text-left">
+                            Oko</h1>
+                        <p class="text-brand-secondary font-medium text-sm md:text-base mt-1 text-center md:text-left">
+                            Профессиональный калькулятор для просчета стоимости остекления</p>
+                    </div>
+                </div>
+
+                <!-- Global Settings (Company & Markup) -->
+                <div class="flex flex-col gap-3 w-full md:w-auto bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div
+                        class="flex items-center justify-between md:justify-end gap-3 text-sm border-b border-slate-200 pb-2 mb-1">
+                        <span class="text-slate-600 font-bold uppercase tracking-wide text-xs">Прайс-листы</span>
+                        <button onclick="toggleSettingsModal()"
+                            class="bg-white border border-slate-200 hover:border-brand-primary hover:text-brand-primary text-slate-600 px-3 py-1.5 rounded-lg flex items-center gap-2 font-medium transition-all shadow-sm">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                            Загрузка цен
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
+                        <span class="text-slate-500 font-medium whitespace-nowrap">Компания:</span>
+                        <select id="select-company"
+                            class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            onchange="handleSettingsChange()">
+                            <option value="daneliya">ИП Данелия Д.Т.</option>
+                            <option value="alex">ООО Алексстрой</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
+                        <span class="text-slate-500 font-medium whitespace-nowrap flex items-center gap-1">Наценка (глоб.):<span class="cursor-help text-slate-400 hover:text-brand-primary transition-colors" title="Глобальная наценка — множитель к дилерской цене. 100% = цена × 2. Применяется ко всем позициям. Это НЕ то же самое, что Доп. наценка в смете.">ⓘ</span></span>
+                        <select id="select-global-markup"
+                            class="bg-brand-light border border-brand-primary rounded-lg px-3 py-1.5 text-brand-dark font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                            onchange="handleSettingsChange()">
+                            <option value="1.0">0% (Базовая)</option>
+                            <option value="1.1">10%</option>
+                            <option value="1.2">20%</option>
+                            <option value="1.25">25%</option>
+                            <option value="1.3">30%</option>
+                            <option value="1.4">40%</option>
+                            <option value="1.5">50%</option>
+                            <option value="1.7">70%</option>
+                            <option value="1.75">75%</option>
+                            <option value="2.0" selected>100%</option>
+                            <option value="2.25">125%</option>
+                            <option value="2.5">150%</option>
+                            <option value="3.0">200%</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <!-- LEFT COLUMN: TABS & INPUTS -->
+                <div class="md:col-span-8 flex flex-col gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div
+                            class="flex flex-nowrap overflow-x-auto custom-scrollbar bg-slate-50 border-b border-slate-100 pl-2">
+                            <button class="tab-btn active px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('glass')"><i data-lucide="layout-grid" class="w-5 h-5"></i>
+                                Стеклопакеты</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('nets')"><i data-lucide="grid-3x3" class="w-5 h-5"></i> Москитные
+                                сетки</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('frameless')"><i data-lucide="blinds" class="w-5 h-5"></i> Безрамное
+                                остекление</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('sills')"><i data-lucide="align-horizontal-justify-end"
+                                    class="w-5 h-5"></i> Подоконники</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('slopes')"><i data-lucide="square-split-horizontal" class="w-5 h-5"></i>
+                                Откосы</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('shower')"><i data-lucide="droplets" class="w-5 h-5"></i>
+                                Душевые</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('rollers')"><i data-lucide="archive" class="w-5 h-5"></i>
+                                Роллеты</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('blinds')"><i data-lucide="app-window" class="w-5 h-5"></i>
+                                Жалюзи</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('custom')"><i data-lucide="package-plus" class="w-5 h-5"></i>
+                                Прочее</button>
+                        </div>
+                        <div class="p-4 sm:p-6">
+                            <!-- TAB: GLASS -->
+                            <div id="tab-glass" class="category-content active">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина
+                                            (мм)</label><input type="number" id="glass-w"
+                                            class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                                            placeholder="1000"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота
+                                            (мм)</label><input type="number" id="glass-h"
+                                            class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                                            placeholder="1200"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="glass-qty" value="1" min="1"
+                                            class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                                            placeholder="1"></div>
+                                </div>
+                                <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-1">Тип
+                                        стеклопакета</label><select id="glass-type"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="loading">Загрузка цен из базы...</option>
+                                    </select></div>
+                                <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-1">Сложность
+                                        формы</label><select id="glass-shape"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="loading">Загрузка...</option>
+                                    </select></div>
+                                <div class="flex items-center gap-3 mb-5 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                                    <input type="checkbox" id="glass-argon" class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                    <label for="glass-argon" class="text-sm text-slate-700 font-medium cursor-pointer select-none flex-1">Заполнение аргоном <span class="text-cyan-600 font-bold">+52 ₽/м²</span></label>
+                                </div>
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-5 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-primary"></div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Декоративная раскладка
+                                        (шпросы)</label>
+                                    <select id="glass-layout"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary mb-3"
+                                        onchange="toggleGlassLayoutInputs()">
+                                        <option value="none">Без раскладки</option>
+                                    </select>
+                                    <div id="glass-layout-inputs"
+                                        class="grid grid-cols-3 gap-3 hidden mt-3 pt-3 border-t border-slate-200">
+                                        <div><label class="text-xs text-slate-500 block mb-1">Длина (мм)</label><input
+                                                type="number" id="glass-layout-len"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                        <div><label class="text-xs text-slate-500 block mb-1">Крестовин</label><input
+                                                type="number" id="glass-layout-cross"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                        <div><label class="text-xs text-slate-500 block mb-1">Торцевых</label><input
+                                                type="number" id="glass-layout-end"
+                                                class="w-full p-2 border border-slate-200 rounded-md text-sm"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="glass-comment" placeholder="Напр.: кухня, 2 этаж..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addGlassItem()"
+                                    class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(19,163,137,0.39)] hover:shadow-[0_6px_20px_rgba(19,163,137,0.23)] active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить стеклопакет</button>
+                            </div>
+
+                            <!-- TAB: NETS -->
+                            <div id="tab-nets" class="category-content">
+                                <div
+                                    class="bg-blue-50 text-blue-800 text-sm p-3 rounded-lg flex items-start gap-2 mb-5">
+                                    <i data-lucide="info" class="w-5 h-5 mt-0.5 flex-shrink-0"></i>
+                                    <p>Указывайте размеры <b>готового изделия</b> или вводите <b>размеры светового
+                                            проема</b>, нажав соответствующую галочку ниже.</p>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина
+                                            (мм)</label><input type="number" id="net-w"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="600"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота
+                                            (мм)</label><input type="number" id="net-h"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="1300"></div>
+                                </div>
+                                <div
+                                    class="flex flex-col gap-2 mb-5 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox"
+                                            id="net-is-lumen"
+                                            class="w-4 h-4 text-brand-primary focus:ring-brand-primary border-gray-300 rounded"
+                                            onchange="calcNetPreview()"><span
+                                            class="text-sm text-slate-700 font-medium select-none">Это размеры светового
+                                            проема</span></label>
+                                    <div id="net-lumen-hint" class="text-xs text-brand-secondary ml-6 hidden">К
+                                        введенным размерам будет автоматически прибавлено: для оконных +50мм, для дверей
+                                        32 +64мм, для дверей 52 +84мм.</div>
+                                </div>
+                                <div class="mb-4"><label class="block text-sm font-medium text-slate-600 mb-1">Тип
+                                        москитной сетки</label><select id="net-type"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                                        onchange="toggleNetOptions()">
+                                        <option value="loading">Загрузка цен...</option>
+                                    </select></div>
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-5 relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-secondary"></div>
+                                    <h3 class="text-sm font-medium text-slate-700 mb-3">Дополнительные опции:</h3>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center justify-between cursor-pointer group">
+                                            <div class="flex items-center gap-2"><input type="checkbox" id="net-opt-pet"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary"><span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Полотно
+                                                    Антикошка / Антипыль</span></div><span
+                                                class="text-xs text-brand-primary font-bold">+1000 ₽/м²</span>
+                                        </label>
+                                        <label class="flex items-center justify-between cursor-pointer group"
+                                            id="net-opt-corners-wrapper">
+                                            <div class="flex items-center gap-2"><input type="checkbox"
+                                                    id="net-opt-corners"
+                                                    class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary"><span
+                                                    class="text-sm text-slate-700 group-hover:text-black select-none">Металлические
+                                                    уголки (4 шт.)</span></div><span
+                                                class="text-xs text-brand-primary font-bold">+200 ₽</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Плиссе конфигуратор -->
+                                <div id="pleated-config" class="hidden p-4 bg-amber-50 border border-amber-200 rounded-xl mb-5">
+                                    <h3 class="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2"><i data-lucide="settings-2" class="w-4 h-4"></i> Конфигурация Плиссе</h3>
+                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Серия</label>
+                                            <select id="pleated-series" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Pro 40">Pro 40</option>
+                                                <option value="Standard 32">Standard 32</option>
+                                                <option value="Premium 50">Premium 50</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Цвет профиля</label>
+                                            <select id="pleated-color" onchange="togglePleatedRal()" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Белый">Белый</option>
+                                                <option value="Коричневый">Коричневый</option>
+                                                <option value="Антрацит">Антрацит</option>
+                                                <option value="RAL (свой цвет)">RAL (свой цвет)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="pleated-ral-wrap" class="hidden mb-3">
+                                        <label class="block text-xs text-slate-600 mb-1">Номер RAL</label>
+                                        <input type="text" id="pleated-ral-input" placeholder="Напр. RAL 7016"
+                                            class="w-full p-2 bg-white border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Направление створки</label>
+                                            <select id="pleated-dir" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Вправо">Вправо</option>
+                                                <option value="Влево">Влево</option>
+                                                <option value="По центру">По центру</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Тип полотна</label>
+                                            <select id="pleated-mesh" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Обычная сетка">Обычная сетка</option>
+                                                <option value="Антикошка">Антикошка</option>
+                                                <option value="Антипыль">Антипыль</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Порог</label>
+                                            <select id="pleated-threshold" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Рамный">Рамный</option>
+                                                <option value="Безрамный">Безрамный</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-slate-600 mb-1">Уплотнитель</label>
+                                            <select id="pleated-seal" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                                <option value="Магнитный">Магнитный</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="net-comment" placeholder="Напр.: балкон, 1 этаж..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addNetItem()"
+                                    class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить москитную сетку</button>
+                            </div>
+
+                            <!-- TAB: FRAMELESS -->
+                            <div id="tab-frameless" class="category-content p-4 sm:p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Общая ширина (мм)</label>
+                                        <input type="number" id="fl-w" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" placeholder="3000">
+                                    </div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label>
+                                        <input type="number" id="fl-h" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" placeholder="2500">
+                                    </div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во панелей</label>
+                                        <input type="number" id="fl-panels" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" placeholder="5" oninput="updateDoorSelectionOptions(); updatePartitionDoorsConfig();">
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Система</label>
+                                    <select id="fl-system" onchange="toggleFlOptions()" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="F1_F2">Salinox F1-F2 (закал. стекло 10мм)</option>
+                                        <option value="F4">Salinox F4 (стеклопакет 35мм, с покраской)</option>
+                                        <option value="F5">Salinox F5 (триплекс или закал. стекло 10мм)</option>
+                                        <option value="F6">Salinox F6 (закал. стекло 10мм, парковка)</option>
+                                        <option value="FB_cr">Salinox FB-cr (триплекс или закал. стекло 10мм)</option>
+                                        <option value="partition">Безрамная перегородка (Прижимной профиль)</option>
+                                        <option value="Elroz">Elroz (ожидается прайс)</option>
+                                    </select>
+                                </div>
+
+                                <!-- PARTITION OPTIONS -->
+                                <div id="fl-partition-settings" class="hidden space-y-4 mb-4 p-4 bg-brand-light/30 rounded-2xl border border-brand-primary/20 shadow-sm">
+                                    <h3 class="text-sm font-bold text-brand-dark flex items-center gap-2 mb-2">
+                                        <i data-lucide="layout" class="w-4 h-4"></i> Настройки перегородки
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Стекло</label>
+                                            <select id="fl-partition-glass" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                                <option value="8_clear">8мм закаленное (Прозрачное) — 3050 ₽/м²</option>
+                                                <option value="8_tinted">8мм закаленное (Тонированное) — 4400 ₽/м²</option>
+                                                <option value="10_clear">10мм закаленное (Прозрачное) — 3550 ₽/м²</option>
+                                                <option value="10_tinted">10мм закаленное (Тонированное) — 5350 ₽/м²</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wider">Количество дверей</label>
+                                            <input type="number" id="fl-partition-doors" value="1" min="0" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" oninput="updatePartitionDoorsConfig()">
+                                            <p class="text-[10px] text-slate-500 mt-1">Фурнитура: 1500 ₽ за каждую дверь</p>
+                                        </div>
+                                    </div>
+                                    <div id="fl-partition-doors-config" class="mt-4 hidden bg-white/50 p-3 rounded-lg border border-slate-200">
+                                        <!-- Dynamic door config will be inserted here -->
+                                    </div>
+                                    <div class="mt-3 text-[11px] text-brand-dark/70 font-medium bg-white/50 p-2 rounded-lg">
+                                        <p>• Прижимной профиль: 1200 ₽/п.м. по периметру</p>
+                                    </div>
+                                </div>
+
+                                <!-- SALINOX OPTIONS -->
+                                <div id="fl-salinox-settings" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-slate-600 mb-1">Дверная панель</label>
+                                            <select id="fl-door-panel" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                                <option value="none">Без двери</option>
+                                            </select>
+                                        </div>
+                                        <div><label class="block text-sm font-medium text-slate-600 mb-1">Открывание двери</label>
+                                            <select id="fl-door-dir" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                                <option value="right">Вправо</option>
+                                                <option value="left">Влево</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label class="block text-sm font-medium text-slate-600 mb-1">Цвет покраски (RAL)</label>
+                                            <select id="fl-ral" onchange="document.getElementById('fl-ral-custom-wrap').style.display=this.value==='custom'?'block':'none'" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                                <option value="Стандартный (Анодированный)">Стандартный (анодированный)</option>
+                                                <option value="RAL 9005 (Черный)">RAL 9005 (Черный)</option>
+                                                <option value="RAL 7016 (Антрацит)">RAL 7016 (Антрацит)</option>
+                                                <option value="RAL 9016 (Белый)">RAL 9016 (Белый)</option>
+                                                <option value="RAL 8014 (Коричневый)">RAL 8014 (Коричневый)</option>
+                                                <option value="custom">Свой цвет (указать)</option>
+                                            </select>
+                                            <div id="fl-ral-custom-wrap" style="display:none" class="mt-2">
+                                                <input type="text" id="fl-ral-custom" placeholder="Введите номер RAL" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2 pt-6">
+                                            <input type="checkbox" id="fl-painting" class="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary border-slate-300 transition-all">
+                                            <label for="fl-painting" class="text-sm font-medium text-slate-700 select-none">Покраска профиля (+15%)</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 relative overflow-hidden">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-slate-800"></div>
+                                        <h3 class="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Дополнительные элементы Salinox:</h3>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" id="fl-opt-mech" class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span class="text-xs text-slate-700 select-none">Механизм F2 (+26 496 ₽)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" id="fl-opt-handle" class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span class="text-xs text-slate-700 select-none">Ручка (+2 520 ₽)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" id="fl-opt-closer" class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span class="text-xs text-slate-700 select-none">Доводчик (+9 000 ₽)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer group">
+                                                <input type="checkbox" id="fl-opt-park" class="w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                                                <span class="text-xs text-slate-700 select-none">Доп. парковка (+10 800 ₽)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-3 rounded-lg border border-slate-200 bg-white shadow-sm">
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Стекло для системы <span class="text-slate-400 font-normal">*по желанию</span></label>
+                                        <select id="fl-glass-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="none">Без стекла (только система)</option>
+                                            <option value="clear10">10мм прозрачное закаленное (4500 ₽/м²)</option>
+                                            <option value="tint10">10мм тонированное закаленное (6000 ₽/м²)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4 mt-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий</label>
+                                    <input type="text" id="fl-comment" placeholder="Напр.: коммерческое помещение, 1 этаж..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addFramelessItem()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i data-lucide="plus" class="w-5 h-5"></i> Добавить в смету</button>
+                            </div>
+                            <!-- TAB: SILLS -->
+                            <div id="tab-sills" class="category-content p-4 md:p-6 space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Бренд</label><select
+                                            id="sill-brand" onchange="updateSillColors()"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></select>
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Цвет
+                                            / Группа</label><select id="sill-color" onchange="updateSillWidths()"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Ширина
+                                            подоконника</label><select id="sill-width"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></select>
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Длина
+                                            (мм)</label><input type="number" id="sill-length" placeholder="напр. 1500"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Кол-во
+                                            (шт)</label><input type="number" id="sill-qty" value="1" min="1"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3">
+                                        Комплектующие</h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div><label class="block text-[10px] text-slate-500 mb-1">Заглушка торцевая
+                                                (шт)</label><input type="number" id="sill-cap" min="0" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div><label class="block text-[10px] text-slate-500 mb-1">Соединитель 90°/135°
+                                                (шт)</label><input type="number" id="sill-conn90" min="0"
+                                                placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div><label class="block text-[10px] text-slate-500 mb-1">Соединитель 150°/180°
+                                                (шт)</label><input type="number" id="sill-conn150" min="0"
+                                                placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="sill-comment" placeholder="Напр.: кухня, спальня..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addSillItem()"
+                                    class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить подоконник</button>
+                            </div>
+                            <!-- TAB: SLOPES -->
+                            <div id="tab-slopes" class="category-content p-4 md:p-6 space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Бренд</label><select
+                                            id="slope-brand" onchange="updateSlopeColors()"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></select>
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Цвет</label><select
+                                            id="slope-color"
+                                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Глубина / Ширина
+                                            (мм)</label><input type="number" id="slope-width" placeholder="напр. 250"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Длина
+                                            (мм)</label><input type="number" id="slope-length" placeholder="напр. 1500"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <div><label
+                                            class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Кол-во
+                                            (шт)</label><input type="number" id="slope-qty" value="1" min="1"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <i data-lucide="frame" class="w-4 h-4 text-slate-400"></i> Закрывающие профили
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1 flex justify-between">
+                                                <span>П Профиль (м.п.)</span>
+                                                <span class="text-brand-primary font-bold">230 ₽/м</span>
+                                            </label>
+                                            <input type="number" id="slope-prof-start" min="0" step="0.1" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1 flex justify-between">
+                                                <span>Н Профиль (м.п.)</span>
+                                                <span class="text-brand-primary font-bold">360 ₽/м</span>
+                                            </label>
+                                            <input type="number" id="slope-prof-h" min="0" step="0.1" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1 flex justify-between">
+                                                <span>Ф Профиль 28x32 (м.п.)</span>
+                                                <span class="text-brand-primary font-bold">340 ₽/м</span>
+                                            </label>
+                                            <input type="number" id="slope-prof-f28" min="0" step="0.1" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-500 mb-1 flex justify-between">
+                                                <span>Ф Профиль 50x30 (м.п.)</span>
+                                                <span class="text-brand-primary font-bold">440 ₽/м</span>
+                                            </label>
+                                            <input type="number" id="slope-prof-f50" min="0" step="0.1" placeholder="0"
+                                                class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+                                        <div class="text-[10px] text-slate-500 flex items-center gap-1.5">
+                                            <i data-lucide="info" class="w-4 h-4 text-blue-500"></i> П и Ф профиль равны длине откоса.
+                                        </div>
+                                        <button type="button" onclick="autoFillSlopeProfiles()" class="text-xs text-brand-primary font-bold hover:underline bg-white px-2.5 py-1.5 rounded-md border border-brand-primary/20 shadow-sm transition-all focus:outline-none flex items-center">
+                                            <i data-lucide="wand-2" class="w-3.5 h-3.5 mr-1.5"></i>Авторасчет
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="slope-comment" placeholder="Напр.: левый откос..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addSlopeItem()"
+                                    class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить откос</button>
+                            </div>
+                            <!-- TAB: SHOWER -->
+                            <div id="tab-shower" class="category-content p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i
+                                        data-lucide="droplets" class="w-5 h-5 text-brand-primary"></i> Душевые кабины
+                                </h2>
+                                <div class="mb-5"><label
+                                        class="block text-sm font-medium text-slate-600 mb-2">Конфигурация</label>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="shower-configs">
+                                        <div class="shower-config-card selected cursor-pointer border-2 border-brand-primary bg-brand-light rounded-xl p-3 text-center transition-all hover:shadow-md"
+                                            data-config="partition" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="25" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                            </svg><span class="text-xs font-bold text-slate-700">Перегородка</span>
+                                        </div>
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="partition_door" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="20" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="28" y="5" width="18" height="50" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="43" cy="30" r="2" fill="#334155" />
+                                            </svg><span class="text-xs font-bold text-slate-700">Перегородка +
+                                                дверь</span></div>
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="corner" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="30" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="38" y="45" width="30" height="10" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                            </svg><span class="text-xs font-bold text-slate-700">Угловая (90°)</span>
+                                        </div>
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="corner_door" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="5" width="18" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="26" y="5" width="14" height="50" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="37" cy="30" r="1.5" fill="#334155" />
+                                                <rect x="40" y="45" width="25" height="10" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                            </svg><span class="text-xs font-bold text-slate-700">Угловая + дверь</span>
+                                        </div>
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="u_shape" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="10" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="13" y="5" width="50" height="8" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="13" y="5" width="8" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="55" y="5" width="8" height="50" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                            </svg><span class="text-xs font-bold text-slate-700">П-образная</span></div>
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="u_shape_door" onclick="selectShowerConfig(this)"><svg
+                                                viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="10" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="13" y="5" width="50" height="8" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="13" y="13" width="8" height="42" fill="#bfdbfe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="55" y="5" width="8" height="25" fill="#bfdbfe" stroke="#64748b"
+                                                    stroke-width="1" opacity="0.7" />
+                                                <rect x="55" y="30" width="8" height="25" fill="#dbeafe"
+                                                    stroke="#64748b" stroke-width="1" opacity="0.5" />
+                                                <circle cx="60" cy="42" r="1.5" fill="#334155" />
+                                            </svg><span class="text-xs font-bold text-slate-700">П-образная +
+                                                дверь</span></div>
+                                    </div>
+                                </div>
+                                <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-1">Тип
+                                        стекла</label><select id="shower-glass"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="clear">Прозрачное (8мм закалённое)</option>
+                                        <option value="graphite">Тонированное «Графит»</option>
+                                        <option value="bronze">Тонированное «Бронза»</option>
+                                        <option value="extra_clear">Осветлённое</option>
+                                        <option value="frosted">Матовое</option>
+                                        <option value="sandblast">Пескоструй</option>
+                                    </select></div>
+                                <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-2">Размеры
+                                        панелей (мм)</label>
+                                    <div id="shower-dimensions" class="space-y-3">
+                                        <div
+                                            class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <div><label class="text-xs text-slate-500 block mb-1">Ширина
+                                                    стенки</label><input type="number" id="shower-w1" placeholder="800"
+                                                    class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                            <div><label class="text-xs text-slate-500 block mb-1">Высота</label><input
+                                                    type="number" id="shower-h" placeholder="2000"
+                                                    class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-5 p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
+                                    <p class="text-sm text-slate-500 flex items-center gap-2"><i data-lucide="wrench"
+                                            class="w-4 h-4"></i> Фурнитура будет добавлена позже</p>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="shower-comment" placeholder="Напр.: главная ванная..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addShowerItem()"
+                                    class="w-full bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold py-3.5 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 shadow-md"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить душевую</button>
+                            </div>
+                            <!-- TAB: ROLLERS -->
+                            <div id="tab-rollers" class="category-content p-4 sm:p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i
+                                        data-lucide="archive" class="w-5 h-5 text-brand-primary"></i> Роллеты
+                                </h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Бренд</label>
+                                        <select id="roller-brand" onchange="updateRollerProfiles()"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="Alutech">Alutech</option>
+                                            <option value="DoorHan">DoorHan</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Тип профиля</label>
+                                        <select id="roller-profile"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <!-- Будет заполнено через JS -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label>
+                                        <input type="number" id="roller-w"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="1000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label>
+                                        <input type="number" id="roller-h"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="2000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label>
+                                        <input type="number" id="roller-qty" value="1" min="1"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Управление</label>
+                                        <select id="roller-control"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="manual">Ручное (пружина/инерция)</option>
+                                            <option value="auto">Автоматика (электропривод)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цвет</label>
+                                        <select id="roller-color"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="Белый">Белый</option>
+                                            <option value="Коричневый">Коричневый</option>
+                                            <option value="Антрацит">Антрацит</option>
+                                            <option value="Серый">Серый</option>
+                                            <option value="Золотой дуб">Золотой дуб</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-5 p-4 bg-brand-light/50 border border-brand-primary/20 rounded-2xl shadow-sm">
+                                    <label class="block text-sm font-bold text-brand-dark mb-1 flex items-center gap-2">
+                                        <i data-lucide="coins" class="w-4 h-4"></i> Цена за единицу (₽)
+                                    </label>
+                                    <input type="number" id="roller-price"
+                                        class="w-full p-3 bg-white border-2 border-brand-primary/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary text-lg font-bold text-slate-900"
+                                        placeholder="Введите цену вручную">
+                                    <p class="text-[10px] text-slate-500 mt-1">Укажите цену за 1 шт. Итоговая сумма будет рассчитана с учетом количества.</p>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий</label>
+                                    <input type="text" id="roller-comment" placeholder="Напр.: на балкон, 1 этаж..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addRollerItem()"
+                                    class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить роллету</button>
+                            </div>
+                            <!-- TAB: BLINDS (ЖАЛЮЗИ) -->
+                            <div id="tab-blinds" class="category-content p-4 sm:p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="app-window" class="w-5 h-5 text-indigo-500"></i> Рулонные шторы / Жалюзи</h2>
+                                <p class="text-sm text-slate-500 mb-5">Расчёт по дилерскому прайсу с учётом ткани и систем.</p>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Система</label>
+                                        <select id="blinds-system" onchange="toggleBlindsSystem()"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="UNI1">Кассетные UNI 1 (Сетка)</option>
+                                            <option value="MINI_D19">Рулонные MINI (D 19) — 500 ₽/м</option>
+                                            <option value="D25">Рулонные D 25 — 800 ₽/м</option>
+                                            <option value="HORIZ">Горизонтальные алюм. — 2100 ₽/м²</option>
+                                        </select>
+                                    </div>
+                                    <div id="blinds-fabric-container">
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ткань</label>
+                                        <select id="blinds-fabric"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <!-- Автозаполнение из JS -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм) <span class="text-red-400">*</span></label>
+                                        <input type="number" id="blinds-w"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="напр. 555" step="1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм) <span class="text-red-400">*</span></label>
+                                        <input type="number" id="blinds-h"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                            placeholder="напр. 1400" step="1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Управление</label>
+                                        <select id="blinds-control"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="right">Справа</option>
+                                            <option value="left">Слева</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label>
+                                        <input type="number" id="blinds-qty" value="1" min="1"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий</label>
+                                    <input type="text" id="blinds-comment" placeholder="Напр.: левая створка, цепочка справа..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addBlindsItem()"
+                                    class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить жалюзи</button>
+                            </div>
+                            <!-- TAB: CUSTOM ITEMS -->
+                            <div id="tab-custom" class="category-content p-4 sm:p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="package-plus" class="w-5 h-5 text-brand-primary"></i> Прочие позиции</h2>
+                                <p class="text-sm text-slate-500 mb-5">Любые изделия или работы, не входящие в другие разделы. Размеры, описание и комментарий попадут в КП.</p>
+
+                                <!-- Наименование -->
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Наименование <span class="text-red-400">*</span></label>
+                                    <input type="text" id="custom-name" placeholder="Напр.: Раздвижка REHAU, Ремонт рамы..."
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                </div>
+
+                                <!-- Размеры (необязательно) -->
+                                <div class="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">📐 Размеры (необязательно — для эскиза в КП)</label>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] text-slate-400 mb-1">Ширина (мм)</label>
+                                            <input type="number" id="custom-w" placeholder="1200" min="0"
+                                                class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-400 mb-1">Высота (мм)</label>
+                                            <input type="number" id="custom-h" placeholder="1400" min="0"
+                                                class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-slate-400 mb-1">Площадь (м²)</label>
+                                            <input type="text" id="custom-area-display" placeholder="авто" readonly
+                                                class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-500 cursor-default">
+                                        </div>
+                                    </div>
+                                    <script>
+                                        (function() {
+                                            function updateArea() {
+                                                var w = parseFloat(document.getElementById('custom-w').value) || 0;
+                                                var h = parseFloat(document.getElementById('custom-h').value) || 0;
+                                                var el = document.getElementById('custom-area-display');
+                                                if (w > 0 && h > 0) el.value = (w * h / 1000000).toFixed(3) + ' м²';
+                                                else el.value = '';
+                                            }
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                document.getElementById('custom-w').addEventListener('input', updateArea);
+                                                document.getElementById('custom-h').addEventListener('input', updateArea);
+                                            });
+                                        })();
+                                    </script>
+                                </div>
+
+                                <!-- Цена / кол-во / ед. -->
+                                <div class="grid grid-cols-3 gap-3 mb-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цена (₽)</label>
+                                        <input type="number" id="custom-price" placeholder="0" min="0"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Кол-во</label>
+                                        <input type="number" id="custom-qty" value="1" min="1"
+                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Ед. изм.</label>
+                                        <select id="custom-unit" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                            <option value="шт.">шт.</option>
+                                            <option value="м²">м²</option>
+                                            <option value="м.п.">м.п.</option>
+                                            <option value="компл.">компл.</option>
+                                            <option value="усл.">усл.</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Описание для КП -->
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Описание для клиента <span class="text-slate-400 font-normal text-xs">(что будет в КП)</span></label>
+                                    <textarea id="custom-desc" rows="2" placeholder="Напр.: Раздвижная система 2 полотна, цвет Антрацит RAL 7016, стекло 6 мм..."
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none resize-none"></textarea>
+                                </div>
+
+
+
+                                <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <p class="text-xs text-amber-800 font-medium">⚠️ Цена вводится итоговая для клиента. Глобальная наценка <strong>не применяется</strong>. Если введены размеры — в КП появится эскиз.</p>
+                                </div>
+                                <button onclick="addCustomItem()"
+                                    class="w-full bg-slate-700 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
+                                        data-lucide="plus" class="w-5 h-5"></i> Добавить позицию</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- RIGHT COLUMN: ESTIMATE / CART -->
+                <div class="md:col-span-4">
+                    <div
+                        class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col md:sticky md:top-4">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i
+                                    data-lucide="receipt" class="w-5 h-5 text-brand-primary"></i> Смета заказа</h2>
+                            <div class="flex items-center gap-1.5">
+                                <span id="items-count-badge"
+                                    class="bg-brand-light text-brand-dark text-xs font-bold px-2.5 py-1 rounded-full">0</span>
+                                <button onclick="showArchive()" title="Архив просчётов"
+                                    class="flex items-center gap-1 text-slate-500 hover:text-brand-primary text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-brand-primary transition-all">
+                                    <i data-lucide="archive" class="w-3.5 h-3.5"></i> Архив
+                                </button>
+                                <button onclick="saveCalculation()" title="Сохранить текущий просчёт"
+                                    class="flex items-center gap-1 bg-brand-primary hover:bg-brand-dark text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition-all">
+                                    <i data-lucide="save" class="w-3.5 h-3.5"></i> Сохранить
+                                </button>
+                            </div>
+                        </div>
+                        <div id="cart-items"
+                            class="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4 space-y-3 min-h-[200px]">
+                            <div class="text-center text-slate-400 py-12 flex flex-col items-center gap-3"><i
+                                    data-lucide="package-open" class="w-10 h-10 text-slate-200"></i><span
+                                    class="text-sm">Смета пуста.<br>Добавьте изделия слева.</span></div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-4 space-y-4">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <h3
+                                    class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <i data-lucide="wrench" class="w-4 h-4 text-slate-400"></i> Дополнительные услуги
+                                </h3>
+                                <!-- Выбор прайса + авторасчёт -->
+                                <div class="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center gap-2">
+                                    <span class="text-xs text-slate-500 font-medium whitespace-nowrap">Прайс:</span>
+                                    <select id="srv-pricelist" class="flex-1 min-w-[100px] p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-medium">
+                                        <option value="office">Офис</option>
+                                        <option value="vitalik">Монтажник</option>
+                                        <option value="brigade">Бригада</option>
+                                    </select>
+                                    <button onclick="autoFillServices()" class="flex items-center gap-1.5 bg-brand-primary hover:bg-brand-dark text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all whitespace-nowrap">
+                                        <i data-lucide="calculator" class="w-3.5 h-3.5"></i> Авторасчёт
+                                    </button>
+                                    <button onclick="clearServices()" class="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg transition-all" title="Очистить">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                                <div id="services-list" class="mb-2">
+                                    <div class="text-center text-slate-400 text-xs py-3">Нет услуг</div>
+                                </div>
+                                <!-- Add new service row -->
+                                <div class="flex items-end gap-2 mt-2 pt-2 border-t border-slate-100">
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] text-slate-400 mb-0.5">Название</label>
+                                        <input type="text" id="srv-new-name" placeholder="Монтаж, Доставка..."
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <div class="w-28">
+                                        <label class="block text-[10px] text-slate-400 mb-0.5">Сумма ₽</label>
+                                        <input type="number" id="srv-new-amount" placeholder="0" min="0"
+                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                    </div>
+                                    <button onclick="addServiceFromInput()" class="flex items-center gap-1 bg-slate-100 hover:bg-brand-primary hover:text-white text-slate-600 text-xs font-bold px-3 py-2 rounded-lg transition-all whitespace-nowrap">
+                                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                    <h3
+                                        class="text-[11px] font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Доп. Наценка
+                                    </h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label
+                                                class="block text-[10px] font-medium text-blue-600/70 uppercase tracking-wider mb-1">Суммой
+                                                (₽)</label><input type="number" id="manual-markup-rub"
+                                                oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                placeholder="0"></div>
+                                        <div><label
+                                                class="block text-[10px] font-medium text-blue-600/70 uppercase tracking-wider mb-1">Процентом
+                                                (%)</label><input type="number" id="manual-markup-pct"
+                                                oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                                placeholder="0"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                    <h3
+                                        class="text-[11px] font-bold text-emerald-800 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <i data-lucide="tags" class="w-3.5 h-3.5"></i> Скидка
+                                    </h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label
+                                                class="block text-[10px] font-medium text-emerald-600/70 uppercase tracking-wider mb-1">Суммой
+                                                (₽)</label><input type="number" id="manual-discount-rub"
+                                                oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-emerald-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                placeholder="0"></div>
+                                        <div><label
+                                                class="block text-[10px] font-medium text-emerald-600/70 uppercase tracking-wider mb-1">Процентом
+                                                (%)</label><input type="number" id="manual-discount-pct"
+                                                oninput="renderCart()"
+                                                class="w-full p-2 bg-white border border-emerald-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                                                placeholder="0"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="flex justify-between items-end pb-2 pt-3 border-t border-dashed border-slate-200">
+                                <span class="text-slate-500 font-medium">Итого:</span><span id="cart-total-display"
+                                    class="text-2xl font-black text-slate-900 tracking-tight">0 ₽</span>
+                            </div>
+                            <div class="flex gap-2 mb-2"><input type="text" id="kp-number-input" placeholder="№ КП"
+                                    class="w-1/3 p-2 bg-white border border-slate-200 rounded-lg text-sm"><input
+                                    type="text" id="client-name" placeholder="Имя клиента"
+                                    class="w-2/3 p-2 bg-white border border-slate-200 rounded-lg text-sm"></div>
+                            <div class="flex flex-col gap-2"><button onclick="showProposal()"
+                                    class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md"><i
+                                        data-lucide="file-check-2" class="w-5 h-5"></i> КП и Смета</button>
+                                <div id="print-error" class="text-red-500 text-sm text-center font-medium hidden">Смета
+                                    пуста! Добавьте изделия.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ARCHIVE MODAL OVERLAY -->
+            <div id="archive-overlay" onclick="closeArchive()" style="display:none"
+                class="fixed inset-0 bg-black/40 z-40 transition-opacity"></div>
+            <div id="archive-panel"
+                class="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col"
+                style="display:none; transform: translateX(100%); transition: transform 0.3s">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="archive" class="w-5 h-5 text-brand-primary"></i> Архив просчётов
+                    </h2>
+                    <button onclick="closeArchive()" class="text-slate-400 hover:text-slate-700 p-1">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="archive-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+                <div class="px-5 py-4 border-t border-slate-100 text-xs text-slate-400">
+                    Просчёты хранятся в браузере. При очистке кеша — удалятся.
+                </div>
+            </div>
+        </div>
+        <!-- PROPOSAL SCREEN -->
+        <div id="proposal-screen"
+            class="proposal-view bg-white min-h-[100vh] p-0 sm:p-8 max-w-[210mm] mx-auto rounded-none sm:rounded-lg sm:shadow-2xl print:shadow-none print:p-0"
+            style="display:none">
+            <div
+                class="no-print mb-8 flex flex-col sm:flex-row justify-between items-center bg-slate-100 p-4 rounded-xl gap-4 border border-slate-200">
+                <button onclick="hideProposal()"
+                    class="flex items-center gap-2 text-slate-600 hover:text-black font-medium transition-colors bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200"><i
+                        data-lucide="arrow-left" class="w-5 h-5"></i> Назад</button>
+                <div class="text-sm text-slate-600 font-medium hidden md:block">💡 Совет: в окне печати выберите
+                    <b>«Сохранить как PDF»</b>. Масштаб по умолчанию 100%.
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportFactoryExcel()" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-bold shadow-md transition-all">
+                        <i data-lucide="download" class="w-5 h-5"></i> В цех
+                    </button>
+                    <button onclick="window.print()" class="flex items-center gap-2 bg-brand-primary text-white px-6 py-2 rounded-lg hover:bg-brand-dark font-bold shadow-md transition-all">
+                        <i data-lucide="printer" class="w-5 h-5"></i> Печать / PDF
+                    </button>
+                </div>
+            </div>
+            <div id="proposal-content" class="bg-white">
+                <div class="flex justify-between items-start border-b-2 border-brand-primary pb-3 mb-4 mt-2">
+                    <div class="flex items-center gap-4"><img
+                            src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Логотип"
+                            class="w-52 sm:w-60 print:w-52 h-auto object-contain shrink-0">
+                        <div class="flex flex-col justify-center border-l-2 border-slate-200 pl-4 shrink-0">
+                            <p
+                                class="text-[11px] font-bold text-slate-800 uppercase tracking-wide leading-snug whitespace-nowrap">
+                                Комплексные решения<br>для дома и бизнеса</p>
+                            <div class="text-[10px] text-slate-600 mt-1.5 space-y-1 font-medium whitespace-nowrap"
+                                id="company-contacts"></div>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end shrink-0 pl-4 max-w-[45%]">
+                        <div class="flex items-baseline justify-end flex-wrap gap-x-2 w-full">
+                            <h2
+                                class="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">
+                                Коммерческое предложение</h2>
+                            <h3 class="text-base sm:text-lg md:text-xl font-black text-brand-primary"
+                                id="kp-number-display-right"></h3>
+                        </div>
+                        <p class="text-xs font-bold text-slate-500 uppercase mt-1">Счет-договор (Оферта)</p>
+                        <p class="text-slate-500 text-xs mt-1">Дата: <span id="kp-date"
+                                class="text-slate-900 font-bold"></span></p>
+                        <div class="mt-3 bg-slate-50 border border-slate-200 rounded p-2 text-left w-[220px]">
+                            <p class="text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Заказчик</p>
+                            <p id="kp-client-display" class="font-bold text-slate-800 text-xs break-words">
+                                _______________</p>
+                        </div>
+                    </div>
+                </div>
+                <table class="w-full text-sm mb-6 border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-left border-b border-slate-300">
+                            <th class="p-3 font-semibold text-slate-700 w-10">№</th>
+                            <th class="p-3 font-semibold text-slate-700 w-28 text-center">Эскиз</th>
+                            <th class="p-3 font-semibold text-slate-700">Наименование / Параметры</th>
+                            <th class="p-3 font-semibold text-slate-700 text-center">Кол-во</th>
+                            <th class="p-3 font-semibold text-slate-700 text-right">Цена за ед.</th>
+                            <th class="p-3 font-semibold text-slate-700 text-right">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kp-table-body"></tbody>
+                </table>
+                <div
+                    class="break-inside-avoid mt-2 border-t-2 border-slate-200 pt-3 flex flex-col md:flex-row gap-6 items-center">
+                    <div
+                        class="w-full md:w-1/2 text-[10px] text-justify text-slate-600 bg-slate-50 p-3 rounded border-l-[3px] border-brand-primary my-auto">
+                        <p class="font-bold mb-1 text-slate-800">Внимание! Настоящее Коммерческое предложение так же
+                            является счёт-офертой (ст. 435 Гражданского кодекса РФ).</p>
+                        <p class="mb-1">Оплата данного счета означает согласие Заказчика с условиями поставки товара
+                            и/или оказания услуг, и приравнивается к заключению договора (акцепт оферты).</p>
+                        <p>В цену товара включены все расходы Исполнителя, связанные с осуществлением своих обязательств
+                            в полном объеме, в том числе все обязательные платежи.</p>
+                    </div>
+                    <div class="w-full md:w-1/2 flex flex-col items-end">
+                        <div class="w-full" id="kp-services-list"></div>
+                        <div
+                            class="bg-brand-light p-3 rounded-xl flex items-center justify-between w-full border border-brand-primary mt-2">
+                            <span class="font-bold text-base text-slate-800 uppercase tracking-wider">Итого к
+                                оплате:</span><span class="font-black text-xl text-brand-dark" id="kp-total-sum">0
+                                ₽</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- БЛОК ОПЛАТЫ: QR-КОД + РЕКВИЗИТЫ -->
+                <div class="break-inside-avoid mt-6 mb-4" id="kp-payment-block">
+                    <div class="border-2 border-slate-200 rounded-xl p-5">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-brand-primary pb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand-primary"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                            Оплата по QR-коду
+                        </h3>
+                        <div class="flex flex-col md:flex-row gap-5 items-center">
+                            <!-- QR Code -->
+                            <div class="flex flex-col items-center gap-2 flex-shrink-0">
+                                <img src="QR для оплаты .png" alt="QR-код для оплаты" class="w-40 h-40 rounded-lg border border-slate-200 shadow-sm">
+                                <p class="text-[9px] text-slate-400 text-center max-w-[170px]">Отсканируйте QR-код в мобильном приложении банка для оплаты</p>
+                            </div>
+                            <!-- Реквизиты для оплаты -->
+                            <div class="flex-1 text-[10px] text-slate-600 space-y-1.5 w-full">
+                                <p class="font-bold text-xs text-slate-800 mb-2 uppercase tracking-wider">Реквизиты для оплаты</p>
+                                <div id="kp-bank-requisites" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                                    <!-- Заполняется из JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="break-inside-avoid mt-16 pb-8">
+                    <div class="flex justify-between items-start text-sm gap-8">
+                        <div class="w-1/2">
+                            <div
+                                class="font-bold mb-4 border-b-2 border-slate-800 pb-2 text-slate-800 uppercase tracking-wider text-xs">
+                                Заказчик</div>
+                            <div class="mt-12">
+                                <div class="border-b border-slate-400 mb-1"></div>
+                                <div class="text-[10px] text-slate-500 text-center">(подпись / ФИО)</div>
+                            </div>
+                        </div>
+                        <div class="w-1/2">
+                            <div
+                                class="font-bold mb-4 border-b-2 border-brand-primary pb-2 text-slate-800 uppercase tracking-wider text-xs">
+                                Исполнитель</div>
+                            <div class="text-[10px] text-slate-600 mb-8 space-y-1.5" id="company-requisites"></div>
+                            <div>
+                                <div class="border-b border-slate-400 mb-1 relative">
+                                    <div
+                                        class="absolute -top-6 right-10 text-brand-primary opacity-20 transform -rotate-12 italic text-2xl font-serif">
+                                        М.П.</div>
+                                </div>
+                                <div class="text-[10px] text-slate-500 text-center" id="company-sign-name">ИП Данелия
+                                    Д.Т. (подпись)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 sm:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="database"
+                        class="w-6 h-6 text-brand-primary"></i> Настройки прайс-листов</h2><button
+                    onclick="toggleSettingsModal()"
+                    class="text-slate-400 hover:text-red-500 transition-colors bg-white p-2 rounded-lg border border-slate-200 shadow-sm"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+                <div class="mb-8 relative">
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-brand-primary/20"></div>
+                    <div class="pl-8 relative">
+                        <div
+                            class="absolute w-8 h-8 rounded-full bg-brand-light border-2 border-brand-primary text-brand-primary flex items-center justify-center font-bold left-0 top-[-4px]">
+                            1</div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Загрузка из Google Таблиц (Онлайн)</h3>
+                        <p class="text-sm text-slate-500 mb-4">Автоматическое обновление цен по ссылке на опубликованную
+                            Google Таблицу.</p>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200"><label
+                                class="block text-sm font-medium text-slate-700 mb-1">Ссылка на Google Таблицу
+                                (CSV)</label>
+                            <div class="flex gap-2"><input type="text" id="g-sheets-url"
+                                    class="flex-1 p-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none"
+                                    placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"><button
+                                    onclick="syncGoogleSheets()" id="btn-sync-gsheets"
+                                    class="bg-brand-primary hover:bg-brand-dark text-white px-5 py-3 rounded-lg font-bold transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"><i
+                                        data-lucide="refresh-cw" class="w-4 h-4" id="icon-sync-gsheets"></i>
+                                    Обновить</button></div>
+                            <div id="gsheets-status" class="mt-2 text-xs font-medium text-slate-500 hidden"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="pl-8 relative">
+                        <div
+                            class="absolute w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-300 text-slate-500 flex items-center justify-center font-bold left-0 top-[-4px]">
+                            2</div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Загрузка из Excel файла (Офлайн)</h3>
+                        <p class="text-sm text-slate-500 mb-4">Если нет интернета, выберите файл прайс-листа
+                            <b>.xlsx</b> с компьютера.
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 border-dashed"><input type="file"
+                                id="excel-file-upload" accept=".xlsx, .xls" class="hidden"
+                                onchange="handleExcelUpload(event)"><label for="excel-file-upload"
+                                class="flex flex-col items-center justify-center w-full min-h-[120px] bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"><i
+                                    data-lucide="file-spreadsheet" class="w-8 h-8 text-slate-400 mb-2"></i><span
+                                    class="text-sm font-medium text-slate-700">Нажмите, чтобы выбрать файл
+                                    Excel</span><span class="text-xs text-slate-400 mt-1">Ожидается файл нужного
+                                    шаблона</span></label>
+                            <div id="excel-status" class="mt-3 text-xs font-medium text-slate-500 text-center hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="text-xs text-slate-500">
+                    <div>Текущие цены: <strong id="current-prices-source" class="text-slate-700">Встроенные
+                            (по-умолчанию)</strong></div>
+                    <div id="current-prices-date" class="mt-0.5"></div>
+                </div><button onclick="downloadExcelTemplate()"
+                    class="text-sm text-brand-primary hover:text-brand-dark font-medium underline underline-offset-2 flex items-center gap-1"><i
+                        data-lucide="download" class="w-4 h-4"></i> Скачать шаблон Excel</button>
+            </div>
+        </div>
+    </div>
+    <!-- EDIT ITEM MODAL -->
+    <div id="edit-item-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40" onclick="closeEditModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i data-lucide="pencil" class="w-5 h-5 text-brand-primary"></i> Редактирование позиции
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Наименование</label>
+                    <input type="text" id="edit-item-type"
+                        class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Кол-во</label>
+                        <input type="number" id="edit-item-qty" min="1"
+                            class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Цена за ед. (₽)</label>
+                        <input type="number" id="edit-item-cost" min="0"
+                            class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-5">
+                <button onclick="closeEditModal()"
+                    class="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm">Отмена</button>
+                <button onclick="saveEditItem()"
+                    class="flex-1 py-3 bg-brand-primary hover:bg-brand-dark text-white font-bold rounded-xl transition-all text-sm">Сохранить</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js" defer></script>
+</body>
+
+</html>

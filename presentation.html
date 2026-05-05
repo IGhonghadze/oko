@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оконный завод — B2B Презентация</title>
+    <meta name="description" content="Светопрозрачные конструкции и комплексные решения для девелоперов и генподрядчиков ЮФО">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="presentation.css">
+</head>
+<body>
+
+    <!-- Навигация -->
+    <nav class="slide-nav" id="slideNav">
+        <div class="nav-dot active" data-slide="1" title="Титульный"></div>
+        <div class="nav-dot" data-slide="2" title="О компании"></div>
+        <div class="nav-dot" data-slide="3" title="ПВХ"></div>
+        <div class="nav-dot" data-slide="4" title="Алюминий"></div>
+        <div class="nav-dot" data-slide="5" title="Двери"></div>
+        <div class="nav-dot" data-slide="6" title="Душевые"></div>
+        <div class="nav-dot" data-slide="7" title="Ограждения"></div>
+        <div class="nav-dot" data-slide="8" title="Защита"></div>
+        <div class="nav-dot" data-slide="9" title="Панорамное"></div>
+        <div class="nav-dot" data-slide="10" title="Перголы"></div>
+        <div class="nav-dot" data-slide="11" title="Контакты"></div>
+    </nav>
+
+    <button class="print-btn" onclick="window.print()">
+        <i class="fa-solid fa-file-pdf"></i> Сохранить в PDF
+    </button>
+
+    <!-- СЛАЙД 1: Титульный -->
+    <div class="slide" id="slide-1">
+        <div class="particles" id="particles1"></div>
+        <div class="title-content">
+            <img src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Оконный Завод" class="main-logo">
+            <h1>Светопрозрачные конструкции<br>и комплексные решения</h1>
+            <p class="tagline">Производство &bull; Инжиниринг &bull; Сервис</p>
+            <div class="title-geo">
+                <i class="fa-solid fa-location-dot"></i>
+                Работаем по всему <span class="accent-text">Южному федеральному округу</span>
+            </div>
+        </div>
+        <div class="slide-number">01</div>
+    </div>
+
+    <!-- СЛАЙД 2: О компании -->
+    <div class="slide" id="slide-2">
+        <div class="corner-accent top-right"></div>
+        <h2 class="slide-title">Масштаб и Технологии</h2>
+        <div class="slide-subtitle">Крупный региональный производитель и инжиниринговый центр</div>
+        <div class="slide-body">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 15px;">
+                    Мы выступаем надежным партнером для девелоперов и генподрядчиков. Наша главная задача — закрыть все потребности строительного объекта в светопрозрачных конструкциях «под ключ»: от детального проектирования узлов примыкания до монтажа и сдачи технадзору.
+                </p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-location-dot" style="color: var(--light-blue);"></i> Штаб-квартира в Геленджике, монтажные бригады по всему ЮФО.</li>
+                    <li><i class="fa-solid fa-handshake" style="color: var(--light-blue);"></i> Работаем напрямую с крупнейшими производителями профилей.</li>
+                    <li><i class="fa-solid fa-check-double" style="color: var(--green);"></i> Строгое соблюдение ГОСТов на всех этапах работ.</li>
+                </ul>
+                <h3 class="chart-title">Рост производственных мощностей (кв.м. в год)</h3>
+                <div class="chart-container">
+                    <svg viewBox="0 0 1000 300" width="100%" height="100%">
+                        <line x1="50" y1="250" x2="950" y2="250" stroke="#2568a9" stroke-opacity="0.3" stroke-width="2"/>
+                        <line x1="50" y1="50" x2="50" y2="250" stroke="#2568a9" stroke-opacity="0.3" stroke-width="2"/>
+                        <defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#18c366" stop-opacity="0.4"/><stop offset="100%" stop-color="#18c366" stop-opacity="0"/></linearGradient></defs>
+                        <polygon points="50,250 150,220 300,180 450,150 600,100 750,80 900,40 900,250" fill="url(#cg)"/>
+                        <polyline points="50,250 150,220 300,180 450,150 600,100 750,80 900,40" fill="none" stroke="#18c366" stroke-width="4"/>
+                        <circle cx="150" cy="220" r="5" fill="#18c366"/><circle cx="300" cy="180" r="5" fill="#18c366"/>
+                        <circle cx="450" cy="150" r="5" fill="#18c366"/><circle cx="600" cy="100" r="5" fill="#18c366"/>
+                        <circle cx="750" cy="80" r="5" fill="#18c366"/><circle cx="900" cy="40" r="6" fill="#18c366" stroke="#fff" stroke-width="2"/>
+                        <text x="150" y="275" fill="#1e293b" font-family="Inter" font-size="14" text-anchor="middle">2021</text>
+                        <text x="450" y="275" fill="#1e293b" font-family="Inter" font-size="14" text-anchor="middle">2023</text>
+                        <text x="750" y="275" fill="#1e293b" font-family="Inter" font-size="14" text-anchor="middle">2025</text>
+                        <text x="900" y="275" fill="#1e293b" font-family="Inter" font-size="14" font-weight="bold" text-anchor="middle">2027</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/building_facade_1774684766163.png" alt="Здание">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">02</div>
+    </div>
+
+    <!-- СЛАЙД 3: ПВХ-системы -->
+    <div class="slide" id="slide-3">
+        <div class="corner-accent top-left"></div>
+        <h2 class="slide-title">ПВХ-профили и Стеклопакеты</h2>
+        <div class="slide-subtitle">Решения для ЖК любого класса — от комфорт до премиум.</div>
+        <div class="slide-body row-reverse">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 15px;">
+                    Оконные системы из ПВХ остаются стандартом де-факто для массового и комфорт-класса жилья. Мы предлагаем гибкие решения, позволяющие оптимизировать смету без потери качества.
+                </p>
+                <table style="margin-bottom: 15px;">
+                    <thead><tr><th>Профильная система</th><th>Модели / Линейки</th><th>Монт. ширина</th><th>Макс. пакет</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Elex</strong></td><td>Базовая 58 / Оптима 70</td><td>58 / 70 мм</td><td>32 / 40 мм</td></tr>
+                        <tr><td><strong>Veka</strong></td><td>Euroline / WHS / Softline</td><td>58, 60, 70 мм</td><td>32 / 42 мм</td></tr>
+                        <tr><td><strong>Rehau</strong></td><td>Grazio / Delight / Thermo 76</td><td>70, 76, 80 мм</td><td>до 53 мм</td></tr>
+                    </tbody>
+                </table>
+                <h3 class="chart-title">Стеклопакеты Thermo</h3>
+                <table>
+                    <thead><tr><th>Тип покрытия</th><th>Сохранение тепла</th><th>Защита от солнца</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Мультифункциональное</strong></td><td>До 60% эффективнее</td><td>Отражает до 58% жары</td></tr>
+                        <tr><td><strong>Энергосберегающее</strong></td><td>До 80% эффективнее</td><td>Базовое</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/pvh_window_1774684781989.png" alt="ПВХ окно">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">03</div>
+    </div>
+
+    <!-- СЛАЙД 4: Алюминий -->
+    <div class="slide bg-image-slide" id="slide-4" style="background-image: url('C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/aluminum_facade_1774684910989.png');">
+        <h2 class="slide-title" style="color: var(--white);">Архитектурный алюминий</h2>
+        <div class="slide-subtitle" style="color: var(--mint);">Окна, двери, фасадное остекление</div>
+        <div class="glass-panel">
+            <p class="text-body" style="margin-bottom: 20px; color: var(--white); font-size: 16px;">
+                Алюминиевые профильные системы обладают высокой несущей способностью и сроком службы более 80 лет. Идеальный выбор для масштабных витражей, стильных входных групп и остекления коммерческих площадей. Окраска в любой цвет RAL.
+            </p>
+            <table class="dark-table" style="margin-bottom: 0;">
+                <thead><tr><th>Тип системы</th><th>Монт. глубина</th><th>Сфера применения</th><th>Взломостойкость</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Холодный профиль</strong></td><td>40 - 50 мм</td><td>Офисные перегородки, тамбуры, неотапливаемые балконы.</td><td>RC1</td></tr>
+                    <tr><td><strong>Теплый профиль (Терморазрыв)</strong></td><td>65 - 75 мм</td><td>Теплые фасады, витражи, окна, входные двери.</td><td>RC2 / RC3</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="slide-number" style="color: rgba(255,255,255,0.3);">04</div>
+    </div>
+
+    <!-- СЛАЙД 5: Двери -->
+    <div class="slide" id="slide-5">
+        <div class="corner-accent top-right"></div>
+        <h2 class="slide-title">Надежные входные группы</h2>
+        <div class="slide-subtitle">Проектирование и монтаж дверей для жилых комплексов.</div>
+        <div class="slide-body row-reverse">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 15px;">
+                    Входные группы — лицо любого объекта и зона максимальной нагрузки. Мы производим двери, рассчитанные на высокую проходимость, с усиленной антивандальной фурнитурой и долговечными уплотнителями.
+                </p>
+                <table>
+                    <thead><tr><th>Тип дверей</th><th>Огнестойкость (ПП)</th><th>Уплотнители и фурнитура</th></tr></thead>
+                    <tbody>
+                        <tr><td><i class="fa-solid fa-door-closed" style="color: var(--light-blue); width: 25px;"></i> <strong>ПВХ (Усиленные)</strong></td><td>—</td><td>EPDM (2-3 контура), усиленные петли</td></tr>
+                        <tr><td><i class="fa-solid fa-building-shield" style="color: var(--light-blue); width: 25px;"></i> <strong>Металлические</strong></td><td>—</td><td>Магнитные / Резиновые уплотнители</td></tr>
+                        <tr><td><i class="fa-solid fa-fire" style="color: var(--light-blue); width: 25px;"></i> <strong>Противопожарные</strong></td><td><span class="badge badge-green">EI 30 / 60 / 90</span></td><td>Терморасширяющиеся ленты</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/entrance_doors_1774684893804.png" alt="Входные группы">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">05</div>
+    </div>
+
+    <!-- СЛАЙД 6: Душевые -->
+    <div class="slide" id="slide-6">
+        <div class="corner-accent top-left"></div>
+        <h2 class="slide-title">Индивидуальные душевые</h2>
+        <div class="slide-subtitle">Готовые решения для санузлов в новостройках "под ключ".</div>
+        <div class="slide-body">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 15px;">
+                    Тенденция сдавать квартиры с готовой отделкой диктует новые стандарты. Инсталляция стеклянных душевых ограждений на этапе строительства значительно повышает привлекательность квартир.
+                </p>
+                <p class="text-body" style="margin-bottom: 20px;">
+                    <i class="fa-solid fa-shield-halved" style="color: var(--green); margin-right: 5px;"></i> <strong>Безопасность:</strong> Закаленное стекло М1, фурнитура из нержавеющей стали и латуни. Гидрофобное покрытие «антикапля». 100% герметичность узлов.
+                </p>
+                <table>
+                    <thead><tr><th>Тип конструкции</th><th>Толщина</th><th style="color: var(--turquoise);">Прозрачность</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Открытого типа / Угловые / В нишу</strong></td><td>8 / 10 мм</td><td style="color: var(--turquoise); font-weight: 600;">Прозрачное / Осветленное</td></tr>
+                        <tr><td><strong>Раздвижные и маятниковые</strong></td><td>8 мм</td><td style="color: var(--turquoise); font-weight: 600;">Матовое / Графит</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/shower_glass_1774684796101.png" alt="Душевая">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">06</div>
+    </div>
+
+    <!-- СЛАЙД 7: Ограждения -->
+    <div class="slide" id="slide-7">
+        <div class="corner-accent top-right"></div>
+        <h2 class="slide-title">Ограждения и Козырьки</h2>
+        <div class="slide-subtitle">Безопасность и эстетика фасадов, кровель и входных групп.</div>
+        <div class="slide-body row-reverse">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 20px;">
+                    Светопрозрачные ограждения придают зданиям легкость и премиальный вид. Инжиниринговый отдел проводит расчет ветровых и статических нагрузок для каждого узла.
+                </p>
+                <h3 class="chart-title">Стеклянные ограждения</h3>
+                <table style="margin-bottom: 15px;">
+                    <thead><tr><th>Тип крепления</th><th>Нагрузки (кН/м)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Точечное (мини-стойки)</td><td>до 0.8 (Жилые)</td></tr>
+                        <tr><td>В алюминиевый профиль</td><td>до 1.5 (Коммерция)</td></tr>
+                    </tbody>
+                </table>
+                <h3 class="chart-title">Стеклянные козырьки (Навесы)</h3>
+                <table>
+                    <thead><tr><th>Тип несущей системы</th><th>Стекло (Триплекс)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Подвесные на тягах</td><td>8+8мм / 10+10мм</td></tr>
+                        <tr><td>На металлическом каркасе</td><td>Закаленный триплекс</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/glass_railing_1774684818518.png" alt="Ограждения">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">07</div>
+    </div>
+
+    <!-- СЛАЙД 8: Ворота и Жалюзи -->
+    <div class="slide" id="slide-8">
+        <div class="corner-accent top-left"></div>
+        <h2 class="slide-title">Защитные и солнцезащитные системы</h2>
+        <div class="slide-subtitle">Надежные решения для коммерции, паркингов и окон.</div>
+        <div class="slide-body">
+            <div class="col-main">
+                <h3 class="section-heading"><i class="fa-solid fa-shield-halved" style="color: var(--green);"></i> Системы безопасности</h3>
+                <p class="text-body" style="margin-bottom: 15px; font-size: 14px;">
+                    Роллетные и секционные системы с интеграцией автоматики в СКУД здания.
+                </p>
+                <table style="margin-bottom: 25px;">
+                    <thead><tr><th>Система</th><th>Профиль / Материал</th><th>Управление</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Рольставни</strong></td><td>Пенозаполненный / Экструдия</td><td>Ручной / Автомат.</td></tr>
+                        <tr><td><strong>Секционные ворота</strong></td><td>Сэндвич-панель (40/45 мм)</td><td>Автоматический</td></tr>
+                    </tbody>
+                </table>
+                <h3 class="section-heading"><i class="fa-solid fa-person-shelter" style="color: var(--turquoise);"></i> Внутренняя солнцезащита</h3>
+                <ul class="check-list">
+                    <li><i class="fa-solid fa-check" style="color: var(--light-blue);"></i> Классические горизонтальные (Алюминий, Дерево).</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--light-blue);"></i> Вертикальные тканевые и мультифактурные.</li>
+                    <li><i class="fa-solid fa-check" style="color: var(--light-blue);"></i> Рулонные шторы (с ручным управлением и электроприводом).</li>
+                </ul>
+            </div>
+            <div class="col-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/roller_shutter_1774684832851.png" alt="Защитные системы">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number">08</div>
+    </div>
+
+    <!-- СЛАЙД 9: Панорамное -->
+    <div class="slide" id="slide-9">
+        <div class="corner-accent top-right"></div>
+        <h2 class="slide-title">Панорамное и безрамное остекление</h2>
+        <div class="slide-subtitle">Премиальные решения для террас, ресторанов и пентхаусов.</div>
+        <div class="slide-body-vertical">
+            <div class="banner-img">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/panoramic_glazing_1774684850280.png" alt="Панорамное остекление">
+            </div>
+            <div style="display: flex; gap: 40px; margin-top: 10px;">
+                <p class="text-body" style="flex: 1;">
+                    <i class="fa-solid fa-star" style="color: #fbbf24; margin-right: 5px;"></i> Ударопрочное закаленное стекло (8-10 мм) и нержавеющая фурнитура, устойчивая к климату побережья ЮФО. Максимальное светопропускание и безупречная эстетика.
+                </p>
+                <table style="flex: 1.5; margin: 0;">
+                    <thead><tr><th>Тип системы</th><th>Особенности открывания</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Безрамное ("Книжка")</strong></td><td>Створки складываются у стены. 100% открытый проем.</td></tr>
+                        <tr><td><strong>Слайдовые (Раздвижные)</strong></td><td>Створки скользят параллельно друг другу.</td></tr>
+                        <tr><td><strong>Гильотинное (Автомат)</strong></td><td>Вертикально-сдвижная система.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="slide-number">09</div>
+    </div>
+
+    <!-- СЛАЙД 10: Перголы -->
+    <div class="slide dark-theme" id="slide-10">
+        <div class="corner-accent-light top-left"></div>
+        <h2 class="slide-title">Решения для открытых площадок</h2>
+        <div class="slide-subtitle" style="color: var(--mint);">Биоклиматические перголы и маркизы для ресторанов, кафе и кровель.</div>
+        <div class="slide-body row-reverse">
+            <div class="col-main">
+                <p class="text-body" style="margin-bottom: 20px;">
+                    Наши биоклиматические перголы создают комфортную всепогодную среду, эффективно увеличивая полезную площадь объекта.
+                </p>
+                <table class="header-mint dark-table">
+                    <thead><tr><th>Тип конструкции</th><th>Ветроустойчивость</th><th>Автоматика</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Биоклиматическая пергола</strong><br><span style="font-size: 12px; color: var(--gray-border);">Поворотные алюм. ламели</span></td><td>До 120 км/ч (11 баллов)</td><td>Датчики ветра/солнца</td></tr>
+                        <tr><td><strong>Локтевая маркиза</strong><br><span style="font-size: 12px; color: var(--gray-border);">Акриловые ткани</span></td><td>До 40 км/ч (5 баллов)</td><td>Опционально</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-img" style="border-color: var(--mint);">
+                <img src="C:/Users/Пользователь/.gemini/antigravity/brain/323637b9-f6eb-4100-92dc-cbc7652decde/pergola_terrace_1774684876125.png" alt="Пергола">
+                <div class="img-overlay"></div>
+            </div>
+        </div>
+        <div class="slide-number" style="color: rgba(255,255,255,0.15);">10</div>
+    </div>
+
+    <!-- СЛАЙД 11: Контакты -->
+    <div class="slide dark-theme" id="slide-11">
+        <div class="corner-accent-light top-right"></div>
+        <h2 class="slide-title">Начнем сотрудничество сегодня</h2>
+        <div class="slide-subtitle" style="color: var(--mint);">Готовы оперативно осметить ваш проект.</div>
+        <div class="contact-grid">
+            <div class="contact-info">
+                <div class="contact-item" style="font-size: 26px; font-weight: bold; margin-bottom: 10px;">Отдел B2B продаж</div>
+                <div class="contact-item"><i class="fa-solid fa-phone"></i><div><span style="color: var(--mint);">+7 (918) 370-47-47</span><br><span style="color: var(--mint);">+7 (988) 310-47-47</span></div></div>
+                <div class="contact-item"><i class="fa-solid fa-envelope"></i> oknazavod-gel@yandex.ru</div>
+                <div class="contact-item"><i class="fa-solid fa-globe"></i> oknazavod-gel.ru</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <div class="qr-box">
+                    <div style="width: 220px; height: 220px; background: #cbd5e1; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; color: #64748b; border-radius: 8px; overflow: hidden;">
+                        <i class="fa-solid fa-qrcode" style="font-size: 80px;"></i>
+                    </div>
+                    СКАНИРУЙТЕ ДЛЯ<br>ПОЛУЧЕНИЯ КП
+                </div>
+            </div>
+        </div>
+        <div class="slide-number" style="color: rgba(255,255,255,0.15);">11</div>
+    </div>
+
+    <script src="presentation.js"></script>
+</body>
+</html>
