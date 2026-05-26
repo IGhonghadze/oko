@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.51.1/docxtemplater.js"></script>
     <link rel="stylesheet" href="style.css">
     <script>
         tailwind.config = {
@@ -694,8 +696,9 @@
                                                 <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                                 <rect x="8" y="5" width="30" height="50" fill="#bfdbfe" stroke="#64748b"
                                                     stroke-width="1" opacity="0.7" />
-                                                <rect x="38" y="45" width="30" height="10" fill="#bfdbfe"
+                                                <rect x="38" y="5" width="30" height="50" fill="#bfdbfe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="68" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                             </svg><span class="text-xs font-bold text-slate-700">Угловая (90°)</span>
                                         </div>
                                         <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
@@ -707,8 +710,9 @@
                                                 <rect x="26" y="5" width="14" height="50" fill="#dbeafe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.5" />
                                                 <circle cx="37" cy="30" r="1.5" fill="#334155" />
-                                                <rect x="40" y="45" width="25" height="10" fill="#bfdbfe"
+                                                <rect x="40" y="5" width="25" height="50" fill="#bfdbfe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="65" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                             </svg><span class="text-xs font-bold text-slate-700">Угловая + дверь</span>
                                         </div>
                                         <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
@@ -737,25 +741,59 @@
                                                 <circle cx="60" cy="42" r="1.5" fill="#334155" />
                                             </svg><span class="text-xs font-bold text-slate-700">П-образная +
                                                 дверь</span></div>
+                                        <!-- Config 7: Раздвижная -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="sliding_door" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="26" width="34" height="8" fill="#bfdbfe" stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="38" y="36" width="34" height="8" fill="#dbeafe" stroke="#64748b" stroke-width="1" opacity="0.8" />
+                                                <path d="M 45 40 L 41 37 L 41 43 Z" fill="#334155" />
+                                                <path d="M 65 40 L 69 37 L 69 43 Z" fill="#334155" />
+                                                <line x1="41" y1="40" x2="69" y2="40" stroke="#334155" stroke-width="1" />
+                                                <rect x="72" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Раздвижная дверь</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-1">Тип
-                                        стекла</label><select id="shower-glass"
-                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
-                                        <option value="clear">Прозрачное (8мм закалённое)</option>
-                                        <option value="graphite">Тонированное «Графит»</option>
-                                        <option value="bronze">Тонированное «Бронза»</option>
-                                        <option value="extra_clear">Осветлённое</option>
-                                        <option value="frosted">Матовое</option>
-                                        <option value="sandblast">Пескоструй</option>
-                                    </select></div>
+                                <div class="grid grid-cols-2 gap-3 mb-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Толщина (зак.)</label>
+                                        <select id="shower-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="8">8 мм</option>
+                                            <option value="10">10 мм</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
+                                        <select id="shower-glass-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="clear">Прозрачное</option>
+                                            <option value="graphite">Тон. Графит</option>
+                                            <option value="bronze">Тон. Бронза</option>
+                                            <option value="extra_clear">Осветленное</option>
+                                            <option value="frosted">Матовое</option>
+                                            <option value="sandblast">Пескоструй</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Направление открывания (для расп. двери)</label>
+                                    <select id="shower-opening" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all text-slate-700">
+                                        <option value="">Не применимо / Нет двери</option>
+                                        <option value="От себя вправо">От себя вправо</option>
+                                        <option value="От себя влево">От себя влево</option>
+                                        <option value="На себя вправо">На себя вправо</option>
+                                        <option value="На себя влево">На себя влево</option>
+                                    </select>
+                                </div>
                                 <div class="mb-5"><label class="block text-sm font-medium text-slate-600 mb-2">Размеры
                                         панелей (мм)</label>
                                     <div id="shower-dimensions" class="space-y-3">
                                         <div
                                             class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                                             <div><label class="text-xs text-slate-500 block mb-1">Ширина
-                                                    стенки</label><input type="number" id="shower-w1" placeholder="800"
+                                                    стекла</label><input type="number" id="shower-w1" placeholder="800"
                                                     class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
                                             </div>
                                             <div><label class="text-xs text-slate-500 block mb-1">Высота</label><input
@@ -765,9 +803,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mb-5 p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
-                                    <p class="text-sm text-slate-500 flex items-center gap-2"><i data-lucide="wrench"
-                                            class="w-4 h-4"></i> Фурнитура будет добавлена позже</p>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Фурнитура</label>
+                                    <select id="shower-hardware" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="Нержавеющая сталь">Нержавеющая сталь</option>
+                                        <option value="Нержавейка хром">Нержавейка хром</option>
+                                        <option value="Латунь">Латунь</option>
+                                        <option value="Золото">Золото</option>
+                                        <option value="Хромированая сталь">Хромированая сталь</option>
+                                        <option value="Матовая черная">Матовая черная</option>
+                                        <option value="Глянцевая черная">Глянцевая черная</option>
+                                    </select>
                                 </div>
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
@@ -1133,6 +1179,11 @@
                             <div class="flex flex-col gap-2"><button onclick="showProposal()"
                                     class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md"><i
                                         data-lucide="file-check-2" class="w-5 h-5"></i> КП и Смета</button>
+                                
+                                <button onclick="openContractModal()"
+                                    class="w-full bg-white border-2 border-brand-primary text-brand-primary hover:bg-brand-light font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"><i
+                                        data-lucide="file-text" class="w-5 h-5"></i> Договор</button>
+
                                 <div id="print-error" class="text-red-500 text-sm text-center font-medium hidden">Смета
                                     пуста! Добавьте изделия.</div>
                             </div>
@@ -1403,7 +1454,186 @@
             </div>
         </div>
     </div>
+
+    <!-- CONTRACT GENERATION MODAL -->
+    <div id="contract-modal-overlay" onclick="closeContractModal()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] transition-opacity duration-300" style="display:none; opacity:0;"></div>
+    <div id="contract-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display:none; opacity:0; transform:scale(0.95); transition: opacity 0.3s, transform 0.3s;">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-6 py-5 border-b border-slate-100 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-primary to-blue-600 flex items-center justify-center shadow-lg shadow-brand-primary/30">
+                            <i data-lucide="file-text" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-slate-900">Генератор договора</h2>
+                            <p class="text-xs text-slate-500 font-medium">Заполните данные — договор сформируется автоматически</p>
+                        </div>
+                    </div>
+                    <button onclick="closeContractModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-400 flex items-center justify-center transition-all">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="px-6 py-5 space-y-5">
+
+                <!-- Секция: Номер и дата договора -->
+                <div class="p-4 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-2xl border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="hash" class="w-4 h-4 text-brand-primary"></i> Номер и дата договора
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Номер договора</label>
+                            <input type="text" id="contract-number" placeholder="Напр. 0603"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Дата договора</label>
+                            <input type="date" id="contract-date" onclick="this.showPicker()"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Данные заказчика -->
+                <div class="p-4 bg-gradient-to-br from-emerald-50/40 to-slate-50 rounded-2xl border border-emerald-100/50">
+                    <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="user" class="w-4 h-4"></i> Данные заказчика
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">ФИО заказчика <span class="text-red-400">*</span></label>
+                            <input type="text" id="contract-client-name" placeholder="Иванов Иван Иванович"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Паспортные данные</label>
+                            <input type="text" id="contract-client-passport" placeholder="Серия 12 34 № 567890, выдан ..."
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Дата рождения</label>
+                            <input type="date" id="contract-client-birthdate"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Адрес объекта <span class="text-red-400">*</span></label>
+                                <input type="text" id="contract-client-address" placeholder="г. Краснодар, ул. ..."
+                                    class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Телефон</label>
+                                <input type="tel" id="contract-client-phone" placeholder="+7 (900) 123-45-67"
+                                    class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Суммы и КП -->
+                <div class="p-4 bg-gradient-to-br from-blue-50/40 to-slate-50 rounded-2xl border border-blue-100/50">
+                    <h3 class="text-xs font-bold text-blue-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="banknote" class="w-4 h-4"></i> Суммы и КП
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Итоговая сумма договора (₽) <span class="text-red-400">*</span></label>
+                            <input type="text" id="contract-total-sum" placeholder="авто из калькулятора"
+                                class="w-full p-3 bg-white border-2 border-brand-primary/30 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Сумма предоплаты (₽)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="contract-prepayment" placeholder="авто 70%"
+                                    class="flex-1 p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                                <button onclick="setContractPrepayment(70)" class="px-3 py-2 bg-slate-100 hover:bg-brand-light text-slate-600 hover:text-brand-dark text-xs font-bold rounded-xl transition-all" title="70%">70%</button>
+                                <button onclick="setContractPrepayment(50)" class="px-3 py-2 bg-slate-100 hover:bg-brand-light text-slate-600 hover:text-brand-dark text-xs font-bold rounded-xl transition-all" title="50%">50%</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Номер КП</label>
+                            <input type="text" id="contract-kp-number" placeholder="авто"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Дата КП</label>
+                            <input type="date" id="contract-kp-date" onclick="this.showPicker()"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Сроки выполнения -->
+                <div class="p-4 bg-gradient-to-br from-amber-50/40 to-slate-50 rounded-2xl border border-amber-100/50">
+                    <h3 class="text-xs font-bold text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i> Сроки выполнения работ
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Дата начала работ</label>
+                            <input type="date" id="contract-start-date" onclick="this.showPicker()"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Дата окончания работ</label>
+                            <input type="date" id="contract-end-date" onclick="this.showPicker()"
+                                class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-brand-primary focus:outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статус-бар -->
+                <div id="contract-status" class="hidden p-3 rounded-xl text-sm font-medium text-center transition-all"></div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="sticky bottom-0 bg-white/95 backdrop-blur-sm px-6 py-4 border-t border-slate-100 rounded-b-3xl flex flex-col sm:flex-row gap-3">
+                <button onclick="closeContractModal()"
+                    class="flex-1 py-3.5 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="x" class="w-4 h-4"></i> Отмена
+                </button>
+                <button onclick="generateContractDocx()"
+                    class="flex-[2] py-3.5 bg-gradient-to-r from-brand-primary to-blue-600 hover:from-brand-dark hover:to-blue-700 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-primary/30">
+                    <i data-lucide="download" class="w-5 h-5"></i> Сгенерировать и скачать договор
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="contract_template_base64.js" defer></script>
+    <script src="contract.js" defer></script>
     <script src="script.js" defer></script>
+
+    <!-- ПЕРЕКЛЮЧЕНИЕ ПО ENTER В ДОГОВОРЕ -->
+    <script>
+        document.addEventListener('keydown', function(e) {
+            if (!e.target.closest('#contract-modal')) return;
+
+            if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                if (['checkbox', 'radio', 'submit', 'button', 'file'].includes(e.target.type)) {
+                    return; 
+                }
+                e.preventDefault();
+                
+                let modal = document.getElementById('contract-modal');
+                let focusable = Array.from(modal.querySelectorAll('input, select, textarea, button'))
+                    .filter(el => !el.disabled && el.offsetWidth > 0 && el.offsetHeight > 0 && el.tabIndex !== -1);
+                
+                let index = focusable.indexOf(e.target);
+                if (index > -1 && index < focusable.length - 1) {
+                    focusable[index + 1].focus();
+                } else if (index === focusable.length - 1) {
+                    e.target.blur();
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

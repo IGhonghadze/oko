@@ -1202,12 +1202,18 @@ function addSillItem() {
     renderCart();
 }
 let SHOWER_GLASS_TYPES = {
-    clear: { name: 'Прозрачное (8мм зак.)', price_sqm: 4500 },
-    graphite: { name: 'Тонированное «Графит» (8мм зак.)', price_sqm: 6000 },
-    bronze: { name: 'Тонированное «Бронза» (8мм зак.)', price_sqm: 6000 },
-    extra_clear: { name: 'Осветлённое (8мм зак.)', price_sqm: 5500 },
-    frosted: { name: 'Матовое (8мм зак.)', price_sqm: 6500 },
-    sandblast: { name: 'Пескоструй (8мм зак.)', price_sqm: 7000 }
+    '8_clear': { name: 'Прозрачное (8мм)', price_sqm: 4500 },
+    '8_graphite': { name: 'Тонированное Графит (8мм)', price_sqm: 6000 },
+    '8_bronze': { name: 'Тонированное Бронза (8мм)', price_sqm: 6000 },
+    '8_extra_clear': { name: 'Осветленное (8мм)', price_sqm: 5500 },
+    '8_frosted': { name: 'Матовое (8мм)', price_sqm: 6500 },
+    '8_sandblast': { name: 'Пескоструй (8мм)', price_sqm: 7000 },
+    '10_clear': { name: 'Прозрачное (10мм)', price_sqm: 6000 },
+    '10_graphite': { name: 'Тонированное Графит (10мм)', price_sqm: 7500 },
+    '10_bronze': { name: 'Тонированное Бронза (10мм)', price_sqm: 7500 },
+    '10_extra_clear': { name: 'Осветленное (10мм)', price_sqm: 7000 },
+    '10_frosted': { name: 'Матовое (10мм)', price_sqm: 8000 },
+    '10_sandblast': { name: 'Пескоструй (10мм)', price_sqm: 8500 }
 };
 let SHOWER_CONFIGS = {
     partition: { name: 'Перегородка', panels: [{ id: 'w1', label: 'Ширина стенки', type: 'fixed' }] },
@@ -1215,7 +1221,8 @@ let SHOWER_CONFIGS = {
     corner: { name: 'Угловая (90°)', panels: [{ id: 'w1', label: 'Фронтальная стенка', type: 'fixed' }, { id: 'w2', label: 'Боковая стенка', type: 'fixed' }] },
     corner_door: { name: 'Угловая + дверь', panels: [{ id: 'w1', label: 'Стенка (фронт)', type: 'fixed' }, { id: 'w2', label: 'Дверь', type: 'door' }, { id: 'w3', label: 'Боковая стенка', type: 'fixed' }] },
     u_shape: { name: 'П-образная', panels: [{ id: 'w1', label: 'Левая стенка', type: 'fixed' }, { id: 'w2', label: 'Задняя стенка', type: 'fixed' }, { id: 'w3', label: 'Правая стенка', type: 'fixed' }] },
-    u_shape_door: { name: 'П-образная + дверь', panels: [{ id: 'w1', label: 'Левая стенка', type: 'fixed' }, { id: 'w2', label: 'Задняя стенка', type: 'fixed' }, { id: 'w3', label: 'Правая стенка', type: 'fixed' }, { id: 'w4', label: 'Дверь', type: 'door' }] }
+    u_shape_door: { name: 'П-образная + дверь', panels: [{ id: 'w1', label: 'Левая стенка', type: 'fixed' }, { id: 'w2', label: 'Задняя стенка', type: 'fixed' }, { id: 'w3', label: 'Правая стенка', type: 'fixed' }, { id: 'w4', label: 'Дверь', type: 'door' }] },
+    sliding_door: { name: 'Раздвижная дверь', panels: [{ id: 'w1', label: 'Неподвижная панель', type: 'fixed' }, { id: 'w2', label: 'Раздвижная дверь', type: 'sliding' }] }
 };
 
 // --- ROLLERS LOGIC ---
@@ -1314,30 +1321,141 @@ function updateShowerDimensions() {
     container.innerHTML = html;
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+function parseShowerOpeningDirection(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return {
+        toRight: normalized ? normalized.includes('вправо') : true,
+        outward: normalized ? normalized.includes('от себя') : true
+    };
+}
+function getShowerMetrics(configKey, panels) {
+    const panelW = index => panels[index] ? Number(panels[index].w) || 0 : 0;
+    const totalRawWidth = panels.reduce((sum, panel) => sum + (Number(panel.w) || 0), 0);
+    const metrics = {
+        totalRawWidth,
+        areaWidthSum: totalRawWidth,
+        displayW: totalRawWidth,
+        sideW: 0,
+        frontTotalW: 0,
+        fixedFrontW: 0,
+        doorW: 0,
+        sidePanelW: 0
+    };
+
+    switch (configKey) {
+        case 'partition':
+            metrics.displayW = panelW(0);
+            metrics.areaWidthSum = panelW(0);
+            break;
+        case 'partition_door':
+            metrics.frontTotalW = panelW(0);
+            metrics.doorW = panelW(1);
+            if (metrics.doorW < metrics.frontTotalW) {
+                metrics.fixedFrontW = metrics.frontTotalW - metrics.doorW;
+                metrics.displayW = metrics.frontTotalW;
+                metrics.areaWidthSum = metrics.frontTotalW;
+            } else {
+                metrics.fixedFrontW = metrics.frontTotalW;
+                metrics.displayW = metrics.frontTotalW + metrics.doorW;
+                metrics.areaWidthSum = metrics.frontTotalW + metrics.doorW;
+            }
+            break;
+        case 'corner':
+            metrics.frontTotalW = panelW(0);
+            metrics.sidePanelW = panelW(1);
+            metrics.displayW = metrics.frontTotalW;
+            metrics.sideW = metrics.sidePanelW;
+            metrics.areaWidthSum = metrics.frontTotalW + metrics.sidePanelW;
+            break;
+        case 'corner_door':
+            metrics.frontTotalW = panelW(0);
+            metrics.doorW = panelW(1);
+            if (metrics.doorW < metrics.frontTotalW) {
+                metrics.fixedFrontW = metrics.frontTotalW - metrics.doorW;
+                metrics.displayW = metrics.frontTotalW;
+            } else {
+                metrics.fixedFrontW = metrics.frontTotalW;
+                metrics.displayW = metrics.frontTotalW + metrics.doorW;
+            }
+            metrics.sidePanelW = panelW(2);
+            metrics.sideW = metrics.sidePanelW;
+            metrics.areaWidthSum = metrics.displayW + metrics.sidePanelW;
+            break;
+        case 'u_shape':
+            metrics.displayW = panelW(1) || totalRawWidth;
+            metrics.sideW = panelW(0);
+            break;
+        case 'u_shape_door':
+            metrics.displayW = panelW(1) || totalRawWidth;
+            metrics.sideW = panelW(0);
+            break;
+        default:
+            break;
+    }
+
+    return metrics;
+}
+function getShowerDimensionLine(item, includeArea = true) {
+    const panels = item.showerPanels || [];
+    const h = item.h || 0;
+    const area = (item.area || 0) * (item.qty || 1);
+    const areaText = includeArea ? ` | S стекла: ${area.toFixed(2)} м²` : '';
+    const panelW = index => panels[index] ? panels[index].w : 0;
+    const metrics = getShowerMetrics(item.showerConfig, panels);
+
+    switch (item.showerConfig) {
+        case 'partition':
+            return `Ширина: ${panelW(0)} мм | H: ${h} мм${areaText}`;
+        case 'partition_door':
+            return `Стенка: ${metrics.frontTotalW} мм (глухая ${metrics.fixedFrontW} + дверь ${metrics.doorW}) | H: ${h} мм${areaText}`;
+        case 'corner':
+            return `Фронт: ${panelW(0)} мм | Бок: ${panelW(1)} мм | H: ${h} мм${areaText}`;
+        case 'corner_door':
+            return `Фронт: ${metrics.frontTotalW} мм (глухая ${metrics.fixedFrontW} + дверь ${metrics.doorW}) | Бок: ${metrics.sidePanelW} мм | H: ${h} мм${areaText}`;
+        case 'u_shape':
+            return `Левая: ${panelW(0)} мм | Задняя: ${panelW(1)} мм | Правая: ${panelW(2)} мм | H: ${h} мм${areaText}`;
+        case 'u_shape_door':
+            return `Левая: ${panelW(0)} мм | Задняя: ${panelW(1)} мм | Правая: ${panelW(2)} мм | Дверь: ${panelW(3)} мм | H: ${h} мм${areaText}`;
+        case 'sliding_door':
+            return `Проём: ${panelW(0) + panelW(1)} мм (стекло ${panelW(0)} + створка ${panelW(1)}) | H: ${h} мм${areaText}`;
+        default:
+            return `${item.w} × ${h} мм${areaText}`;
+    }
+}
 function addShowerItem() {
     let config = SHOWER_CONFIGS[currentShowerConfig];
-    let glassKey = document.getElementById('shower-glass').value;
-    let glass = SHOWER_GLASS_TYPES[glassKey];
+    let thickness = document.getElementById('shower-thickness') ? document.getElementById('shower-thickness').value : '8';
+    let type = document.getElementById('shower-glass-type') ? document.getElementById('shower-glass-type').value : 'clear';
+    let glassKey = `${thickness}_${type}`;
+    let glass = SHOWER_GLASS_TYPES[glassKey] || { name: 'Неизвестное стекло', price_sqm: 0 };
+    
     let h = parseFloat(document.getElementById('shower-h').value);
     if (!h) { alert('Введите высоту!'); return; }
-    let panelWidths = [], totalArea = 0, panelDescs = [];
+    let panelWidths = [], panelDescs = [];
     for (let p of config.panels) {
         let pw = parseFloat(document.getElementById('shower-' + p.id).value);
         if (!pw) { alert(`Введите ширину: ${p.label}!`); return; }
         panelWidths.push({ id: p.id, w: pw, type: p.type, label: p.label });
-        totalArea += (pw * h) / 1000000;
-        panelDescs.push(`${p.label}: ${pw}мм${p.type === 'door' ? ' (дверь)' : ''}`);
+        let typeStr = p.type === 'door' ? ' (дверь)' : (p.type === 'sliding' ? ' (раздвижная)' : '');
+        panelDescs.push(`${p.label}: ${pw}мм${typeStr}`);
     }
-    let totalW = panelWidths.reduce((s, p) => s + p.w, 0);
+    const metrics = getShowerMetrics(currentShowerConfig, panelWidths);
+    const totalArea = (metrics.areaWidthSum * h) / 1000000;
     let showerComment = document.getElementById('shower-comment').value.trim();
-    let optionsDesc = [`Конфигурация: ${config.name}`, `Стекло: ${glass.name}`, ...panelDescs];
+    let hardware = document.getElementById('shower-hardware') ? document.getElementById('shower-hardware').value : 'Нержавеющая сталь';
+    let openingDirection = document.getElementById('shower-opening') ? document.getElementById('shower-opening').value : '';
+    let hasSwingDoor = panelWidths.some(p => p.type === 'door');
+    
+    let optionsDesc = [`Конфигурация: ${config.name}`, `Стекло: ${glass.name}`, `Фурнитура: ${hardware}`, ...panelDescs];
+    if (hasSwingDoor && openingDirection) optionsDesc.push(`Открывание: ${openingDirection}`);
     if (showerComment) optionsDesc.push(`📝 ${showerComment}`);
     let showerTotal = totalArea * glass.price_sqm;
     ITEMS.push({
         id: Date.now(), category: 'shower', type: `Душевая: ${config.name}`,
         qty: 1,
-        w: totalW, h: h, area: totalArea, calcArea: totalArea, shape: config.name,
+        w: metrics.displayW, h: h, sideW: metrics.sideW, area: totalArea, calcArea: totalArea, shape: config.name,
         isLarge: false, showerConfig: currentShowerConfig, showerPanels: panelWidths, showerGlass: glassKey,
+        openingDirection: openingDirection,
         unitCost: showerTotal,
         optionsDesc: optionsDesc, baseTotal: showerTotal
     });
@@ -1811,6 +1929,8 @@ function renderCart() {
             let dimLine;
             if (it.category === 'custom' || it.category === 'slope_profile') {
                 dimLine = `${it.qty || 1} ${it.unit || 'шт.'}`;
+            } else if (it.category === 'shower') {
+                dimLine = getShowerDimensionLine(it, true);
             } else {
                 dimLine = `${it.w} × ${it.h} мм | ${totalArea.toFixed(2)} м²`;
             }
@@ -1875,8 +1995,10 @@ function showProposal() {
         if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller' || it.category === 'blinds') {
             if (it.w > 0 && it.h > 0) dimLine = `Размеры: ${it.w} × ${it.h} мм`;
             if (it.category === 'roller' || it.category === 'blinds') dimLine += ` (S = ${itemTotalArea.toFixed(2)} м²)`;
+        } else if (it.category === 'shower') {
+            dimLine = getShowerDimensionLine(it, true);
         } else {
-            dimLine = `Размеры: ${it.w} × ${it.h} мм (S = ${itemTotalArea.toFixed(2)} м²)`;
+            dimLine = `${it.w} × ${it.h} мм (S = ${itemTotalArea.toFixed(2)} м²)`;
         }
         
         let unitLabel = (it.category === 'custom' || it.category === 'slope_profile') ? (it.unit || 'шт.') : 'шт.';
@@ -2083,84 +2205,212 @@ function drawSketch(canvasId, item) {
         }
     } else if (item.category === 'shower') {
         ctx.clearRect(0, 0, cSize, cSize);
-        let pad = 30, drawArea = cSize - pad * 2, cfg = item.showerConfig, panels = item.showerPanels || [], totalH = item.h || 2000;
+        let padT = 40, padB = 28, padL = 38, padR = 36;
+        let dW = cSize - padL - padR;   // drawing width
+        let dH = cSize - padT - padB;   // drawing height
+        let cfg = item.showerConfig, panels = item.showerPanels || [], totalH = item.h || 2000;
+        let metrics = getShowerMetrics(cfg, panels);
         let wallColor = '#64748b', glassColor = '#93c5fd', glassFill = '#dbeafe', doorColor = '#60a5fa', handleColor = '#1e293b';
+        let font = 'bold 11px sans-serif';
         ctx.lineWidth = 2;
+
+        function labelH(y1, y2) {
+            ctx.save();
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.translate(24, padT + (y2 - y1) / 2 + y1 - padT);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('H ' + totalH, 0, 0);
+            ctx.restore();
+        }
+        function labelW(text, xCenter, yBelow) {
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(text, xCenter, yBelow);
+        }
+        function drawDoorIndicator(doorX, doorY, doorW, doorH, orientation = 'horizontal') {
+            const { toRight, outward } = parseShowerOpeningDirection(item.openingDirection);
+            let startX, startY, endX, endY, hx, hy;
+            if (orientation === 'vertical') {
+                startX = outward ? doorX + 4 : doorX + doorW - 4;
+                endX = outward ? doorX + doorW - 4 : doorX + 4;
+                startY = toRight ? doorY + 4 : doorY + doorH - 4;
+                endY = toRight ? doorY + doorH - 4 : doorY + 4;
+                hx = toRight ? doorX + 6 : doorX + doorW - 6;
+                hy = toRight ? doorY + doorH - 10 : doorY + 10;
+            } else {
+                startX = toRight ? doorX + 4 : doorX + doorW - 4;
+                endX = toRight ? doorX + doorW - 4 : doorX + 4;
+                startY = outward ? doorY + doorH - 4 : doorY + 4;
+                endY = outward ? doorY + 4 : doorY + doorH - 4;
+                hx = toRight ? doorX + 8 : doorX + doorW - 8;
+                hy = outward ? doorY + doorH * 0.35 : doorY + doorH * 0.65;
+            }
+            
+            // Draw chevron indicator (< or >) in the center of the door
+            const cx = doorX + doorW / 2;
+            const cy = doorY + doorH / 2;
+            const size = 12;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#1d4ed8'; // Royal Blue
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (!toRight) {
+                // ">" means opening left (влево)
+                ctx.moveTo(cx - size * 0.5, cy - size);
+                ctx.lineTo(cx + size * 0.5, cy);
+                ctx.lineTo(cx - size * 0.5, cy + size);
+            } else {
+                // "<" means opening right (вправо)
+                ctx.moveTo(cx + size * 0.5, cy - size);
+                ctx.lineTo(cx - size * 0.5, cy);
+                ctx.lineTo(cx + size * 0.5, cy + size);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = handleColor;
+            ctx.beginPath();
+            ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         if (cfg === 'partition') {
-            let gw = panels[0] ? panels[0].w : 800;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad, drawArea * 0.5, drawArea);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad, drawArea * 0.5, drawArea);
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(gw + ' мм', pad + 8 + drawArea * 0.25, cSize - 10);
-            ctx.save(); ctx.translate(cSize - 12, pad + drawArea / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(totalH + ' мм', 0, 0); ctx.restore();
+            let pw1 = panels[0] ? panels[0].w : 800;
+            let gW = dW * 0.55;
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, gW, dH);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, gW, dH);
+            labelW(pw1 + ' мм', padL + 8 + gW / 2, cSize - 8);
+            labelH(padT, padT + dH);
+
         } else if (cfg === 'partition_door') {
-            let pw1 = panels[0] ? panels[0].w : 500, pw2 = panels[1] ? panels[1].w : 600, totalPW = pw1 + pw2;
-            let glassW1 = (pw1 / totalPW) * drawArea * 0.6, doorW = (pw2 / totalPW) * drawArea * 0.6;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad, glassW1, drawArea);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad, glassW1, drawArea);
-            let doorX = pad + 8 + glassW1;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(doorX, pad, doorW, drawArea);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(doorX, pad, doorW, drawArea);
-            ctx.beginPath(); ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
-            ctx.arc(doorX, pad + drawArea, doorW, -Math.PI / 2, 0); ctx.stroke(); ctx.setLineDash([]);
-            ctx.fillStyle = handleColor; ctx.beginPath(); ctx.arc(doorX + doorW - 8, pad + drawArea / 2, 3, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(pw1 + '', pad + 8 + glassW1 / 2, cSize - 8); ctx.fillText(pw2 + '', doorX + doorW / 2, cSize - 8);
+            let pw1 = metrics.frontTotalW || (panels[0] ? panels[0].w : 500);
+            let pw2 = metrics.doorW || (panels[1] ? panels[1].w : 600);
+            let fixedPw = metrics.fixedFrontW;
+            let totalFrontDrawW = dW * 0.7;
+            let gW1 = metrics.displayW > 0 ? (fixedPw / metrics.displayW) * totalFrontDrawW : 0;
+            let doorW = metrics.displayW > 0 ? (pw2 / metrics.displayW) * totalFrontDrawW : totalFrontDrawW;
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH);
+            if (gW1 > 0) {
+                ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, gW1, dH);
+                ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, gW1, dH);
+            }
+            let dX = padL + 8 + gW1;
+            ctx.fillStyle = '#eff6ff'; ctx.fillRect(dX, padT, doorW, dH);
+            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(dX, padT, doorW, dH);
+            drawDoorIndicator(dX, padT, doorW, dH);
+            labelW(metrics.displayW + ' мм', padL + 8 + totalFrontDrawW / 2, padT - 8);
+            if (gW1 > 16) labelW(fixedPw + '', padL + 8 + gW1 / 2, cSize - 8);
+            labelW(pw2 + '', dX + doorW / 2, cSize - 8);
+            labelH(padT, padT + dH);
+
         } else if (cfg === 'corner') {
             let pw1 = panels[0] ? panels[0].w : 800, pw2 = panels[1] ? panels[1].w : 800, total = pw1 + pw2;
-            let frontW = (pw1 / total) * drawArea * 0.8, sideH = (pw2 / total) * drawArea * 0.8;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea); ctx.fillRect(pad, pad + drawArea - 8, drawArea, 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad, frontW, drawArea - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad, frontW, drawArea - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8 + frontW, pad + drawArea - 8 - sideH, drawArea - 8 - frontW, sideH);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(pad + 8 + frontW, pad + drawArea - 8 - sideH, drawArea - 8 - frontW, sideH);
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(pw1 + '', pad + 8 + frontW / 2, pad - 5);
-            ctx.save(); ctx.translate(cSize - 8, pad + drawArea - sideH / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(pw2 + '', 0, 0); ctx.restore();
+            let frontW = (pw1 / total) * dW * 0.75;
+            let sideW = dW - frontW - 8;
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL, padT + dH - 8, dW, 8);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, frontW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, frontW, dH - 8);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8 + frontW, padT, sideW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8 + frontW, padT, sideW, dH - 8);
+            // front width: above top of sketch, left-aligned to panel center
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(pw1 + ' мм', padL + 8 + frontW / 2, padT - 8);
+            // side width: rotated on the right
+            ctx.save(); ctx.translate(cSize - 14, padT + (dH - 8) / 2); ctx.rotate(-Math.PI / 2);
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(pw2 + ' мм', 0, 0); ctx.restore();
+
         } else if (cfg === 'corner_door') {
-            let pw1 = panels[0] ? panels[0].w : 400, pw2 = panels[1] ? panels[1].w : 600, pw3 = panels[2] ? panels[2].w : 800;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea); ctx.fillRect(pad, pad + drawArea - 8, drawArea, 8);
-            let frontTotal = drawArea * 0.7, f1W = (pw1 / (pw1 + pw2)) * frontTotal, dW = (pw2 / (pw1 + pw2)) * frontTotal;
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad, f1W, drawArea - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad, f1W, drawArea - 8);
-            let doorX = pad + 8 + f1W;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(doorX, pad, dW, drawArea - 8);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(doorX, pad, dW, drawArea - 8);
-            ctx.fillStyle = handleColor; ctx.beginPath(); ctx.arc(doorX + dW - 6, pad + (drawArea - 8) / 2, 3, 0, Math.PI * 2); ctx.fill();
-            let sideW = drawArea * 0.25;
-            ctx.fillStyle = glassFill; ctx.fillRect(doorX + dW, pad + drawArea - 8 - sideW, drawArea - 8 - f1W - dW, sideW);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(doorX + dW, pad + drawArea - 8 - sideW, drawArea - 8 - f1W - dW, sideW);
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(pw1 + '', pad + 8 + f1W / 2, pad - 4); ctx.fillText(pw2 + '🚪', doorX + dW / 2, pad - 4);
+            let pw1 = metrics.frontTotalW || (panels[0] ? panels[0].w : 400);
+            let pw2 = metrics.doorW || (panels[1] ? panels[1].w : 600);
+            let pw3 = metrics.sidePanelW || (panels[2] ? panels[2].w : 800);
+            let fixedPw = metrics.fixedFrontW;
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL, padT + dH - 8, dW, 8);
+            let frontTotal = dW * 0.7;
+            let f1W = metrics.displayW > 0 ? (fixedPw / metrics.displayW) * frontTotal : 0;
+            let ddW = metrics.displayW > 0 ? (pw2 / metrics.displayW) * frontTotal : frontTotal;
+            let sideW = dW - frontTotal - 8;
+            if (f1W > 0) {
+                ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, f1W, dH - 8);
+                ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, f1W, dH - 8);
+            }
+            let dX = padL + 8 + f1W;
+            ctx.fillStyle = '#eff6ff'; ctx.fillRect(dX, padT, ddW, dH - 8);
+            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(dX, padT, ddW, dH - 8);
+            drawDoorIndicator(dX, padT, ddW, dH - 8);
+            ctx.fillStyle = glassFill; ctx.fillRect(dX + ddW, padT, sideW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(dX + ddW, padT, sideW, dH - 8);
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(metrics.displayW + ' мм', padL + 8 + frontTotal / 2, padT - 8);
+            if (f1W > 16) ctx.fillText(fixedPw + '', padL + 8 + f1W / 2, cSize - 8);
+            ctx.fillText(pw2 + '', dX + ddW / 2, cSize - 8);
+            ctx.save(); ctx.translate(cSize - 14, padT + (dH - 8) / 2); ctx.rotate(-Math.PI / 2);
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(pw3 + '', 0, 0); ctx.restore();
+            labelH(padT, padT + dH - 8);
+
         } else if (cfg === 'u_shape') {
             let pw1 = panels[0] ? panels[0].w : 600, pw2 = panels[1] ? panels[1].w : 1200, pw3 = panels[2] ? panels[2].w : 600;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea); ctx.fillRect(pad + drawArea - 8, pad, 8, drawArea); ctx.fillRect(pad, pad, drawArea, 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(pw1, pad + 8 + drawArea * 0.075, cSize - 8); ctx.fillText(pw2, pad + drawArea / 2, pad + 8 + drawArea * 0.06 + 12); ctx.fillText(pw3, pad + drawArea - 8 - drawArea * 0.075, cSize - 8);
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH); ctx.fillRect(padL, padT, dW, 8);
+            let sW = dW * 0.18;
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, sW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT + 8, sW, dH - 8);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
+            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + dW - 8 - sW, padT + 8, sW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + dW - 8 - sW, padT + 8, sW, dH - 8);
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(pw1, padL + 8 + sW / 2, cSize - 8);
+            ctx.fillText(pw2, padL + dW / 2, padT + 8 + dH * 0.14 / 2 + 5);
+            ctx.fillText(pw3, padL + dW - 8 - sW / 2, cSize - 8);
+            labelH(padT, padT + dH);
+
         } else if (cfg === 'u_shape_door') {
             let pw1 = panels[0] ? panels[0].w : 600, pw2 = panels[1] ? panels[1].w : 1200, pw3 = panels[2] ? panels[2].w : 400, pw4 = panels[3] ? panels[3].w : 500;
-            ctx.fillStyle = wallColor; ctx.fillRect(pad, pad, 8, drawArea); ctx.fillRect(pad + drawArea - 8, pad, 8, drawArea); ctx.fillRect(pad, pad, drawArea, 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(pad + 8, pad + 8, drawArea * 0.15, drawArea - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(pad + 8, pad + 8, drawArea - 16, drawArea * 0.12);
-            let rightGlassH = drawArea * 0.4;
-            ctx.fillStyle = glassFill; ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, rightGlassH);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, pad + 8, drawArea * 0.15, rightGlassH);
-            let doorY = pad + 8 + rightGlassH, doorH = drawArea - 8 - rightGlassH;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(pad + drawArea - 8 - drawArea * 0.15, doorY, drawArea * 0.15, doorH);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(pad + drawArea - 8 - drawArea * 0.15, doorY, drawArea * 0.15, doorH);
-            ctx.fillStyle = handleColor; ctx.beginPath(); ctx.arc(pad + drawArea - 8 - drawArea * 0.075, doorY + doorH / 2, 3, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#334155'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(pw1, pad + 8 + drawArea * 0.075, cSize - 6); ctx.fillText(pw2, pad + drawArea / 2, pad + 8 + drawArea * 0.06 + 11);
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH); ctx.fillRect(padL, padT, dW, 8);
+            let sW = dW * 0.18;
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, sW, dH - 8);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT + 8, sW, dH - 8);
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
+            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
+            let rightGlassH = dH * 0.4;
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + dW - 8 - sW, padT + 8, sW, rightGlassH);
+            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + dW - 8 - sW, padT + 8, sW, rightGlassH);
+            let dY = padT + 8 + rightGlassH, doorHh = dH - 8 - rightGlassH;
+            ctx.fillStyle = '#eff6ff'; ctx.fillRect(padL + dW - 8 - sW, dY, sW, doorHh);
+            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(padL + dW - 8 - sW, dY, sW, doorHh);
+            drawDoorIndicator(padL + dW - 8 - sW, dY, sW, doorHh, 'vertical');
+            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
+            ctx.fillText(pw1, padL + 8 + sW / 2, cSize - 8);
+            ctx.fillText(pw2, padL + dW / 2, padT + 8 + dH * 0.14 / 2 + 5);
+            ctx.fillText(pw3, padL + dW - 8 - sW / 2, cSize - 8);
+            labelH(padT, padT + dH);
+
+        } else if (cfg === 'sliding_door') {
+            let pw1 = panels[0] ? panels[0].w : 500, pw2 = panels[1] ? panels[1].w : 600, totalPW = pw1 + pw2;
+            let staticW = (pw1 / totalPW) * dW * 0.85, slideW = (pw2 / totalPW) * dW * 0.85;
+            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH);
+            let midY = padT + dH / 2;
+            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, midY - 5, staticW, 10);
+            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, midY - 5, staticW, 10);
+            let slideX = padL + 8 + staticW - 12;
+            ctx.fillStyle = '#eff6ff'; ctx.fillRect(slideX, midY + 3, slideW, 10);
+            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(slideX, midY + 3, slideW, 10);
+            // arrow
+            let aY = midY + 8;
+            ctx.beginPath();
+            ctx.moveTo(slideX + 10, aY); ctx.lineTo(slideX + slideW - 10, aY);
+            ctx.moveTo(slideX + 14, aY - 3); ctx.lineTo(slideX + 10, aY); ctx.lineTo(slideX + 14, aY + 3);
+            ctx.moveTo(slideX + slideW - 14, aY - 3); ctx.lineTo(slideX + slideW - 10, aY); ctx.lineTo(slideX + slideW - 14, aY + 3);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5; ctx.stroke();
+            labelW(pw1 + '', padL + 8 + staticW / 2, cSize - 8);
+            labelW(pw2 + ' ↔', slideX + slideW / 2, cSize - 8);
+            labelH(padT, padT + dH);
+        }
+        if (cfg !== 'partition' && cfg !== 'partition_door' && cfg !== 'corner_door' && cfg !== 'u_shape' && cfg !== 'u_shape_door' && cfg !== 'sliding_door') {
+            labelH(padT, padT + dH);
         }
         return; // Skip standard dimensions for shower
     }

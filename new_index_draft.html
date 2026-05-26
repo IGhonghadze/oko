@@ -767,9 +767,9 @@
                                                 <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                                 <rect x="8" y="5" width="30" height="50" fill="#bfdbfe" stroke="#64748b"
                                                     stroke-width="1" opacity="0.7" />
-                                                <rect x="38" y="45" width="30" height="10" fill="#bfdbfe"
+                                                <rect x="38" y="5" width="30" height="50" fill="#bfdbfe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.7" />
-                                                <rect x="68" y="45" width="3" height="10" fill="#94a3b8" rx="1" />
+                                                <rect x="68" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                             </svg>
                                             <span class="text-xs font-bold text-slate-700">Угловая (90°)</span>
                                         </div>
@@ -785,9 +785,9 @@
                                                 <rect x="26" y="5" width="14" height="50" fill="#dbeafe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.5" />
                                                 <circle cx="37" cy="30" r="1.5" fill="#334155" />
-                                                <rect x="40" y="45" width="25" height="10" fill="#bfdbfe"
+                                                <rect x="40" y="5" width="25" height="50" fill="#bfdbfe"
                                                     stroke="#64748b" stroke-width="1" opacity="0.7" />
-                                                <rect x="65" y="45" width="3" height="10" fill="#94a3b8" rx="1" />
+                                                <rect x="65" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
                                             </svg>
                                             <span class="text-xs font-bold text-slate-700">Угловая + дверь</span>
                                         </div>
@@ -828,20 +828,54 @@
                                             </svg>
                                             <span class="text-xs font-bold text-slate-700">П-образная + дверь</span>
                                         </div>
+                                        <!-- Config 7: Раздвижная -->
+                                        <div class="shower-config-card cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition-all hover:shadow-md hover:border-brand-primary"
+                                            data-config="sliding_door" onclick="selectShowerConfig(this)">
+                                            <svg viewBox="0 0 80 60" class="w-full h-12 mb-1">
+                                                <rect x="5" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                                <rect x="8" y="26" width="34" height="8" fill="#bfdbfe" stroke="#64748b" stroke-width="1" opacity="0.7" />
+                                                <rect x="38" y="36" width="34" height="8" fill="#dbeafe" stroke="#64748b" stroke-width="1" opacity="0.8" />
+                                                <path d="M 45 40 L 41 37 L 41 43 Z" fill="#334155" />
+                                                <path d="M 65 40 L 69 37 L 69 43 Z" fill="#334155" />
+                                                <line x1="41" y1="40" x2="69" y2="40" stroke="#334155" stroke-width="1" />
+                                                <rect x="72" y="5" width="3" height="50" fill="#94a3b8" rx="1" />
+                                            </svg>
+                                            <span class="text-xs font-bold text-slate-700">Раздвижная дверь</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Glass Type -->
+                                <!-- Glass Options -->
+                                <div class="grid grid-cols-2 gap-3 mb-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Толщина (зак.)</label>
+                                        <select id="shower-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="8">8 мм</option>
+                                            <option value="10">10 мм</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
+                                        <select id="shower-glass-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="clear">Прозрачное</option>
+                                            <option value="graphite">Тон. Графит</option>
+                                            <option value="bronze">Тон. Бронза</option>
+                                            <option value="extra_clear">Осветленное</option>
+                                            <option value="frosted">Матовое</option>
+                                            <option value="sandblast">Пескоструй</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Opening Direction -->
                                 <div class="mb-5">
-                                    <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
-                                    <select id="shower-glass"
-                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
-                                        <option value="clear">Прозрачное (8мм закалённое)</option>
-                                        <option value="graphite">Тонированное «Графит» (8мм зак.)</option>
-                                        <option value="bronze">Тонированное «Бронза» (8мм зак.)</option>
-                                        <option value="extra_clear">Осветлённое (8мм зак.)</option>
-                                        <option value="frosted">Матовое (8мм зак.)</option>
-                                        <option value="sandblast">Пескоструй (8мм зак.)</option>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Направление открывания (для расп. двери)</label>
+                                    <select id="shower-opening" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all text-slate-700">
+                                        <option value="">Не применимо / Нет двери</option>
+                                        <option value="От себя вправо">От себя вправо</option>
+                                        <option value="От себя влево">От себя влево</option>
+                                        <option value="На себя вправо">На себя вправо</option>
+                                        <option value="На себя влево">На себя влево</option>
                                     </select>
                                 </div>
 
@@ -854,7 +888,7 @@
                                         <div
                                             class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                                             <div>
-                                                <label class="text-xs text-slate-500 block mb-1">Ширина стенки</label>
+                                                <label class="text-xs text-slate-500 block mb-1">Ширина стекла</label>
                                                 <input type="number" id="shower-w1" placeholder="800"
                                                     class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
                                             </div>
@@ -868,11 +902,11 @@
                                 </div>
 
                                 <!-- Hardware placeholder -->
-                                <div class="mb-5 p-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
-                                    <p class="text-sm text-slate-500 flex items-center gap-2">
-                                        <i data-lucide="wrench" class="w-4 h-4"></i>
-                                        Фурнитура будет добавлена позже
-                                    </p>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Фурнитура</label>
+                                    <select id="shower-hardware" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="Нержавеющая сталь">Нержавеющая сталь</option><option value="Нержавейка хром">Нержавейка хром</option><option value="Латунь">Латунь</option><option value="Золото">Золото</option><option value="Хромированая сталь">Хромированая сталь</option><option value="Матовая черная">Матовая черная</option><option value="Глянцевая черная">Глянцевая черная</option>
+                                    </select>
                                 </div>
 
                                 <!-- Add Button -->
