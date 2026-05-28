@@ -298,6 +298,29 @@ const BLINDS_FABRICS = [
 ];
 
 let ITEMS = [];
+let currentKpId = '';
+
+function generateKpId() {
+    let date = new Date();
+    let d = String(date.getDate()).padStart(2, '0');
+    let m = String(date.getMonth() + 1).padStart(2, '0');
+    let y = String(date.getFullYear()).slice(-2);
+    let rand = Math.floor(1000 + Math.random() * 9000);
+    return `КП-${d}${m}${y}-${rand}`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    currentKpId = generateKpId();
+    let headerDiv = document.getElementById('select-company')?.parentElement?.parentElement;
+    if (headerDiv) {
+        let kpDisplay = document.createElement('div');
+        kpDisplay.id = 'kp-id-display';
+        kpDisplay.className = 'text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm ml-auto sm:ml-0';
+        kpDisplay.innerText = 'ID: ' + currentKpId;
+        headerDiv.appendChild(kpDisplay);
+    }
+});
+
 
 const COMPANIES = {
     daneliya: {
@@ -527,6 +550,8 @@ function toggleGlassLayoutInputs() {
 
 // --- GLASS LOGIC ---
 function addGlassItem() {
+    let _capturedData = captureRawData("tab-glass");
+    let _commitItems = [];
     let w = parseFloat(document.getElementById('glass-w').value);
     let h = parseFloat(document.getElementById('glass-h').value);
     if (!w || !h) { alert('Введите ширину и высоту!'); return; }
@@ -568,7 +593,7 @@ function addGlassItem() {
         comment ? `📝 ${comment}` : null
     ].filter(Boolean);
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(),
         category: 'glass',
         type: hasArgon ? glass.name + ' + Аргон' : glass.name,
@@ -590,7 +615,8 @@ function addGlassItem() {
     // glass-argon: НЕ сбрасываем — удобнее когда много позиций с аргоном
     document.getElementById('glass-comment').value = '';
     document.getElementById('glass-w').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-glass', _capturedData);
+    else renderCart();
 }
 
 // --- NETS LOGIC ---
@@ -618,6 +644,8 @@ function calcNetPreview() {
 }
 
 function addNetItem() {
+    let _capturedData = captureRawData("tab-nets");
+    let _commitItems = [];
     let wIn = parseFloat(document.getElementById('net-w').value);
     let hIn = parseFloat(document.getElementById('net-h').value);
     if (!wIn || !hIn) { alert('Введите размеры сетки!'); return; }
@@ -682,7 +710,7 @@ function addNetItem() {
     }
     if (comment) optionsDesc.push(`📝 ${comment}`);
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(),
         category: 'net',
         type: itemName,
@@ -699,7 +727,8 @@ function addNetItem() {
     document.getElementById('net-h').value = '';
     document.getElementById('net-comment').value = '';
     document.getElementById('net-w').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-nets', _capturedData);
+    else renderCart();
 }
 
 // --- FRAMELESS LOGIC ---
@@ -746,6 +775,8 @@ function updatePartitionDoorsConfig() {
 }
 
 function addFramelessItem() {
+    let _capturedData = captureRawData("tab-frameless");
+    let _commitItems = [];
     let totalW = parseFloat(document.getElementById('fl-w').value);
     let h = parseFloat(document.getElementById('fl-h').value);
     let panels = parseInt(document.getElementById('fl-panels').value) || 1;
@@ -870,7 +901,7 @@ function addFramelessItem() {
         if (comment) optionsDesc.push(`📝 ${comment}`);
     }
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(), category: 'frameless',
         type: typeName,
         qty: 1,
@@ -889,7 +920,8 @@ function addFramelessItem() {
     document.getElementById('fl-panels').value = ''; 
     document.getElementById('fl-comment').value = '';
     document.getElementById('fl-w').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-frameless', _capturedData);
+    else renderCart();
 }
 
 // --- SLOPES (ОТКОСЫ) LOGIC ---
@@ -924,6 +956,8 @@ function autoFillSlopeProfiles() {
 }
 
 function addSlopeItem() {
+    let _capturedData = captureRawData("tab-slopes");
+    let _commitItems = [];
     let wIn = parseFloat(document.getElementById('slope-width').value);
     let lenIn = parseFloat(document.getElementById('slope-length').value);
     let qty = parseInt(document.getElementById('slope-qty').value) || 1;
@@ -995,7 +1029,7 @@ function addSlopeItem() {
     let panelOptDesc = [`Размер: ${wIn}×${lenIn} мм (расчёт ${calcW}×${calcLenM * 1000} мм)`];
     if (slopeComment) panelOptDesc.push(`📝 ${slopeComment}`);
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(), 
         category: 'slope', 
         type: `Откосы ${brand.brand} ${colorName} ${calcW}*${calcLenM * 1000} мм`, 
@@ -1012,7 +1046,7 @@ function addSlopeItem() {
     let timestamp = Date.now();
     if (valProfF50 > 0) {
         let f50PricePerM = SLOPES_PROF_PRICES.f50 / 6; // дилерская цена за пог.м
-        ITEMS.push({
+        _commitItems.push({
             id: timestamp + 1,
             category: 'slope_profile',
             type: `Ф-профиль 50×30 (${colorName})`,
@@ -1027,7 +1061,7 @@ function addSlopeItem() {
     }
     if (valProfF28 > 0) {
         let f28PricePerM = SLOPES_PROF_PRICES.f28 / 6;
-        ITEMS.push({
+        _commitItems.push({
             id: timestamp + 2,
             category: 'slope_profile',
             type: `Ф-профиль 28×32 (${colorName})`,
@@ -1042,7 +1076,7 @@ function addSlopeItem() {
     }
     if (valProfStart > 0) {
         let startPricePerM = SLOPES_PROF_PRICES.start / 6;
-        ITEMS.push({
+        _commitItems.push({
             id: timestamp + 3,
             category: 'slope_profile',
             type: `П-профиль (${colorName})`,
@@ -1057,7 +1091,7 @@ function addSlopeItem() {
     }
     if (valProfH > 0) {
         let hPricePerM = SLOPES_PROF_PRICES.h / 6;
-        ITEMS.push({
+        _commitItems.push({
             id: timestamp + 4,
             category: 'slope_profile',
             type: `Н-профиль (${colorName})`,
@@ -1081,7 +1115,8 @@ function addSlopeItem() {
     document.getElementById('slope-prof-f50').value = '';
     
     document.getElementById('slope-width').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-slopes', _capturedData);
+    else renderCart();
 }
 
 // --- SILLS LOGIC ---
@@ -1128,6 +1163,8 @@ function updateSillWidths() {
 }
 
 function addSillItem() {
+    let _capturedData = captureRawData("tab-sills");
+    let _commitItems = [];
     let lenIn = parseFloat(document.getElementById('sill-length').value);
     let qty = parseInt(document.getElementById('sill-qty').value) || 1;
     if (!lenIn || lenIn <= 0) { alert('Введите длину подоконника!'); return; }
@@ -1180,7 +1217,7 @@ function addSillItem() {
     let totalCost_dealer = panelCost_dealer + compCost_dealer;
     let unitCost_dealer = totalCost_dealer / qty;
     
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(),
         category: 'sill',
         type: `Подоконник ${brand.brand} (${group.name})`,
@@ -1200,7 +1237,8 @@ function addSillItem() {
     document.getElementById('sill-conn150').value = '';
     document.getElementById('sill-comment').value = '';
     document.getElementById('sill-length').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-sills', _capturedData);
+    else renderCart();
 }
 let SHOWER_GLASS_TYPES = {
     '8_clear': { name: 'Прозрачное (8мм)', price_sqm: 4500 },
@@ -1239,6 +1277,8 @@ function updateRollerProfiles() {
 }
 
 function addRollerItem() {
+    let _capturedData = captureRawData("tab-rollers");
+    let _commitItems = [];
     let w = parseFloat(document.getElementById('roller-w').value);
     let h = parseFloat(document.getElementById('roller-h').value);
     let qty = parseInt(document.getElementById('roller-qty').value) || 1;
@@ -1263,7 +1303,7 @@ function addRollerItem() {
     ].filter(Boolean);
 
     // SVG эскиз для роллеты
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(),
         category: 'roller',
         type: `Роллета ${brand} (${w}×${h}мм)`,
@@ -1284,7 +1324,8 @@ function addRollerItem() {
     document.getElementById('roller-comment').value = '';
     document.getElementById('roller-w').focus();
     
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-rollers', _capturedData);
+    else renderCart();
 }
 let currentShowerConfig = 'partition';
 
@@ -1423,6 +1464,8 @@ function getShowerDimensionLine(item, includeArea = true) {
     }
 }
 function addShowerItem() {
+    let _capturedData = captureRawData("tab-shower");
+    let _commitItems = [];
     let config = SHOWER_CONFIGS[currentShowerConfig];
     let thickness = document.getElementById('shower-thickness') ? document.getElementById('shower-thickness').value : '8';
     let type = document.getElementById('shower-glass-type') ? document.getElementById('shower-glass-type').value : 'clear';
@@ -1450,7 +1493,7 @@ function addShowerItem() {
     if (hasSwingDoor && openingDirection) optionsDesc.push(`Открывание: ${openingDirection}`);
     if (showerComment) optionsDesc.push(`📝 ${showerComment}`);
     let showerTotal = totalArea * glass.price_sqm;
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(), category: 'shower', type: `Душевая: ${config.name}`,
         qty: 1,
         w: metrics.displayW, h: h, sideW: metrics.sideW, area: totalArea, calcArea: totalArea, shape: config.name,
@@ -1462,11 +1505,14 @@ function addShowerItem() {
     config.panels.forEach(p => { let el = document.getElementById('shower-' + p.id); if (el) el.value = ''; });
     document.getElementById('shower-h').value = '';
     document.getElementById('shower-comment').value = '';
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-shower', _capturedData);
+    else renderCart();
 }
 
 // --- CUSTOM ITEMS LOGIC ---
 function addCustomItem() {
+    let _capturedData = captureRawData("tab-custom");
+    let _commitItems = [];
     let name = document.getElementById('custom-name').value.trim();
     let price = parseFloat(document.getElementById('custom-price').value) || 0;
     let qty = parseInt(document.getElementById('custom-qty').value) || 1;
@@ -1495,7 +1541,7 @@ function addCustomItem() {
         if (lengthM > 0) effectiveTotal = price * lengthM * qty;
     }
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(), category: 'custom', type: name,
         qty: qty, w: w, h: h, l: 0, area: area, calcArea: area,
         shape: '', isLarge: false,
@@ -1511,7 +1557,8 @@ function addCustomItem() {
     document.getElementById('custom-h').value = '';
     document.getElementById('custom-area-display').value = '';
     document.getElementById('custom-desc').value = '';
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-custom', _capturedData);
+    else renderCart();
 }
 
 
@@ -1542,6 +1589,8 @@ function toggleBlindsSystem() {
 }
 
 function addBlindsItem() {
+    let _capturedData = captureRawData("tab-blinds");
+    let _commitItems = [];
     let widthMm = parseFloat(document.getElementById('blinds-w').value);
     let heightMm = parseFloat(document.getElementById('blinds-h').value);
     let qty = parseInt(document.getElementById('blinds-qty').value) || 1;
@@ -1698,7 +1747,7 @@ function addBlindsItem() {
         </svg>
     `;
 
-    ITEMS.push({
+    _commitItems.push({
         id: Date.now(),
         category: 'blinds',
         type: typeDisplay,
@@ -1720,7 +1769,8 @@ function addBlindsItem() {
     document.getElementById('blinds-qty').value = '1';
     document.getElementById('blinds-comment').value = '';
     document.getElementById('blinds-w').focus();
-    renderCart();
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-blinds', _capturedData);
+    else renderCart();
 }
 
 // --- SERVICES AUTO-FILL ---
@@ -2026,7 +2076,9 @@ function renderCart() {
             } else {
                 dimLine = `${it.w} × ${it.h} мм | ${totalArea.toFixed(2)} м²`;
             }
-            list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative group"><div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="editItem(${it.id})" class="text-slate-300 hover:text-blue-500 p-1" title="Редактировать"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="remove(${it.id})" class="text-slate-300 hover:text-red-500 p-1" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-${col}/10 flex items-center justify-center flex-shrink-0 text-${col}"><i data-lucide="${icon}" class="w-4 h-4"></i></div><div><div class="font-bold text-sm text-slate-800 pr-14">${idx + 1}. ${it.type}${qtyBadge}</div><div class="text-xs text-slate-500 font-medium">${dimLine}</div>${opts}</div></div><div class="mt-2 text-right font-black text-${col}">${cost.toLocaleString()} ₽</div></div>`;
+            list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative group"><div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">${it.tabId ? `<button onclick="editItemFull(${it.groupId || it.id}, '${it.tabId}')" class="text-brand-primary hover:text-brand-dark p-1 bg-brand-light hover:bg-blue-100 rounded-lg transition-colors mr-1" title="Полное редактирование">
+        <i data-lucide="pencil" class="w-4 h-4"></i>
+    </button>` : `<button onclick="editItem(${it.id})" class="text-slate-300 hover:text-blue-500 p-1" title="Базовое редактирование"><i data-lucide="pencil" class="w-4 h-4"></i></button>`}<button onclick="remove(${it.id})" class="text-slate-300 hover:text-red-500 p-1" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-${col}/10 flex items-center justify-center flex-shrink-0 text-${col}"><i data-lucide="${icon}" class="w-4 h-4"></i></div><div><div class="font-bold text-sm text-slate-800 pr-14">${idx + 1}. ${it.type}${qtyBadge}</div><div class="text-xs text-slate-500 font-medium">${dimLine}</div>${opts}</div></div><div class="mt-2 text-right font-black text-${col}">${cost.toLocaleString()} ₽</div></div>`;
         });
     }
     document.getElementById('items-count-badge').innerText = ITEMS.reduce((s, it) => s + (it.qty || 1), 0);
@@ -2605,9 +2657,18 @@ function downloadExcelTemplate() {
 // ==========================================
 // АРХИВ ПРОСЧЁТОВ (localStorage)
 // ==========================================
-const ARCHIVE_KEY = 'oko_archive';
-function getArchive() { try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]'); } catch(e) { return []; } }
-function saveArchive(arr) { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(arr)); }
+const API_URL = 'https://w98834km.beget.tech/api.php';
+let GLOBAL_ARCHIVE_CACHE = [];
+
+async function fetchArchive() {
+    try {
+        let res = await fetch(API_URL + '?action=list');
+        if (!res.ok) throw new Error('API error');
+        GLOBAL_ARCHIVE_CACHE = await res.json();
+    } catch(e) {
+        console.error('Ошибка загрузки архива:', e);
+    }
+}
 
 function collectState() {
     let getVal = (id) => { let el = document.getElementById(id); return el ? el.value : ''; };
@@ -2616,9 +2677,10 @@ function collectState() {
         services: JSON.parse(JSON.stringify(SERVICES)),
         markup: getVal('select-global-markup'), company: getVal('select-company'),
         manualRub: getVal('manual-markup-rub'), manualPct: getVal('manual-markup-pct'),
-        discount: getVal('manual-discount'),
-        kpClient: getVal('kp-client'), kpObject: getVal('kp-object'),
-        kpDate: getVal('kp-date'), kpMgr: getVal('kp-manager')
+        discountRub: getVal('manual-discount-rub'), discountPct: getVal('manual-discount-pct'),
+        clientName: getVal('client-name'),
+        kpNumber: getVal('kp-number-input'),
+        currentKpId: currentKpId || ''
     };
 }
 
@@ -2628,85 +2690,284 @@ function applyState(state) {
     SERVICES = state.services || [];
     if (state.markup) setVal('select-global-markup', state.markup);
     if (state.company) setVal('select-company', state.company);
-    setVal('manual-markup-rub', state.manualRub || ''); setVal('manual-markup-pct', state.manualPct || '');
-    setVal('manual-discount', state.discount || '');
-    setVal('kp-client', state.kpClient || ''); setVal('kp-object', state.kpObject || '');
-    setVal('kp-date', state.kpDate || ''); setVal('kp-manager', state.kpMgr || '');
+    setVal('manual-markup-rub', state.manualRub || ''); 
+    setVal('manual-markup-pct', state.manualPct || '');
+    setVal('manual-discount-rub', state.discountRub || state.discount || '');
+    setVal('manual-discount-pct', state.discountPct || '');
+    setVal('client-name', state.clientName || state.kpClient || ''); 
+    setVal('kp-number-input', state.kpNumber || state.kpObject || '');
+    
+    if (state.currentKpId) {
+        currentKpId = state.currentKpId;
+        let display = document.getElementById('kp-id-display');
+        if(display) display.innerText = 'ID: ' + currentKpId;
+    }
+    
     handleSettingsChange(); updateDropdownPrices(); renderServicesList(); renderCart();
 }
 
-function saveCalculation() {
+async function saveCalculation(btn) {
     if (ITEMS.length === 0) { alert('Смета пуста — нечего сохранять!'); return; }
-    let client = (document.getElementById('kp-client') || {}).value || '';
-    let obj = (document.getElementById('kp-object') || {}).value || '';
+    let client = (document.getElementById('client-name') || {}).value || '';
+    let obj = (document.getElementById('kp-number-input') || {}).value || '';
     let suggestion = [client.trim(), obj.trim()].filter(Boolean).join(' — ') || 'Просчёт';
-    let name = prompt('Имя просчёта (клиент / объект):', suggestion);
+    let name = prompt('Имя просчёта (клиент / номер):', suggestion);
     if (name === null) return;
     if (!name.trim()) name = suggestion;
-    let archive = getArchive();
-    let entry = { id: Date.now(), name: name.trim(), date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}), itemCount: ITEMS.length, state: collectState() };
-    archive.unshift(entry);
-    if (archive.length > 100) archive = archive.slice(0, 100);
-    saveArchive(archive);
-    alert(`\u2705 Просчёт "${name.trim()}" сохранён!`);
+    
+    let tSumText = document.getElementById('cart-total-display') ? document.getElementById('cart-total-display').innerText.replace(/[^\d.-]/g, '') : '0';
+    let tSum = parseFloat(tSumText) || 0;
+    
+    let entry = { 
+        id: Date.now(), 
+        name: name.trim(), 
+        date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}), 
+        itemCount: ITEMS.length, 
+        totalSum: tSum, 
+        state: collectState() 
+    };
+    
+    let origBtnContent = btn ? btn.innerHTML : '';
+    try {
+        if(btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Сохраняем...'; lucide.createIcons(); }
+        
+        let res = await fetch(API_URL + '?action=save', { method:'POST', body: JSON.stringify(entry) });
+        if(!res.ok) throw new Error('Network error');
+        alert(`\u2705 Просчёт "${name.trim()}" сохранён в облако!`);
+    } catch(e) {
+        alert('Ошибка при сохранении в облако: ' + e.message);
+    } finally {
+        if(btn) { btn.disabled = false; btn.innerHTML = origBtnContent; lucide.createIcons(); }
+    }
 }
 
 function loadCalculation(id) {
-    let entry = getArchive().find(e => e.id === id);
+    let entry = GLOBAL_ARCHIVE_CACHE.find(e => e.id == id);
     if (!entry) return;
     if (!confirm(`Загрузить "${entry.name}"?\n\nТекущая смета будет заменена.`)) return;
     applyState(entry.state); closeArchive();
 }
 
-function deleteCalculation(id) {
-    let entry = getArchive().find(e => e.id === id);
-    if (!entry || !confirm(`Удалить "${entry.name}"?`)) return;
-    saveArchive(getArchive().filter(e => e.id !== id)); renderArchiveList();
+async function deleteCalculation(id) {
+    let entry = GLOBAL_ARCHIVE_CACHE.find(e => e.id == id);
+    if (!entry || !confirm(`Удалить "${entry.name}" навсегда?`)) return;
+    try {
+        await fetch(API_URL + '?action=delete', { method:'POST', body: JSON.stringify({id}) });
+        await fetchArchive();
+        renderArchiveList();
+    } catch(e) { alert('Ошибка удаления'); }
 }
 
-function renameCalculation(id) {
-    let archive = getArchive(); let entry = archive.find(e => e.id === id);
+async function renameCalculation(id) {
+    let entry = GLOBAL_ARCHIVE_CACHE.find(e => e.id == id);
     if (!entry) return;
     let newName = prompt('Новое имя:', entry.name);
     if (!newName || !newName.trim()) return;
-    entry.name = newName.trim(); saveArchive(archive); renderArchiveList();
+    try {
+        await fetch(API_URL + '?action=rename', { method:'POST', body: JSON.stringify({id, name: newName.trim()}) });
+        await fetchArchive();
+        renderArchiveList();
+    } catch(e) { alert('Ошибка переименования'); }
 }
 
-function renderArchiveList() {
-    let archive = getArchive(); let container = document.getElementById('archive-list'); if (!container) return;
-    if (archive.length === 0) {
-        container.innerHTML = '<div class="text-center text-slate-400 py-12"><p class="text-3xl mb-2">📭</p><p class="text-sm">Архив пуст.<br>Нажмите «Сохранить» в шапке сметы.</p></div>'; return;
+let archiveViewMode = localStorage.getItem('oko_archive_view') || 'grid';
+
+function setArchiveView(mode) {
+    archiveViewMode = mode;
+    localStorage.setItem('oko_archive_view', mode);
+    
+    let btnGrid = document.getElementById('btn-view-grid');
+    let btnList = document.getElementById('btn-view-list');
+    if(btnGrid && btnList) {
+        if(mode === 'grid') {
+            btnGrid.className = 'p-3 sm:p-4 bg-white text-brand-primary shadow-sm rounded-lg transition-all';
+            btnList.className = 'p-3 sm:p-4 text-slate-400 hover:text-slate-700 rounded-lg transition-all';
+        } else {
+            btnList.className = 'p-3 sm:p-4 bg-white text-brand-primary shadow-sm rounded-lg transition-all';
+            btnGrid.className = 'p-3 sm:p-4 text-slate-400 hover:text-slate-700 rounded-lg transition-all';
+        }
     }
-    container.innerHTML = archive.map(e => `
-        <div class="bg-white border border-slate-200 rounded-xl p-3 hover:border-brand-primary transition-all group">
-            <div class="flex justify-between items-start gap-2">
-                <div class="flex-1 min-w-0">
-                    <p class="font-bold text-sm text-slate-800 truncate">${e.name}</p>
-                    <p class="text-[11px] text-slate-400 mt-0.5">${e.date} · ${e.itemCount} поз.</p>
-                </div>
-                <div class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="renameCalculation(${e.id})" title="Переименовать" class="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">✏️</button>
-                    <button onclick="deleteCalculation(${e.id})" title="Удалить" class="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50">🗑</button>
-                </div>
-            </div>
-            <button onclick="loadCalculation(${e.id})" class="mt-2 w-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-brand-primary hover:text-white py-1.5 rounded-lg transition-all">📂 Загрузить</button>
-        </div>`).join('');
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-function showArchive() {
-    let panel = document.getElementById('archive-panel'); let overlay = document.getElementById('archive-overlay');
-    if (!panel || !overlay) return;
-    panel.style.display = 'flex'; overlay.style.display = 'block';
-    setTimeout(() => { panel.style.transform = 'translateX(0)'; }, 10);
     renderArchiveList();
 }
 
-function closeArchive() {
-    let panel = document.getElementById('archive-panel'); let overlay = document.getElementById('archive-overlay');
-    if (!panel || !overlay) return;
-    panel.style.transform = 'translateX(100%)';
-    setTimeout(() => { panel.style.display = 'none'; overlay.style.display = 'none'; }, 300);
+function calcArchivedTotal(state) {
+    if (!state || !state.items) return 0;
+    let baseSum = state.items.reduce((sum, it) => sum + (it.baseTotal || 0) * (it.qty || 1), 0);
+    let markup = parseFloat(state.markup) || 1.3;
+    let itemsTotal = 0;
+    state.items.forEach(it => {
+        let costMult = (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') ? 1 : markup;
+        itemsTotal += Math.ceil((it.baseTotal || 0) * costMult) * (it.qty || 1);
+    });
+    
+    let srvSum = (state.services || []).reduce((sum, s) => sum + (parseFloat(s.price) || 0) * (parseFloat(s.qty) || 1), 0);
+    
+    let mRub = parseFloat(state.manualRub) || 0;
+    let mPct = parseFloat(state.manualPct) || 0;
+    let dRub = parseFloat(state.discountRub || state.discount) || 0;
+    let dPct = parseFloat(state.discountPct) || 0;
+    
+    let sub = itemsTotal + srvSum;
+    let totalManualMarkup = mRub + (sub * (mPct / 100));
+    sub += totalManualMarkup;
+    let totalDiscount = dRub + (sub * (dPct / 100));
+    return Math.max(0, Math.round(sub - totalDiscount));
+}
+
+function renderArchiveList() {
+    let archive = GLOBAL_ARCHIVE_CACHE || []; 
+    let container = document.getElementById('archive-list'); 
+    if (!container) return;
+    
+    // Ensure container grid class matches mode
+    container.className = archiveViewMode === 'grid' 
+        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20"
+        : "flex flex-col gap-3 pb-20";
+    
+    let searchQ = (document.getElementById('archive-search') ? document.getElementById('archive-search').value.toLowerCase().trim() : '');
+    
+    if (searchQ) {
+        archive = archive.filter(e => {
+            let str = (e.name + ' ' + e.date + ' ' + (e.state?.clientName || '') + ' ' + (e.state?.kpNumber || '')).toLowerCase();
+            return str.includes(searchQ);
+        });
+    }
+
+    if (archive.length === 0) {
+        container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 py-20 px-6 text-center shadow-sm">
+            <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                <i data-lucide="${searchQ ? 'search-x' : 'archive'}" class="w-12 h-12 text-slate-300"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">${searchQ ? 'Ничего не найдено' : 'Архив пуст'}</h3>
+            <p class="text-slate-500 max-w-sm">${searchQ ? 'Попробуйте изменить поисковой запрос.' : 'Сохраняйте просчёты в архив, чтобы иметь к ним быстрый доступ в будущем.'}</p>
+        </div>`; 
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+    
+    container.innerHTML = archive.map(e => {
+        let firstItem = e.state?.items?.[0];
+        let sketchHtml = '<div class="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 rounded-xl"><i data-lucide="image" class="w-8 h-8 opacity-50"></i></div>';
+        if (firstItem && typeof generateSvgSketch === 'function') {
+            sketchHtml = generateSvgSketch(firstItem) || sketchHtml;
+        }
+        
+        let client = e.state?.clientName || 'Не указан';
+        let kpId = e.state?.kpNumber || e.state?.currentKpId || 'БЕЗ НОМЕРА';
+        
+        // Calculate total dynamically if missing
+        let totalVal = e.totalSum || calcArchivedTotal(e.state);
+        let tSum = totalVal ? `<span class="text-xl font-black text-slate-900">${totalVal.toLocaleString()} ₽</span>` : `<span class="text-sm font-medium text-slate-400">Сумма не сохранена</span>`;
+        
+        if (archiveViewMode === 'grid') {
+            return `<div class="bg-white border-2 border-slate-100 rounded-2xl hover:border-brand-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group relative">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500 tracking-wider">${kpId}</span>
+                        <span class="text-xs font-medium text-slate-400 flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${e.date}</span>
+                    </div>
+                    <div class="dropdown relative">
+                        <button onclick="event.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden')); this.nextElementSibling.classList.toggle('hidden');" class="p-1 text-slate-400 hover:text-slate-800 transition-colors">
+                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                        </button>
+                        <div class="dropdown-menu hidden absolute right-0 top-full mt-1 w-40 bg-white border border-slate-100 rounded-xl shadow-lg z-30 py-1">
+                            <button onclick="renameCalculation(${e.id}); event.stopPropagation();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i> Переименовать</button>
+                            <button onclick="deleteCalculation(${e.id}); event.stopPropagation();" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i> Удалить</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-5 flex flex-col h-full cursor-pointer" onclick="loadCalculation(${e.id})">
+                    <div class="flex gap-4 mb-4">
+                        <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center p-1.5 border border-slate-100 rounded-xl bg-white shadow-inner group-hover:scale-105 transition-transform duration-300">
+                            ${sketchHtml}
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center min-w-0">
+                            <h3 class="text-lg font-bold text-slate-800 mb-1 truncate" title="${e.name}">${e.name}</h3>
+                            <div class="text-sm font-medium text-slate-500 flex items-center gap-1.5 truncate">
+                                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i> ${client}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto flex items-end justify-between pt-4 border-t border-dashed border-slate-200">
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Сумма заказа</div>
+                            ${tSum}
+                        </div>
+                        <div class="text-xs font-bold text-brand-primary bg-brand-light px-2.5 py-1 rounded-lg">
+                            ${e.itemCount} поз.
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            // List View
+            return `<div class="bg-white border-2 border-slate-100 rounded-xl hover:border-brand-primary/50 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center p-3 gap-4 group cursor-pointer" onclick="loadCalculation(${e.id})">
+                <div class="flex-shrink-0 flex items-center gap-3 w-full sm:w-48">
+                    <span class="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-[10px] font-bold text-slate-500 tracking-wider">${kpId}</span>
+                    <span class="text-xs font-medium text-slate-400 whitespace-nowrap">${e.date}</span>
+                </div>
+                
+                <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-base font-bold text-slate-800 truncate" title="${e.name}">${e.name}</h3>
+                        <div class="text-xs font-medium text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i> ${client}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto mt-2 sm:mt-0">
+                        <div class="text-right">
+                            ${totalVal ? `<span class="text-lg font-black text-slate-900">${totalVal.toLocaleString()} ₽</span>` : `<span class="text-xs text-slate-400">Сумма неизвестна</span>`}
+                        </div>
+                        <div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded whitespace-nowrap">
+                            ${e.itemCount} поз.
+                        </div>
+                        
+                        <div class="dropdown relative ml-auto sm:ml-0">
+                            <button onclick="event.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden')); this.nextElementSibling.classList.toggle('hidden');" class="p-1 text-slate-400 hover:text-slate-800 transition-colors">
+                                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                            </button>
+                            <div class="dropdown-menu hidden absolute right-0 top-full mt-1 w-40 bg-white border border-slate-100 rounded-xl shadow-lg z-30 py-1">
+                                <button onclick="renameCalculation(${e.id}); event.stopPropagation();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4 text-slate-400"></i> Переименовать</button>
+                                <button onclick="deleteCalculation(${e.id}); event.stopPropagation();" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i> Удалить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+
+
+async function showArchive() { 
+    document.getElementById('calculator-screen').classList.add('hidden');
+    document.getElementById('archive-screen').classList.remove('hidden');
+    document.getElementById('archive-screen').style.display = 'block';
+    
+    let container = document.getElementById('archive-list');
+    if(container) {
+        container.innerHTML = '<div class="col-span-full flex flex-col items-center py-20 text-slate-400"><i data-lucide="loader-2" class="w-12 h-12 animate-spin mb-4 text-brand-primary"></i> Загрузка из облака...</div>';
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    
+    await fetchArchive();
+    
+    let searchEl = document.getElementById('archive-search');
+    if(searchEl) { searchEl.value = ''; searchEl.focus(); }
+    
+    renderArchiveList(); 
+    window.scrollTo(0,0);
+}
+
+function closeArchive() { 
+    document.getElementById('archive-screen').classList.add('hidden');
+    document.getElementById('archive-screen').style.display = 'none';
+    document.getElementById('calculator-screen').classList.remove('hidden');
 }
 
 // --- Export to Factory Logic ---
@@ -2750,3 +3011,119 @@ function exportFactoryExcel() {
         alert('Техническая ошибка при выгрузке: ' + e.message);
     }
 }
+
+
+
+// ==========================================
+// EDIT MODE SYSTEM (КП Редактирование)
+// ==========================================
+window.editingGroupId = null;
+
+function commitItemsToCart(itemsToPush, tabId, rawData) {
+    let groupId = Date.now();
+    let insertIndex = ITEMS.length;
+
+    if (window.editingGroupId) {
+        insertIndex = ITEMS.findIndex(i => (i.groupId || i.id) === window.editingGroupId);
+        if (insertIndex === -1) insertIndex = ITEMS.length;
+        ITEMS = ITEMS.filter(i => (i.groupId || i.id) !== window.editingGroupId);
+        window.editingGroupId = null;
+        resetAddButton(tabId);
+    }
+
+    itemsToPush.forEach((item, idx) => {
+        if (!item.id) item.id = groupId + idx;
+        item.groupId = groupId;
+        item.tabId = tabId;
+        if (idx === 0) item.rawData = rawData; 
+    });
+
+    ITEMS.splice(insertIndex, 0, ...itemsToPush);
+    renderCart();
+}
+
+function captureRawData(tabId) {
+    let data = {};
+    let tab = document.getElementById(tabId);
+    if (!tab) return data;
+    let inputs = tab.querySelectorAll('input, select, textarea');
+    inputs.forEach(el => {
+        if (el.id) {
+            if (el.type === 'checkbox' || el.type === 'radio') data[el.id] = el.checked;
+            else data[el.id] = el.value;
+        }
+    });
+    return data;
+}
+
+function restoreRawData(data) {
+    if (!data) return;
+    for (let id in data) {
+        let el = document.getElementById(id);
+        if (el) {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = data[id];
+            } else {
+                el.value = data[id];
+            }
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+}
+
+function editItemFull(groupId, tabId) {
+    let item = ITEMS.find(i => (i.groupId || i.id) === groupId);
+    if (!item || !item.rawData) {
+        alert("Редактирование этой позиции невозможно (добавлена до обновления).");
+        return;
+    }
+    
+    window.editingGroupId = groupId;
+    let cleanTabId = tabId.replace('tab-', '');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    let activeBtn = document.querySelector(`button[onclick="switchTab('${cleanTabId}')"]`);
+    if(activeBtn) activeBtn.classList.add('active');
+    
+    document.querySelectorAll('.category-content').forEach(c => c.classList.remove('active'));
+    let targetTab = document.getElementById(tabId);
+    if(targetTab) targetTab.classList.add('active');
+    
+    if (tabId === 'tab-shower' && typeof generateShowerFields === 'function') {
+        let layoutEl = document.getElementById('shower-layout');
+        if (layoutEl) {
+            layoutEl.value = item.rawData['shower-layout'];
+            generateShowerFields();
+        }
+    }
+
+    restoreRawData(item.rawData);
+    
+    let btn = document.querySelector(`#${tabId} button[onclick^="add"]`);
+    if (btn) {
+        if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> Сохранить изменения`;
+        btn.classList.remove('from-brand-primary', 'to-brand-secondary');
+        btn.classList.add('from-emerald-500', 'to-emerald-600');
+        btn.setAttribute('data-editing', 'true');
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function resetAddButton(tabId) {
+    let btn = document.querySelector(`#${tabId} button[onclick^="add"]`);
+    if (btn && btn.getAttribute('data-editing') === 'true') {
+        btn.innerHTML = btn.dataset.originalHtml || `<i data-lucide="plus-circle" class="w-5 h-5"></i> Добавить в смету`;
+        btn.classList.remove('from-emerald-500', 'to-emerald-600');
+        btn.classList.add('from-brand-primary', 'to-brand-secondary');
+        btn.removeAttribute('data-editing');
+    }
+}
+
+// Close dropdowns globally
+document.addEventListener('click', function(evt) {
+    if(!evt.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu:not(.hidden)').forEach(d => d.classList.add('hidden'));
+    }
+});
