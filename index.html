@@ -1092,11 +1092,11 @@
                                 </h3>
                                 <!-- Выбор прайса + авторасчёт -->
                                 <div class="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center gap-2">
-                                    <span class="text-xs text-slate-500 font-medium whitespace-nowrap">Прайс:</span>
-                                    <select id="srv-pricelist" class="flex-1 min-w-[100px] p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-medium">
-                                        <option value="office">Офис</option>
-                                        <option value="vitalik">Монтажник</option>
-                                        <option value="brigade">Бригада</option>
+                                    <label class="text-sm text-brand-primary font-bold">Выберите тип цен:</label>
+                                    <select id="srv-pricelist" class="w-full p-2 text-sm bg-brand-primary/10 border border-brand-primary/50 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-bold text-brand-primary mb-2 shadow-sm">
+                                        <option value="office">Прайс: Офис</option>
+                                        <option value="vitalik">Прайс: Виталик</option>
+                                        <option value="brigade">Прайс: Парни (Бригада)</option>
                                     </select>
                                     <button onclick="autoFillServices()" class="flex items-center gap-1.5 bg-brand-primary hover:bg-brand-dark text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all whitespace-nowrap">
                                         <i data-lucide="calculator" class="w-3.5 h-3.5"></i> Авторасчёт
@@ -1104,6 +1104,12 @@
                                     <button onclick="clearServices()" class="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg transition-all" title="Очистить">
                                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                     </button>
+                                </div>
+                                <!-- Выпадающий список услуг из прайса -->
+                                <div class="mb-3">
+                                    <select id="srv-preset" onchange="applyPresetService()" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none cursor-pointer">
+                                        <option value="">-- Выбрать услугу из прайса --</option>
+                                    </select>
                                 </div>
                                 <div id="services-list" class="mb-2">
                                     <div class="text-center text-slate-400 text-xs py-3">Нет услуг</div>

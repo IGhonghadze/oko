@@ -347,6 +347,7 @@ let googleSheetsUrl = localStorage.getItem('oko_gsheets_url') || '';
 window.onload = function () {
     lucide.createIcons();
     document.getElementById('kp-date').innerText = new Date().toLocaleDateString('ru-RU');
+    initPresetServices();
 
     document.getElementById('g-sheets-url').value = googleSheetsUrl;
     loadPricesFromStorage();
@@ -1262,20 +1263,6 @@ function addRollerItem() {
     ].filter(Boolean);
 
     // SVG эскиз для роллеты
-    let rollerSvg = `
-        <svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto mb-1">
-            <rect x="10" y="10" width="80" height="15" fill="#475569" rx="2" />
-            <rect x="15" y="25" width="70" height="65" fill="#f1f5f9" stroke="#475569" stroke-width="2" />
-            <line x1="15" y1="35" x2="85" y2="35" stroke="#cbd5e1" stroke-width="1" />
-            <line x1="15" y1="45" x2="85" y2="45" stroke="#cbd5e1" stroke-width="1" />
-            <line x1="15" y1="55" x2="85" y2="55" stroke="#cbd5e1" stroke-width="1" />
-            <line x1="15" y1="65" x2="85" y2="65" stroke="#cbd5e1" stroke-width="1" />
-            <line x1="15" y1="75" x2="85" y2="75" stroke="#cbd5e1" stroke-width="1" />
-            <rect x="10" y="25" width="5" height="65" fill="#94a3b8" />
-            <rect x="85" y="25" width="5" height="65" fill="#94a3b8" />
-        </svg>
-    `;
-
     ITEMS.push({
         id: Date.now(),
         category: 'roller',
@@ -1286,8 +1273,7 @@ function addRollerItem() {
         isLarge: false,
         unitCost: priceMan,
         optionsDesc: optionsDesc,
-        baseTotal: priceMan * qty,
-        customSvg: rollerSvg
+        baseTotal: priceMan * qty, customSvg: null
     });
 
     // Очистка полей
@@ -1310,15 +1296,29 @@ function selectShowerConfig(el) {
 }
 function updateShowerDimensions() {
     let config = SHOWER_CONFIGS[currentShowerConfig];
-    let container = document.getElementById('shower-dimensions'); let html = '';
-    config.panels.forEach((p, idx) => {
-        if (idx === 0) {
-            html += `<div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100"><div><label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' 🚪' : ''}</label><input type="number" id="shower-${p.id}" placeholder="800" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div><div><label class="text-xs text-slate-500 block mb-1">Высота</label><input type="number" id="shower-h" placeholder="2000" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div></div>`;
-        } else {
-            html += `<div class="p-3 bg-slate-50 rounded-xl border border-slate-100"><label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' 🚪' : ''}</label><input type="number" id="shower-${p.id}" placeholder="600" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div>`;
-        }
+    let container = document.getElementById('shower-dimensions'); 
+    
+    let html = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">';
+    config.panels.forEach((p) => {
+        html += `<div><label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' 🚪' : ''}</label><input type="number" id="shower-${p.id}" placeholder="800" class="shower-input-field w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div>`;
     });
+    html += `<div><label class="text-xs text-slate-500 block mb-1">Высота</label><input type="number" id="shower-h" placeholder="2000" class="shower-input-field w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div>`;
+    html += '</div>';
+    
     container.innerHTML = html;
+    
+    // Поддержка клавиши Enter для удобного ввода
+    let inputs = container.querySelectorAll('.shower-input-field');
+    inputs.forEach((input, i) => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (i < inputs.length - 1) inputs[i+1].focus();
+                else addShowerItem();
+            }
+        });
+    });
+
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 function parseShowerOpeningDirection(value) {
@@ -1753,7 +1753,98 @@ function addService(name, amount) {
     renderCart();
 }
 
+// --- PRESET SERVICES FROM CSV ---
+const PRESET_SERVICES_DB = [{"id":"srv_1","name":"Вывоз","unit":"м2","prices":[800,650,500]},{"id":"srv_2","name":"Демонтаж вагончик","unit":"м2","prices":[1500,1350,1200]},{"id":"srv_3","name":"Демонтаж дерево","unit":"м2","prices":[900,800,700]},{"id":"srv_4","name":"Демонтаж перил ровные до 3 метров","unit":"шт","prices":[4000,3500,3000]},{"id":"srv_5","name":"Демонтаж перил ровные свыше 3 метров","unit":"шт","prices":[5000,4500,4000]},{"id":"srv_6","name":"Демонтаж пластик","unit":"м2","prices":[1200,1050,900]},{"id":"srv_7","name":"Демонтаж разбитого СП","unit":"м2","prices":[800,700,600]},{"id":"srv_8","name":"Демонтаж стены пеноблок","unit":"м2","prices":[3500,3000,2700]},{"id":"srv_9","name":"Демонтаж стены шлакоблок","unit":"м2","prices":[4000,3500,3000]},{"id":"srv_10","name":"Доставка","unit":"","prices":[0,70,0]},{"id":"srv_11","name":"Минимальный выезд","unit":"","prices":[2000,1700,1500]},{"id":"srv_12","name":"Монтаж 58","unit":"м2","prices":[1300,1200,1000]},{"id":"srv_13","name":"Монтаж 70","unit":"м2","prices":[1500,1400,1200]},{"id":"srv_14","name":"Монтаж 80","unit":"м2","prices":[1800,1600,1400]},{"id":"srv_15","name":"Монтаж Алюминий 60","unit":"м2","prices":[2000,1700,1500]},{"id":"srv_16","name":"Монтаж Алюминий 70","unit":"м2","prices":[2200,1900,1700]},{"id":"srv_17","name":"Монтаж ворот подьемных","unit":"шт","prices":[25000,20000,15000]},{"id":"srv_18","name":"Монтаж двери дерево","unit":"шт","prices":[6500,6000,5500]},{"id":"srv_19","name":"Монтаж двери металл","unit":"шт","prices":[3500,3000,2500]},{"id":"srv_20","name":"Монтаж двери пластик","unit":"шт","prices":[3500,3000,2500]},{"id":"srv_21","name":"Монтаж доводчика","unit":"шт","prices":[1500,1200,1000]},{"id":"srv_22","name":"Монтаж душевой","unit":"шт","prices":[8000,6500,5500]},{"id":"srv_23","name":"Монтаж композита","unit":"м2","prices":[3500,3000,2500]},{"id":"srv_24","name":"Монтаж Обналички паянная","unit":"шт","prices":[1000,700,500]},{"id":"srv_25","name":"Монтаж Откосов с материалом","unit":"метр","prices":[2000,1000,800]},{"id":"srv_26","name":"Монтаж пирил","unit":"метр","prices":[2700,2300,2000]},{"id":"srv_27","name":"Монтаж поликорбоната","unit":"м2","prices":[2000,1500,1200]},{"id":"srv_28","name":"Монтаж Раздвижка Алюминий","unit":"м2","prices":[3000,2700,2500]},{"id":"srv_29","name":"Монтаж Раздвижки безрамное","unit":"м2","prices":[2000,1600,1400]},{"id":"srv_30","name":"Монтаж роллет 58,45","unit":"м2","prices":[1500,1200,1000]},{"id":"srv_31","name":"Монтаж роллет 70","unit":"м2","prices":[2000,1700,1500]},{"id":"srv_32","name":"Монтаж ручки дверной","unit":"шт","prices":[500,400,300]},{"id":"srv_33","name":"Монтаж ручки дверной офисная","unit":"шт","prices":[1500,1200,1000]},{"id":"srv_34","name":"Монтаж ручки оконная","unit":"шт","prices":[300,230,150]},{"id":"srv_35","name":"Монтаж сендвич","unit":"м2","prices":[700,600,500]},{"id":"srv_36","name":"Монтаж Слайд Пластик","unit":"м2","prices":[1300,1200,1000]},{"id":"srv_37","name":"Монтаж Сп пластик","unit":"м2","prices":[2000,1600,1300]},{"id":"srv_38","name":"Монтаж Сп Фасадка","unit":"м2","prices":[3000,2500,2000]},{"id":"srv_39","name":"Монтаж уголка с материалом внутри","unit":"метр","prices":[350,150,100]},{"id":"srv_40","name":"Монтаж уголка с материалом улица","unit":"метр","prices":[500,250,200]},{"id":"srv_41","name":"Монтаж Фасадка с примыканием (Уголок) объем","unit":"м2","prices":[2500,2250,2000]},{"id":"srv_42","name":"Монтаж Фасадка с примыканием (Уголок)еденичные","unit":"","prices":[3000,2500,2250]},{"id":"srv_43","name":"Монтаж фурнитура","unit":"шт","prices":[2000,1700,1500]},{"id":"srv_44","name":"Монтажи не стандартных позиций договорная","unit":"","prices":[0,0,0]},{"id":"srv_45","name":"Отлив","unit":"метр","prices":[700,600,500]},{"id":"srv_46","name":"Погрузка разгрузка","unit":"час","prices":[1300,1150,1000]},{"id":"srv_47","name":"Подоконик кристалит","unit":"метр","prices":[1000,850,700]},{"id":"srv_48","name":"Подоконик обычный","unit":"метр","prices":[700,600,500]},{"id":"srv_49","name":"Подъем","unit":"м2","prices":[200,170,150]},{"id":"srv_50","name":"Распакечивание Алюминий","unit":"шт","prices":[1700,1500,1300]},{"id":"srv_51","name":"Распакечивание пластик","unit":"шт","prices":[1500,1200,1000]},{"id":"srv_52","name":"Регулировка ключом дверь Алюминий","unit":"шт","prices":[1100,950,800]},{"id":"srv_53","name":"Регулировка ключом дверь пластик","unit":"шт","prices":[1000,850,700]},{"id":"srv_54","name":"Регулировка ключом окно Алюминий","unit":"шт","prices":[800,700,600]},{"id":"srv_55","name":"Регулировка ключом окно пластик","unit":"шт","prices":[600,500,400]},{"id":"srv_56","name":"Резина работа материал","unit":"метр","prices":[150,70,50]},{"id":"srv_57","name":"Сварка балкона","unit":"шт","prices":[50000,40000,35000]},{"id":"srv_58","name":"Сетка обычная","unit":"шт","prices":[700,600,500]},{"id":"srv_59","name":"Сетка плиссе","unit":"шт","prices":[1500,1200,1000]},{"id":"srv_60","name":"Смазка фурнитуры","unit":"шт","prices":[200,150,100]},{"id":"srv_61","name":"Стиз","unit":"м2","prices":[600,500,400]},{"id":"srv_62","name":"Монтаж противопожарных дверей","unit":"шт","prices":[4500,4000,3500]}];
+
+function initPresetServices() {
+    let select = document.getElementById('srv-preset');
+    let priceTierEl = document.getElementById('srv-pricelist');
+    if (!select || !priceTierEl) return;
+    
+    let priceTier = priceTierEl.value;
+    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
+    
+    // Save current selection to restore after re-render
+    let currentVal = select.value;
+    
+    select.innerHTML = '<option value="">-- Выбрать услугу из прайса --</option>';
+    PRESET_SERVICES_DB.forEach(srv => {
+        let price = srv.prices[tierIdx];
+        select.innerHTML += `<option value="${srv.id}">${srv.name} — ${price} ₽/${srv.unit}</option>`;
+    });
+    
+    select.value = currentVal;
+}
+
+function applyPresetService() {
+    let select = document.getElementById('srv-preset');
+    let srvId = select.value;
+    if (!srvId) return;
+
+    let srv = PRESET_SERVICES_DB.find(s => s.id === srvId);
+    if (!srv) return;
+
+    let priceTier = document.getElementById('srv-pricelist').value;
+    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
+
+    let basePrice = srv.prices[tierIdx];
+    let amount = basePrice;
+    
+    // Auto-calc from cart if unit is m2 or metr or sht
+    let glassArea = 0, framelessArea = 0, showerCount = 0;
+    let sillLengthM = 0;
+    let netCount = 0;
+
+    ITEMS.forEach(it => {
+        if (it.category === 'glass') glassArea += (it.area || 0) * (it.qty || 1);
+        else if (it.category === 'frameless') framelessArea += (it.area || 0);
+        else if (it.category === 'shower') showerCount += 1;
+        else if (it.category === 'sill') sillLengthM += ((it.h || 0) / 1000) * (it.qty || 1);
+        else if (it.category === 'net') netCount += (it.qty || 1);
+        else if (it.category === 'slope') glassArea += (it.area || 0) * (it.qty || 1);
+    });
+
+    let totalArea = glassArea + framelessArea;
+
+    if (srv.unit.includes('м2')) {
+        amount = Math.ceil(totalArea * basePrice);
+        if (amount === 0) amount = basePrice; // fallback if cart empty
+    } else if (srv.unit.includes('м.п') || srv.unit.includes('метр')) {
+        amount = Math.ceil(sillLengthM * basePrice);
+        if (amount === 0) amount = basePrice; 
+    } else if (srv.unit.includes('шт')) {
+        let maxQty = Math.max(showerCount, netCount, 1);
+        amount = Math.ceil(maxQty * basePrice);
+    }
+
+    document.getElementById('srv-new-name').value = srv.name;
+    document.getElementById('srv-new-amount').value = amount || 0;
+    
+    // Reset selection so user can pick again
+    select.value = '';
+}
+
+// Attach event listener to pricelist to update dropdown automatically
+window.addEventListener('DOMContentLoaded', () => {
+    let priceTierEl = document.getElementById('srv-pricelist');
+    if (priceTierEl) {
+        priceTierEl.addEventListener('change', () => {
+            initPresetServices();
+            if (typeof autoFillServices === 'function') autoFillServices();
+        });
+    }
+});
+
 function removeService(idx) {
+    SERVICES.splice(idx, 1);
+    renderServicesList();
+    renderCart();
+}
+
+function editService(idx) {
+    let srv = SERVICES[idx];
+    document.getElementById('srv-new-name').value = srv.name;
+    document.getElementById('srv-new-amount').value = srv.amount;
     SERVICES.splice(idx, 1);
     renderServicesList();
     renderCart();
@@ -1781,9 +1872,10 @@ function renderServicesList() {
         return;
     }
     container.innerHTML = SERVICES.map((srv, i) => `
-        <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0">
-            <span class="flex-1 text-xs text-slate-700 font-medium truncate">${srv.name}</span>
+        <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0" ondblclick="editService(${i})">
+            <span class="flex-1 text-xs text-slate-700 font-medium truncate cursor-pointer">${srv.name}</span>
             <span class="text-xs font-bold text-slate-800 whitespace-nowrap">${srv.amount.toLocaleString()} ₽</span>
+            <button onclick="editService(${i})" class="text-slate-300 hover:text-blue-500 p-0.5 flex-shrink-0" title="Редактировать"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
             <button onclick="removeService(${i})" class="text-slate-300 hover:text-red-500 p-0.5 flex-shrink-0" title="Удалить"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
         </div>
     `).join('');
@@ -2002,12 +2094,15 @@ function showProposal() {
         }
         
         let unitLabel = (it.category === 'custom' || it.category === 'slope_profile') ? (it.unit || 'шт.') : 'шт.';
-        let sketchHtml = it.customSvg || (it.category === 'slope_profile' ? '<div class="text-3xl text-slate-300 text-center">—</div>' : `<canvas id="${canvasId}" class="sketch-container mx-auto" width="200" height="200" style="width: 100px; height: 100px;"></canvas>`);
+        canvasId = `sketch-${it.id}`;
+        let sketchHtml = it.customSvg || generateSvgSketch(it);
         
         tbody.innerHTML += `<tr class="border-b border-slate-200 hover:bg-slate-50"><td class="p-3 text-slate-500 align-middle">${idx + 1}</td><td class="p-3 align-middle text-center">${sketchHtml}</td><td class="p-3 align-middle"><div class="font-bold text-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${it.type}</div><div class="text-xs text-slate-500 font-medium opacity-80 mt-0.5 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${dimLine}</div>${opts}</td><td class="p-3 align-middle text-center font-medium text-slate-700 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${qty} ${unitLabel}</td><td class="p-3 align-middle text-right text-xs text-slate-500 whitespace-nowrap outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${unitCostDisplay}</td><td class="p-3 align-middle text-right font-bold text-slate-800 whitespace-nowrap outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${cost.toLocaleString()} ₽</td></tr>`;
     });
     
-    setTimeout(() => { ITEMS.forEach(it => drawSketch(`sketch-${it.id}`, it)); }, 50);
+    // (sketches are now SVG)
+    
+    
     
     let sList = document.getElementById('kp-services-list');
     sList.innerHTML = `<div class="flex justify-between text-sm mb-2 pb-2 border-b border-slate-100"><span class="text-slate-500">Общая площадь изделий:</span><span class="font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${totalArea.toFixed(2)} м²</span></div>`;
@@ -2076,357 +2171,307 @@ function hideProposal() {
     document.getElementById('proposal-screen').style.display = 'none';
 }
 
-// --- SKETCH DRAWING ENGINE ---
-function drawSketch(canvasId, item) {
-    let canvas = document.getElementById(canvasId); if (!canvas) return;
-    let ctx = canvas.getContext('2d');
-    let cSize = 200, padding = 40, mw = cSize - padding * 2, mh = cSize - padding * 2;
-    let drawW = item.category === 'sill' ? item.h : item.w;
-    let drawH = item.category === 'sill' ? item.w : item.h;
-    let ratio = drawW / drawH, w = 0, h = 0;
-    if (ratio > 1) { w = mw; h = mw / ratio; } else { h = mh; w = mh * ratio; }
-    if (w < 40) w = 40; if (h < 40) h = 40;
-    let x = (cSize - w) / 2, y = (cSize - h) / 2;
-    ctx.clearRect(0, 0, cSize, cSize);
-    ctx.lineWidth = 4; ctx.strokeStyle = '#000000';
+
+
+
+
+
+
+
+
+
+// --- SKETCH SVG GENERATOR ---
+function generateSvgSketch(item) {
+    if (!item) return '';
+
+    const VB_SIZE = 500;
+    
+    let typeStr = (item.type || '').toLowerCase();
+    let isIcon = false;
+    let iconPath = '';
+    let iconColor = '#475569';
+    let w = parseFloat(item.w) || 0;
+    let h = parseFloat(item.h) || 0;
+    if (item.category === 'sill') { w = parseFloat(item.h) || 0; h = parseFloat(item.w) || 0; }
+
+    if (item.category === 'custom' || item.category === 'slope_profile' || item.category === 'services') {
+        if (typeStr.includes('сварка') || typeStr.includes('свароч') || typeStr.includes('усилен')) {
+            isIcon = true; iconColor = '#f59e0b';
+            iconPath = `<path d="M2 22 L2 2 L6 2 L6 22 Z" fill="#94a3b8"/><path d="M6 18 L16 18 L20 10 L20 6 L16 6 L6 6" stroke="${iconColor}" stroke-width="2" fill="none"/><path d="M12 6 L16 18" stroke="${iconColor}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="18" cy="8" r="2" fill="#ef4444"/>`;
+        } else if (typeStr.includes('вынос') || typeStr.includes('балкон')) {
+            isIcon = true; iconColor = '#3b82f6';
+            iconPath = `<path d="M4 22 L4 10 L12 4 L12 10 L10 10 L10 22 Z" stroke="${iconColor}" stroke-width="2" fill="none"/>`;
+        } else if (typeStr.includes('крыша') || typeStr.includes('кровл') || typeStr.includes('козырек')) {
+            isIcon = true; iconColor = '#ef4444';
+            iconPath = `<path d="M2 12L12 3l10 9M5 12v8h14v-8" stroke="${iconColor}" stroke-width="2" fill="none"/>`;
+        } else if (typeStr.includes('фурнитур') || typeStr.includes('ручк') || typeStr.includes('замок') || typeStr.includes('петл')) {
+            isIcon = true; iconColor = '#8b5cf6';
+            iconPath = `<rect x="6" y="10" width="12" height="10" rx="2" stroke="${iconColor}" stroke-width="2" fill="none"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="${iconColor}" stroke-width="2" fill="none"/><circle cx="12" cy="15" r="1.5" fill="${iconColor}"/>`;
+        } else if (typeStr.includes('резин') || typeStr.includes('уплотн')) {
+            isIcon = true; iconColor = '#10b981';
+            iconPath = `<circle cx="12" cy="12" r="8" stroke="${iconColor}" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" fill="${iconColor}"/>`;
+        } 
+    }
+
+    if (isIcon) {
+        return `<svg viewBox="0 0 24 24" style="width: 100%; max-width: 80px; height: auto; display: block; margin: 0 auto;">${iconPath}</svg>`;
+    }
+
+    let innerSvg = '';
+    let drawW = w || 1000;
+    let drawH = h || 1000;
+    let ratio = drawW / drawH;
+    
+    let maxDrawW = 320; 
+    let maxDrawH = 320;
+    if (item.category === 'roller' || typeStr.includes('ворот')) {
+        maxDrawW = 400; 
+        maxDrawH = 400;
+    }
+
+    let svgW = maxDrawW;
+    let svgH = maxDrawH;
+    
+    if (ratio > 1) {
+        svgH = maxDrawW / ratio;
+    } else {
+        svgW = maxDrawH * ratio;
+    }
+    if (svgW < 80) svgW = 80;
+    if (svgH < 80) svgH = 80;
+
+    let x = (VB_SIZE - svgW) / 2 - 40; 
+    let y = (VB_SIZE - svgH) / 2 + 40; 
+
+    let getFrameColor = () => {
+        let allText = (typeStr + ' ' + (item.optionsDesc||[]).join(' ')).toLowerCase();
+        if (allText.includes('антрацит') || allText.includes('серый') || allText.includes('7016')) return '#334155';
+        if (allText.includes('коричн') || allText.includes('8017') || allText.includes('8014') || allText.includes('шоколад')) return '#78350f';
+        if (allText.includes('черн') || allText.includes('9005')) return '#0f172a';
+        if (allText.includes('золот') || allText.includes('дуб') || allText.includes('орех')) return '#b45309';
+        if (allText.includes('бел') || allText.includes('9016')) return '#e2e8f0'; 
+        return '#78350f'; 
+    };
+
+    let swFrame = 8;
+    let swInner = 4;
 
     if (item.category === 'glass') {
-        ctx.fillStyle = '#f0f9ff'; ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
-        ctx.lineWidth = 2; ctx.strokeStyle = '#000000'; ctx.strokeRect(x + 6, y + 6, w - 12, h - 12);
-        ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = w / 4;
-        ctx.moveTo(x + w * 0.2, y + h - 10); ctx.lineTo(x + w - 10, y + h * 0.2); ctx.stroke();
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f0f9ff" stroke="#1e293b" stroke-width="${swFrame}"/>`;
+        innerSvg += `<rect x="${x+12}" y="${y+12}" width="${svgW-24}" height="${svgH-24}" fill="none" stroke="#475569" stroke-width="${swInner}"/>`;
+        innerSvg += `<path d="M${x + svgW*0.2} ${y + svgH - 20} L${x + svgW - 20} ${y + svgH*0.2}" stroke="#ffffff" stroke-width="${svgW/5}" stroke-opacity="0.6" fill="none"/>`;
+        
         let totalCross = (item.layoutCross || 0) + (item.layoutEnd || 0);
         if (totalCross > 0) {
-            ctx.lineWidth = 2;
+            let cols = item.layoutCross + 1;
+            let rows = item.layoutCross + 1;
             let layoutColor = '#c8a84e';
-            if (item.layoutName) { let ln = item.layoutName.toLowerCase(); if (ln.includes('коричнев')) layoutColor = '#6b4226'; else if (ln.includes('бел')) layoutColor = '#b0b0b0'; else if (ln.includes('золот')) layoutColor = '#c8a84e'; }
-            ctx.strokeStyle = layoutColor;
-            let innerX = x + 8, innerY = y + 8, innerW = w - 16, innerH = h - 16;
-            let cols = item.layoutCross + 1, rows = item.layoutCross + 1;
-            for (let i = 1; i < cols; i++) { ctx.beginPath(); ctx.moveTo(innerX + (innerW / cols) * i, innerY); ctx.lineTo(innerX + (innerW / cols) * i, innerY + innerH); ctx.stroke(); }
-            for (let j = 1; j < rows; j++) { ctx.beginPath(); ctx.moveTo(innerX, innerY + (innerH / rows) * j); ctx.lineTo(innerX + innerW, innerY + (innerH / rows) * j); ctx.stroke(); }
+            if (item.layoutName) {
+                let ln = item.layoutName.toLowerCase();
+                if (ln.includes('коричнев')) layoutColor = '#6b4226';
+                else if (ln.includes('бел')) layoutColor = '#e2e8f0';
+            }
+            let innerX = x + 16, innerY = y + 16, innerW = svgW - 32, innerH = svgH - 32;
+            for (let i = 1; i < cols; i++) {
+                let lx = innerX + (innerW / cols) * i;
+                innerSvg += `<line x1="${lx}" y1="${innerY}" x2="${lx}" y2="${innerY+innerH}" stroke="${layoutColor}" stroke-width="${swInner+2}"/>`;
+            }
+            for (let j = 1; j < rows; j++) {
+                let ly = innerY + (innerH / rows) * j;
+                innerSvg += `<line x1="${innerX}" y1="${ly}" x2="${innerX+innerW}" y2="${ly}" stroke="${layoutColor}" stroke-width="${swInner+2}"/>`;
+            }
         }
     } else if (item.category === 'frameless') {
-        ctx.fillStyle = '#f8fafc'; ctx.fillRect(x, y, w, h);
-        ctx.lineWidth = 4; ctx.strokeStyle = '#000000'; ctx.strokeRect(x, y, w, h);
-        let match = item.shape.match(/Панелей: (\d+)/); let pCount = match ? parseInt(match[1]) : 1;
-        if (pCount > 1) {
-            let pWidth = w / pCount;
-            if (item.doorPanel && item.doorPanel !== 'none') {
-                let doorIdx = parseInt(item.doorPanel) - 1; let dLeft = x + doorIdx * pWidth;
-                ctx.fillStyle = '#e2e8f0'; ctx.fillRect(dLeft, y, pWidth, h);
-                ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = '#475569';
-                if (item.doorDir === 'right') { ctx.moveTo(dLeft, y); ctx.lineTo(dLeft + pWidth, y + h / 2); ctx.lineTo(dLeft, y + h); }
-                else { ctx.moveTo(dLeft + pWidth, y); ctx.lineTo(dLeft, y + h / 2); ctx.lineTo(dLeft + pWidth, y + h); }
-                ctx.stroke();
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="#1e293b" stroke-width="${swFrame}"/>`;
+        let match = (item.shape||'').match(/Панелей: (\d+)/);
+        let panels = match ? parseInt(match[1]) : 1;
+        let pWidth = svgW / panels;
+        
+        if (panels > 1) {
+            let doorPanel = null;
+            let doorDirStr = 'right';
+            if (item.optionsDesc) {
+                let dDesc = item.optionsDesc.find(d => d.includes('Дверь: Панель'));
+                if (dDesc) {
+                    let m = dDesc.match(/Панель (\d+)/);
+                    if (m) doorPanel = parseInt(m[1]);
+                    if (dDesc.includes('Влево')) doorDirStr = 'left';
+                }
             }
-            ctx.lineWidth = 2; ctx.strokeStyle = '#000000';
-            for (let i = 1; i < pCount; i++) { ctx.beginPath(); ctx.moveTo(x + i * pWidth, y); ctx.lineTo(x + i * pWidth, y + h); ctx.stroke(); }
+
+            if (doorPanel) {
+                let doorIdx = doorPanel - 1;
+                let dLeft = x + doorIdx * pWidth;
+                innerSvg += `<rect x="${dLeft}" y="${y}" width="${pWidth}" height="${svgH}" fill="#e2e8f0" />`;
+                let cx = dLeft + pWidth/2;
+                let cy = y + svgH/2;
+                innerSvg += `<text x="${cx}" y="${cy+20}" font-family="Arial" font-size="64" font-weight="bold" fill="#0f172a" text-anchor="middle">${doorDirStr === 'right' ? '<' : '>'}</text>`;
+            }
+            for (let i = 1; i < panels; i++) {
+                let lx = x + i * pWidth;
+                innerSvg += `<line x1="${lx}" y1="${y}" x2="${lx}" y2="${y+svgH}" stroke="#1e293b" stroke-width="${swInner}"/>`;
+            }
         }
     } else if (item.category === 'net') {
-        let isPleated = item.type && item.type.toLowerCase().includes('плисс');
+        let frameColor = getFrameColor();
+        let isPleated = typeStr.includes('плисс');
+        
         if (isPleated) {
-            // Рисуем раздвижную плиссе-сетку
-            ctx.fillStyle = '#fff9f0'; ctx.fillRect(x, y, w, h);
-            ctx.lineWidth = 5; ctx.strokeStyle = '#92400e'; ctx.strokeRect(x, y, w, h);
-            // Верхняя направляющая шина
-            ctx.lineWidth = 6; ctx.strokeStyle = '#92400e';
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.stroke();
-            ctx.lineWidth = 6; ctx.strokeStyle = '#92400e';
-            ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x + w, y + h); ctx.stroke();
-            // Полотно сетки (гофре)
-            ctx.lineWidth = 0.8; ctx.strokeStyle = '#b45309';
-            let plStep = 6;
-            for (let i = x + plStep; i < x + w; i += plStep) { ctx.beginPath(); ctx.moveTo(i, y + 4); ctx.lineTo(i, y + h - 4); ctx.stroke(); }
-            for (let j = y + plStep; j < y + h; j += plStep) { ctx.beginPath(); ctx.moveTo(x + 4, j); ctx.lineTo(x + w - 4, j); ctx.stroke(); }
-            // Определяем направление из optionsDesc
-            let dirText = '→'; // default вправо
+            innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#fff9f0" stroke="${frameColor}" stroke-width="12"/>`;
+            
+            let dirText = '→'; 
             if (item.optionsDesc) {
                 let dirEntry = item.optionsDesc.find(d => d && d.includes('Створка:'));
                 if (dirEntry) {
                     if (dirEntry.includes('Влево')) dirText = '←';
                     else if (dirEntry.includes('центр')) dirText = '←→';
-                    else dirText = '→';
                 }
             }
-            // Полоса с хомутом
-            let handleX = dirText === '←' ? x + 10 : x + w - 10;
-            ctx.lineWidth = 4; ctx.strokeStyle = '#7c3aed';
-            ctx.beginPath(); ctx.moveTo(handleX, y + h * 0.25); ctx.lineTo(handleX, y + h * 0.75); ctx.stroke();
-            ctx.beginPath(); ctx.arc(handleX, y + h * 0.5, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#7c3aed'; ctx.fill();
-            // Стрелка направления
-            let arrowY = y + h / 2;
-            ctx.lineWidth = 2.5; ctx.strokeStyle = '#1d4ed8'; ctx.font = 'bold 22px sans-serif';
-            ctx.fillStyle = '#1d4ed8'; ctx.textAlign = 'center';
-            ctx.fillText(dirText, x + w / 2, arrowY + 8);
-            // Надпись
-            ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#92400e'; ctx.textAlign = 'center';
-            ctx.fillText('ПЛИССЕ', x + w / 2, y - 6);
+            
+            let handleX = x + svgW / 2; 
+            if (dirText === '←→') {
+                let plStep = 16;
+                for (let i = x + plStep; i < x + svgW*0.3; i += plStep) {
+                    innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                }
+                for (let i = x + svgW - plStep; i > x + svgW*0.7; i -= plStep) {
+                    innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                }
+                innerSvg += `<rect x="${x+svgW*0.3}" y="${y+6}" width="16" height="${svgH-12}" fill="${frameColor}" rx="4" />`;
+                innerSvg += `<rect x="${x+svgW*0.7-16}" y="${y+6}" width="16" height="${svgH-12}" fill="${frameColor}" rx="4" />`;
+                innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+20}" font-family="Arial" font-size="64" font-weight="bold" fill="#1d4ed8" text-anchor="middle">←→</text>`;
+            } else {
+                let plStep = 16;
+                if (dirText === '→') {
+                    for (let i = x + plStep; i < handleX; i += plStep) {
+                        innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                    }
+                    innerSvg += `<rect x="${handleX-8}" y="${y+6}" width="20" height="${svgH-12}" fill="${frameColor}" rx="5" />`;
+                    innerSvg += `<text x="${handleX + 45}" y="${y+svgH/2+20}" font-family="Arial" font-size="70" font-weight="bold" fill="#1d4ed8" text-anchor="middle">→</text>`;
+                } else {
+                    for (let i = x + svgW - plStep; i > handleX; i -= plStep) {
+                        innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                    }
+                    innerSvg += `<rect x="${handleX-12}" y="${y+6}" width="20" height="${svgH-12}" fill="${frameColor}" rx="5" />`;
+                    innerSvg += `<text x="${handleX - 45}" y="${y+svgH/2+20}" font-family="Arial" font-size="70" font-weight="bold" fill="#1d4ed8" text-anchor="middle">←</text>`;
+                }
+            }
         } else {
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, w, h);
-            ctx.lineWidth = 6; ctx.strokeStyle = '#000000'; ctx.strokeRect(x, y, w, h);
-            ctx.lineWidth = 1; ctx.strokeStyle = '#000000'; let step = 8;
-            for (let i = x + step; i < x + w; i += step) { ctx.beginPath(); ctx.moveTo(i, y); ctx.lineTo(i, y + h); ctx.stroke(); }
-            for (let j = y + step; j < y + h; j += step) { ctx.beginPath(); ctx.moveTo(x, j); ctx.lineTo(x + w, j); ctx.stroke(); }
-            if (item.h >= 1000) { ctx.beginPath(); ctx.lineWidth = 6; ctx.strokeStyle = '#000000'; ctx.moveTo(x, y + h / 2); ctx.lineTo(x + w, y + h / 2); ctx.stroke(); }
+            innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#ffffff" stroke="${frameColor}" stroke-width="12"/>`;
+            let step = 18;
+            for (let i = x + step; i < x + svgW; i += step) { innerSvg += `<line x1="${i}" y1="${y}" x2="${i}" y2="${y+svgH}" stroke="#64748b" stroke-width="3"/>`; }
+            for (let j = y + step; j < y + svgH; j += step) { innerSvg += `<line x1="${x}" y1="${j}" x2="${x+svgW}" y2="${j}" stroke="#64748b" stroke-width="3"/>`; }
+            if (h >= 1000) {
+                innerSvg += `<line x1="${x}" y1="${y+svgH/2}" x2="${x+svgW}" y2="${y+svgH/2}" stroke="${frameColor}" stroke-width="10"/>`;
+            }
         }
     } else if (item.category === 'sill') {
-        ctx.fillStyle = '#fef3c7'; ctx.fillRect(x, y, w, h);
-        ctx.lineWidth = 4; ctx.strokeStyle = '#000000'; ctx.strokeRect(x, y, w, h);
-        ctx.lineWidth = 1; ctx.strokeStyle = '#d4a574'; let grainStep = 12;
-        for (let j = y + grainStep; j < y + h; j += grainStep) { ctx.beginPath(); ctx.moveTo(x + 4, j); ctx.lineTo(x + w - 4, j); ctx.stroke(); }
-    } else if (item.category === 'custom') {
-        if (item.w > 0 && item.h > 0) {
-            // Рисуем пропорциональный прямоугольник для произвольной позиции
-            ctx.fillStyle = '#f1f5f9'; ctx.fillRect(x, y, w, h);
-            ctx.lineWidth = 4; ctx.strokeStyle = '#475569'; ctx.strokeRect(x, y, w, h);
-            // Штриховка (косые линии)
-            ctx.lineWidth = 0.7; ctx.strokeStyle = '#cbd5e1';
-            let dStep = 14;
-            for (let d = -(w + h); d < w + h; d += dStep) {
-                ctx.beginPath();
-                ctx.moveTo(x + Math.max(0, d), y + Math.max(0, -d));
-                ctx.lineTo(x + Math.min(w, d + h), y + Math.max(0, d + h - w));
-                ctx.stroke();
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#fef3c7" stroke="#1e293b" stroke-width="6"/>`;
+        innerSvg += `<rect x="${x}" y="${y+svgH-26}" width="${svgW}" height="26" fill="#fde68a" stroke="#1e293b" stroke-width="6"/>`; 
+        innerSvg += `<line x1="${x}" y1="${y+svgH-26}" x2="${x+svgW}" y2="${y+svgH-26}" stroke="#1e293b" stroke-width="4"/>`;
+        innerSvg += `<path d="M${x+20} ${y+svgH-13} L${x+svgW-20} ${y+svgH-13}" stroke="#d97706" stroke-width="3" stroke-dasharray="8,8" fill="none"/>`;
+    } else if (item.category === 'roller' || typeStr.includes('ворот')) {
+        let isGate = typeStr.includes('ворот');
+        let rColor = getFrameColor();
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="${rColor}" stroke-width="8"/>`;
+        if (isGate) {
+            let panelH = 50;
+            for(let i=y+panelH; i<y+svgH; i+=panelH) {
+                innerSvg += `<line x1="${x}" y1="${i}" x2="${x+svgW}" y2="${i}" stroke="${rColor}" stroke-width="6"/>`;
+                innerSvg += `<rect x="${x+16}" y="${i-panelH+8}" width="${svgW-32}" height="${panelH-16}" fill="#f1f5f9" stroke="${rColor}" stroke-width="2"/>`;
             }
-            // Иконка — шестерёнка как символ «изделие»
-            ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
-            ctx.fillText('⚙', x + w / 2, y + h / 2 + 8);
         } else {
-            // Нет размеров — рисуем заглушку
-            ctx.fillStyle = '#f8fafc'; ctx.fillRect(x, y, w, h);
-            ctx.lineWidth = 2; ctx.strokeStyle = '#cbd5e1';
-            ctx.setLineDash([4, 4]); ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
-            ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = '#cbd5e1'; ctx.textAlign = 'center';
-            ctx.fillText('?', x + w / 2, y + h / 2 + 10);
-            ctx.font = '9px sans-serif'; ctx.fillStyle = '#94a3b8';
-            ctx.fillText('нет размеров', x + w / 2, y + h - 6);
+            for(let i=16; i<svgH; i+=16) {
+                innerSvg += `<line x1="${x}" y1="${y+i}" x2="${x+svgW}" y2="${y+i}" stroke="${rColor}" stroke-width="3"/>`;
+            }
+            innerSvg += `<rect x="${x-8}" y="${y-12}" width="${svgW+16}" height="24" fill="${rColor}" stroke="${rColor}" stroke-width="4" rx="6"/>`; 
         }
     } else if (item.category === 'shower') {
-        ctx.clearRect(0, 0, cSize, cSize);
-        let padT = 40, padB = 28, padL = 38, padR = 36;
-        let dW = cSize - padL - padR;   // drawing width
-        let dH = cSize - padT - padB;   // drawing height
-        let cfg = item.showerConfig, panels = item.showerPanels || [], totalH = item.h || 2000;
-        let metrics = getShowerMetrics(cfg, panels);
-        let wallColor = '#64748b', glassColor = '#93c5fd', glassFill = '#dbeafe', doorColor = '#60a5fa', handleColor = '#1e293b';
-        let font = 'bold 11px sans-serif';
-        ctx.lineWidth = 2;
+        let swColor = '#0369a1';
+        let glColor = '#e0f2fe';
+        
+        let panels = item.showerPanels || [];
+        let totalW = 0;
+        
+        if (panels.length === 0) {
+            panels = [{ w: svgW, type: 'fixed' }]; 
+            totalW = svgW;
+        } else {
+            totalW = panels.reduce((sum, p) => sum + p.w, 0);
+        }
+        
+        let currX = x;
+        for (let idx = 0; idx < panels.length; idx++) {
+            let p = panels[idx];
+            let pw = (p.w / totalW) * svgW;
+            if (pw < 10) pw = 10; 
+            
+            innerSvg += `<rect x="${currX}" y="${y}" width="${pw}" height="${svgH}" fill="${glColor}" stroke="${swColor}" stroke-width="6" fill-opacity="0.6"/>`;
+            
+            // Пишем ширину КОНКРЕТНОЙ ПАНЕЛИ СНИЗУ эскиза
+            if (p.w > 0) {
+                // Выводим все размеры строго в ряд
+                let subY = y + svgH + 20;
+                let fontSize = pw < 40 ? 24 : 32; // Уменьшаем шрифт, если панель узкая
+                
+                // Рисуем пунктирную выноску
+                innerSvg += `<line x1="${currX + pw/2}" y1="${y + svgH + 2}" x2="${currX + pw/2}" y2="${subY - 15}" stroke="#0369a1" stroke-width="2" stroke-dasharray="4,4" opacity="0.5"/>`;
+                
+                innerSvg += `<text x="${currX + pw/2}" y="${subY}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="normal" fill="#0369a1" text-anchor="middle">${p.w}</text>`;
+            }
 
-        function labelH(y1, y2) {
-            ctx.save();
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.translate(24, padT + (y2 - y1) / 2 + y1 - padT);
-            ctx.rotate(-Math.PI / 2);
-            ctx.fillText('H ' + totalH, 0, 0);
-            ctx.restore();
-        }
-        function labelW(text, xCenter, yBelow) {
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(text, xCenter, yBelow);
-        }
-        function drawDoorIndicator(doorX, doorY, doorW, doorH, orientation = 'horizontal') {
-            const { toRight, outward } = parseShowerOpeningDirection(item.openingDirection);
-            let startX, startY, endX, endY, hx, hy;
-            if (orientation === 'vertical') {
-                startX = outward ? doorX + 4 : doorX + doorW - 4;
-                endX = outward ? doorX + doorW - 4 : doorX + 4;
-                startY = toRight ? doorY + 4 : doorY + doorH - 4;
-                endY = toRight ? doorY + doorH - 4 : doorY + 4;
-                hx = toRight ? doorX + 6 : doorX + doorW - 6;
-                hy = toRight ? doorY + doorH - 10 : doorY + 10;
-            } else {
-                startX = toRight ? doorX + 4 : doorX + doorW - 4;
-                endX = toRight ? doorX + doorW - 4 : doorX + 4;
-                startY = outward ? doorY + doorH - 4 : doorY + 4;
-                endY = outward ? doorY + 4 : doorY + doorH - 4;
-                hx = toRight ? doorX + 8 : doorX + doorW - 8;
-                hy = outward ? doorY + doorH * 0.35 : doorY + doorH * 0.65;
+            if (p.type === 'door' || p.type === 'sliding') {
+                innerSvg += `<rect x="${currX+3}" y="${y+3}" width="${pw-6}" height="${svgH-6}" fill="#bae6fd" opacity="0.5"/>`;
+                let cx = currX + pw/2;
+                let cy = y + svgH/2;
+                
+                if (p.type === 'sliding') {
+                    innerSvg += `<text x="${cx}" y="${cy+15}" font-family="Arial" font-size="48" font-weight="bold" fill="#0c4a6e" text-anchor="middle">↔</text>`;
+                } else {
+                    let isRight = item.openingDirection && item.openingDirection.toLowerCase().includes('вправо');
+                    innerSvg += `<text x="${cx}" y="${cy+15}" font-family="Arial" font-size="56" font-weight="bold" fill="#0c4a6e" text-anchor="middle">${isRight ? '<' : '>'}</text>`;
+                }
             }
             
-            // Draw chevron indicator (< or >) in the center of the door
-            const cx = doorX + doorW / 2;
-            const cy = doorY + doorH / 2;
-            const size = 12;
-            
-            ctx.beginPath();
-            ctx.strokeStyle = '#1d4ed8'; // Royal Blue
-            ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            
-            if (!toRight) {
-                // ">" means opening left (влево)
-                ctx.moveTo(cx - size * 0.5, cy - size);
-                ctx.lineTo(cx + size * 0.5, cy);
-                ctx.lineTo(cx - size * 0.5, cy + size);
-            } else {
-                // "<" means opening right (вправо)
-                ctx.moveTo(cx + size * 0.5, cy - size);
-                ctx.lineTo(cx - size * 0.5, cy);
-                ctx.lineTo(cx + size * 0.5, cy + size);
+            if (currX + pw < x + svgW - 5) {
+                innerSvg += `<line x1="${currX+pw}" y1="${y}" x2="${currX+pw}" y2="${y+svgH}" stroke="${swColor}" stroke-width="6"/>`;
             }
-            ctx.stroke();
-
-            ctx.fillStyle = handleColor;
-            ctx.beginPath();
-            ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
-            ctx.fill();
+            currX += pw;
         }
-
-        if (cfg === 'partition') {
-            let pw1 = panels[0] ? panels[0].w : 800;
-            let gW = dW * 0.55;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, gW, dH);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, gW, dH);
-            labelW(pw1 + ' мм', padL + 8 + gW / 2, cSize - 8);
-            labelH(padT, padT + dH);
-
-        } else if (cfg === 'partition_door') {
-            let pw1 = metrics.frontTotalW || (panels[0] ? panels[0].w : 500);
-            let pw2 = metrics.doorW || (panels[1] ? panels[1].w : 600);
-            let fixedPw = metrics.fixedFrontW;
-            let totalFrontDrawW = dW * 0.7;
-            let gW1 = metrics.displayW > 0 ? (fixedPw / metrics.displayW) * totalFrontDrawW : 0;
-            let doorW = metrics.displayW > 0 ? (pw2 / metrics.displayW) * totalFrontDrawW : totalFrontDrawW;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH);
-            if (gW1 > 0) {
-                ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, gW1, dH);
-                ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, gW1, dH);
-            }
-            let dX = padL + 8 + gW1;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(dX, padT, doorW, dH);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(dX, padT, doorW, dH);
-            drawDoorIndicator(dX, padT, doorW, dH);
-            labelW(metrics.displayW + ' мм', padL + 8 + totalFrontDrawW / 2, padT - 8);
-            if (gW1 > 16) labelW(fixedPw + '', padL + 8 + gW1 / 2, cSize - 8);
-            labelW(pw2 + '', dX + doorW / 2, cSize - 8);
-            labelH(padT, padT + dH);
-
-        } else if (cfg === 'corner') {
-            let pw1 = panels[0] ? panels[0].w : 800, pw2 = panels[1] ? panels[1].w : 800, total = pw1 + pw2;
-            let frontW = (pw1 / total) * dW * 0.75;
-            let sideW = dW - frontW - 8;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL, padT + dH - 8, dW, 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, frontW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, frontW, dH - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8 + frontW, padT, sideW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8 + frontW, padT, sideW, dH - 8);
-            // front width: above top of sketch, left-aligned to panel center
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(pw1 + ' мм', padL + 8 + frontW / 2, padT - 8);
-            // side width: rotated on the right
-            ctx.save(); ctx.translate(cSize - 14, padT + (dH - 8) / 2); ctx.rotate(-Math.PI / 2);
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(pw2 + ' мм', 0, 0); ctx.restore();
-
-        } else if (cfg === 'corner_door') {
-            let pw1 = metrics.frontTotalW || (panels[0] ? panels[0].w : 400);
-            let pw2 = metrics.doorW || (panels[1] ? panels[1].w : 600);
-            let pw3 = metrics.sidePanelW || (panels[2] ? panels[2].w : 800);
-            let fixedPw = metrics.fixedFrontW;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL, padT + dH - 8, dW, 8);
-            let frontTotal = dW * 0.7;
-            let f1W = metrics.displayW > 0 ? (fixedPw / metrics.displayW) * frontTotal : 0;
-            let ddW = metrics.displayW > 0 ? (pw2 / metrics.displayW) * frontTotal : frontTotal;
-            let sideW = dW - frontTotal - 8;
-            if (f1W > 0) {
-                ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT, f1W, dH - 8);
-                ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT, f1W, dH - 8);
-            }
-            let dX = padL + 8 + f1W;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(dX, padT, ddW, dH - 8);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(dX, padT, ddW, dH - 8);
-            drawDoorIndicator(dX, padT, ddW, dH - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(dX + ddW, padT, sideW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(dX + ddW, padT, sideW, dH - 8);
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(metrics.displayW + ' мм', padL + 8 + frontTotal / 2, padT - 8);
-            if (f1W > 16) ctx.fillText(fixedPw + '', padL + 8 + f1W / 2, cSize - 8);
-            ctx.fillText(pw2 + '', dX + ddW / 2, cSize - 8);
-            ctx.save(); ctx.translate(cSize - 14, padT + (dH - 8) / 2); ctx.rotate(-Math.PI / 2);
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(pw3 + '', 0, 0); ctx.restore();
-            labelH(padT, padT + dH - 8);
-
-        } else if (cfg === 'u_shape') {
-            let pw1 = panels[0] ? panels[0].w : 600, pw2 = panels[1] ? panels[1].w : 1200, pw3 = panels[2] ? panels[2].w : 600;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH); ctx.fillRect(padL, padT, dW, 8);
-            let sW = dW * 0.18;
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, sW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT + 8, sW, dH - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + dW - 8 - sW, padT + 8, sW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + dW - 8 - sW, padT + 8, sW, dH - 8);
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(pw1, padL + 8 + sW / 2, cSize - 8);
-            ctx.fillText(pw2, padL + dW / 2, padT + 8 + dH * 0.14 / 2 + 5);
-            ctx.fillText(pw3, padL + dW - 8 - sW / 2, cSize - 8);
-            labelH(padT, padT + dH);
-
-        } else if (cfg === 'u_shape_door') {
-            let pw1 = panels[0] ? panels[0].w : 600, pw2 = panels[1] ? panels[1].w : 1200, pw3 = panels[2] ? panels[2].w : 400, pw4 = panels[3] ? panels[3].w : 500;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH); ctx.fillRect(padL, padT, dW, 8);
-            let sW = dW * 0.18;
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, sW, dH - 8);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, padT + 8, sW, dH - 8);
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + 8, padT + 8, dW - 16, dH * 0.14);
-            let rightGlassH = dH * 0.4;
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + dW - 8 - sW, padT + 8, sW, rightGlassH);
-            ctx.strokeStyle = glassColor; ctx.strokeRect(padL + dW - 8 - sW, padT + 8, sW, rightGlassH);
-            let dY = padT + 8 + rightGlassH, doorHh = dH - 8 - rightGlassH;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(padL + dW - 8 - sW, dY, sW, doorHh);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(padL + dW - 8 - sW, dY, sW, doorHh);
-            drawDoorIndicator(padL + dW - 8 - sW, dY, sW, doorHh, 'vertical');
-            ctx.fillStyle = '#1e293b'; ctx.font = font; ctx.textAlign = 'center';
-            ctx.fillText(pw1, padL + 8 + sW / 2, cSize - 8);
-            ctx.fillText(pw2, padL + dW / 2, padT + 8 + dH * 0.14 / 2 + 5);
-            ctx.fillText(pw3, padL + dW - 8 - sW / 2, cSize - 8);
-            labelH(padT, padT + dH);
-
-        } else if (cfg === 'sliding_door') {
-            let pw1 = panels[0] ? panels[0].w : 500, pw2 = panels[1] ? panels[1].w : 600, totalPW = pw1 + pw2;
-            let staticW = (pw1 / totalPW) * dW * 0.85, slideW = (pw2 / totalPW) * dW * 0.85;
-            ctx.fillStyle = wallColor; ctx.fillRect(padL, padT, 8, dH); ctx.fillRect(padL + dW - 8, padT, 8, dH);
-            let midY = padT + dH / 2;
-            ctx.fillStyle = glassFill; ctx.fillRect(padL + 8, midY - 5, staticW, 10);
-            ctx.strokeStyle = glassColor; ctx.lineWidth = 3; ctx.strokeRect(padL + 8, midY - 5, staticW, 10);
-            let slideX = padL + 8 + staticW - 12;
-            ctx.fillStyle = '#eff6ff'; ctx.fillRect(slideX, midY + 3, slideW, 10);
-            ctx.strokeStyle = doorColor; ctx.lineWidth = 2; ctx.strokeRect(slideX, midY + 3, slideW, 10);
-            // arrow
-            let aY = midY + 8;
-            ctx.beginPath();
-            ctx.moveTo(slideX + 10, aY); ctx.lineTo(slideX + slideW - 10, aY);
-            ctx.moveTo(slideX + 14, aY - 3); ctx.lineTo(slideX + 10, aY); ctx.lineTo(slideX + 14, aY + 3);
-            ctx.moveTo(slideX + slideW - 14, aY - 3); ctx.lineTo(slideX + slideW - 10, aY); ctx.lineTo(slideX + slideW - 14, aY + 3);
-            ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5; ctx.stroke();
-            labelW(pw1 + '', padL + 8 + staticW / 2, cSize - 8);
-            labelW(pw2 + ' ↔', slideX + slideW / 2, cSize - 8);
-            labelH(padT, padT + dH);
-        }
-        if (cfg !== 'partition' && cfg !== 'partition_door' && cfg !== 'corner_door' && cfg !== 'u_shape' && cfg !== 'u_shape_door' && cfg !== 'sliding_door') {
-            labelH(padT, padT + dH);
-        }
-        return; // Skip standard dimensions for shower
+        
+        // Верхняя штанга
+        innerSvg += `<line x1="${x-10}" y1="${y}" x2="${x+svgW+10}" y2="${y}" stroke="#334155" stroke-width="12" stroke-linecap="round"/>`;
+    } else {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="#94a3b8" stroke-width="6" stroke-dasharray="10,10" rx="8"/>`;
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2-10}" font-family="Arial" font-size="56" fill="#cbd5e1" text-anchor="middle">✦</text>`;
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+30}" font-family="Arial" font-size="28" font-weight="bold" fill="#64748b" text-anchor="middle">ДОП. ОПЦИЯ</text>`;
     }
 
-    // Draw Dimensions (Bottom = W, Right = H)
-    ctx.fillStyle = '#000000'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-    let bottomLabel = item.category === 'sill' ? item.h + ' мм' : item.w + ' мм';
-    ctx.fillText(bottomLabel, x + w / 2, y + h + 28);
-    let rightLabel = item.category === 'sill' ? item.w + ' мм' : item.h + ' мм';
-    ctx.save(); ctx.translate(x + w + 22, y + h / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(rightLabel, 0, 0); ctx.restore();
-    ctx.beginPath(); ctx.lineWidth = 1; ctx.strokeStyle = '#000000';
-    ctx.moveTo(x + w + 4, y); ctx.lineTo(x + w + 16, y);
-    ctx.moveTo(x + w + 4, y + h); ctx.lineTo(x + w + 16, y + h);
-    ctx.moveTo(x + w + 10, y); ctx.lineTo(x + w + 10, y + h);
-    ctx.stroke();
+    let bottomLabel = w > 0 ? (w + ' мм') : '';
+    let rightLabel = h > 0 ? (h + ' мм') : '';
+    
+    // Пишем общую ширину сверху для ВСЕХ изделий (включая душевые)
+    if (w > 0) {
+        let fSize = 56;
+        innerSvg += `<text x="${x + svgW/2}" y="${y - 35}" font-family="Arial, sans-serif" font-size="${fSize}" fill="#334155" text-anchor="middle">${bottomLabel}</text>`;
+        innerSvg += `<path d="M${x} ${y-10} L${x} ${y-20} L${x+svgW} ${y-20} L${x+svgW} ${y-10}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
+    }
+    
+    // Пишем высоту справа для ВСЕХ изделий
+    if (h > 0) {
+        let fSize = 56;
+        let textX = x + svgW + 90; 
+        let textY = y + svgH/2;
+        innerSvg += `<text x="${textX}" y="${textY}" font-family="Arial, sans-serif" font-size="${fSize}" fill="#334155" text-anchor="middle" transform="rotate(-90, ${textX}, ${textY})">${rightLabel}</text>`;
+        innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
+    }
+
+    return `
+    <svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; min-width: 150px; max-width: 280px; height: auto; display: block; margin: 0 auto;">
+        ${innerSvg}
+    </svg>`;
 }
+
 
 // --- SETTINGS AND PRICING LOGIC ---
 function toggleSettingsModal() { document.getElementById('settings-modal').classList.toggle('hidden'); }
