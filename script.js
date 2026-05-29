@@ -2657,7 +2657,7 @@ function downloadExcelTemplate() {
 // ==========================================
 // АРХИВ ПРОСЧЁТОВ (localStorage)
 // ==========================================
-const API_URL = 'https://w98834km.beget.tech/api.php';
+const API_URL = 'http://w98834km.beget.tech/api.php';
 let GLOBAL_ARCHIVE_CACHE = [];
 
 async function fetchArchive() {
