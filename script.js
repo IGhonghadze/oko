@@ -2519,7 +2519,7 @@ function generateSvgSketch(item) {
     }
 
     return `
-    <svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; min-width: 150px; max-width: 280px; height: auto; display: block; margin: 0 auto;">
+    <svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">
         ${innerSvg}
     </svg>`;
 }
@@ -2718,8 +2718,17 @@ async function saveCalculation(btn) {
     let tSumText = document.getElementById('cart-total-display') ? document.getElementById('cart-total-display').innerText.replace(/[^\d.-]/g, '') : '0';
     let tSum = parseFloat(tSumText) || 0;
     
+    let targetId = Date.now();
+    if (window.CURRENT_LOADED_ARCHIVE_ID) {
+        if (confirm(`Обновить расчет в архиве?\n\n[ОК] - Обновить существующий (перезаписать)\n[Отмена] - Сохранить как новую копию`)) {
+            targetId = window.CURRENT_LOADED_ARCHIVE_ID;
+        } else {
+            window.CURRENT_LOADED_ARCHIVE_ID = null; // Create new copy
+        }
+    }
+    
     let entry = { 
-        id: Date.now(), 
+        id: targetId, 
         name: name.trim(), 
         date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}), 
         itemCount: ITEMS.length, 
@@ -2745,7 +2754,9 @@ function loadCalculation(id) {
     let entry = GLOBAL_ARCHIVE_CACHE.find(e => e.id == id);
     if (!entry) return;
     if (!confirm(`Загрузить "${entry.name}"?\n\nТекущая смета будет заменена.`)) return;
-    applyState(entry.state); closeArchive();
+    applyState(entry.state);
+    window.CURRENT_LOADED_ARCHIVE_ID = id;
+    closeArchive();
 }
 
 async function deleteCalculation(id) {
@@ -2853,7 +2864,9 @@ function renderArchiveList() {
         }
         
         let client = e.state?.clientName || 'Не указан';
-        let kpId = e.state?.kpNumber || e.state?.currentKpId || 'БЕЗ НОМЕРА';
+        let kpNumber = e.state?.kpNumber || 'БЕЗ НОМЕРА';
+        let sysId = e.id;
+        let idBadge = `<span class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500 tracking-wider" title="Системный ID: ${sysId}">#${sysId} | ${kpNumber}</span>`;
         
         // Calculate total dynamically if missing
         let totalVal = e.totalSum || calcArchivedTotal(e.state);
@@ -2863,7 +2876,7 @@ function renderArchiveList() {
             return `<div class="bg-white border-2 border-slate-100 rounded-2xl hover:border-brand-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group relative">
                 <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                     <div class="flex items-center gap-2">
-                        <span class="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-500 tracking-wider">${kpId}</span>
+                        ${idBadge}
                         <span class="text-xs font-medium text-slate-400 flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${e.date}</span>
                     </div>
                     <div class="dropdown relative">
@@ -2904,7 +2917,7 @@ function renderArchiveList() {
             // List View
             return `<div class="bg-white border-2 border-slate-100 rounded-xl hover:border-brand-primary/50 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center p-3 gap-4 group cursor-pointer" onclick="loadCalculation(${e.id})">
                 <div class="flex-shrink-0 flex items-center gap-3 w-full sm:w-48">
-                    <span class="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-[10px] font-bold text-slate-500 tracking-wider">${kpId}</span>
+                    ${idBadge}
                     <span class="text-xs font-medium text-slate-400 whitespace-nowrap">${e.date}</span>
                 </div>
                 
