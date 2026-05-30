@@ -2891,8 +2891,8 @@ function renderArchiveList() {
                 </div>
                 
                 <div class="p-5 flex flex-col h-full cursor-pointer" onclick="loadCalculation(${e.id})">
-                    <div class="flex gap-4 mb-4">
-                        <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center p-1.5 border border-slate-100 rounded-xl bg-white shadow-inner group-hover:scale-105 transition-transform duration-300">
+                    <div class="flex gap-5 mb-4">
+                        <div class="w-20 h-20 flex-shrink-0 flex items-center justify-center p-2 border border-slate-100 rounded-xl bg-white shadow-inner group-hover:scale-105 transition-transform duration-300">
                             ${sketchHtml}
                         </div>
                         <div class="flex-1 flex flex-col justify-center min-w-0">
@@ -2915,13 +2915,13 @@ function renderArchiveList() {
             </div>`;
         } else {
             // List View
-            return `<div class="bg-white border-2 border-slate-100 rounded-xl hover:border-brand-primary/50 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center p-3 gap-4 group cursor-pointer" onclick="loadCalculation(${e.id})">
-                <div class="flex-shrink-0 flex items-center gap-3 w-full sm:w-48">
+            return `<div class="bg-white border-2 border-slate-100 rounded-xl hover:border-brand-primary/50 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center p-4 gap-6 group cursor-pointer" onclick="loadCalculation(${e.id})">
+                <div class="flex-shrink-0 flex items-center gap-3 w-full sm:w-64">
                     ${idBadge}
                     <span class="text-xs font-medium text-slate-400 whitespace-nowrap">${e.date}</span>
                 </div>
                 
-                <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
+                <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full pl-2 sm:pl-4 border-l border-transparent sm:border-slate-100">
                     <div class="flex-1 min-w-0">
                         <h3 class="text-base font-bold text-slate-800 truncate" title="${e.name}">${e.name}</h3>
                         <div class="text-xs font-medium text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
