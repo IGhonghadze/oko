@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // Oko Calculator — Основной скрипт
 // ==========================================
 
@@ -3140,3 +3140,4 @@ document.addEventListener('click', function(evt) {
         document.querySelectorAll('.dropdown-menu:not(.hidden)').forEach(d => d.classList.add('hidden'));
     }
 });
+
