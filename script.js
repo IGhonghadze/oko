@@ -2858,7 +2858,7 @@ function renderArchiveList() {
     
     let headerHtml = '';
     if (archiveViewMode === 'list') {
-        headerHtml = <div class="hidden sm:flex flex-row items-center gap-4 sm:gap-6 px-4 py-3 mb-1 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">
+        headerHtml = `<div class="hidden sm:flex flex-row items-center gap-4 sm:gap-6 px-4 py-3 mb-1 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">
             <div class="flex flex-row items-center gap-4 w-full sm:w-auto shrink-0">
                 <div class="w-16 sm:w-20 shrink-0 text-center sm:text-left">№ КП</div>
                 <div class="w-32 shrink-0">Дата создания</div>
@@ -2870,7 +2870,7 @@ function renderArchiveList() {
                 <div class="text-right flex-shrink-0 w-24">Стоимость</div>
                 <div class="w-12"></div>
             </div>
-        </div>;
+        </div>`;
     }
     
     container.innerHTML = headerHtml + archive.map(e => {
@@ -3157,6 +3157,8 @@ document.addEventListener('click', function(evt) {
         document.querySelectorAll('.dropdown-menu:not(.hidden)').forEach(d => d.classList.add('hidden'));
     }
 });
+
+
 
 
 
