@@ -181,7 +181,7 @@
                                 Душевые</button>
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
                                 onclick="switchTab('rollers')"><i data-lucide="archive" class="w-5 h-5"></i>
-                                Роллеты</button>
+                                Ворота</button>
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
                                 onclick="switchTab('blinds')"><i data-lucide="app-window" class="w-5 h-5"></i>
                                 Жалюзи</button>
@@ -826,9 +826,16 @@
                             <!-- TAB: ROLLERS -->
                             <div id="tab-rollers" class="category-content p-4 sm:p-6">
                                 <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i
-                                        data-lucide="archive" class="w-5 h-5 text-brand-primary"></i> Роллеты
+                                        data-lucide="archive" class="w-5 h-5 text-brand-primary"></i> Роллеты и Ворота
                                 </h2>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Вид изделия</label>
+                                        <select id="roller-type" onchange="if(this.value==='gate'){document.getElementById('roller-brand').value='DoorHan'; updateRollerProfiles();}" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="roller">Защитная роллета</option>
+                                            <option value="gate">Секционные ворота</option>
+                                        </select>
+                                    </div>
                                     <div>
                                         <label class="block text-sm font-medium text-slate-600 mb-1">Бренд</label>
                                         <select id="roller-brand" onchange="updateRollerProfiles()"
@@ -1655,6 +1662,7 @@
 </body>
 
 </html>
+
 
 
 
