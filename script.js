@@ -1292,6 +1292,7 @@ function addRollerItem() {
     let control = document.getElementById('roller-control').value;
     let color = document.getElementById('roller-color').value;
     let comment = document.getElementById('roller-comment').value.trim();
+    let rType = document.getElementById('roller-type') ? document.getElementById('roller-type').value : 'roller';
 
     let controlText = control === 'auto' ? 'Автоматика (электропривод)' : 'Ручное (пружина/инерция)';
     
@@ -1302,11 +1303,13 @@ function addRollerItem() {
         comment ? `📝 ${comment}` : null
     ].filter(Boolean);
 
+    let typeStr = rType === 'gate' ? `Секционные ворота ${brand} (${w}×${h}мм)` : `Защитная роллета ${brand} (${w}×${h}мм)`;
+
     // SVG эскиз для роллеты
     _commitItems.push({
         id: Date.now(),
         category: 'roller',
-        type: `Роллета ${brand} (${w}×${h}мм)`,
+        type: typeStr,
         qty: qty,
         w: w, h: h, area: (w * h) / 1000000, calcArea: (w * h) / 1000000,
         shape: profile,
@@ -3157,6 +3160,7 @@ document.addEventListener('click', function(evt) {
         document.querySelectorAll('.dropdown-menu:not(.hidden)').forEach(d => d.classList.add('hidden'));
     }
 });
+
 
 
 
