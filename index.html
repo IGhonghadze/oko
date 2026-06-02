@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 
 <head>
@@ -165,6 +165,12 @@
                                 onclick="switchTab('glass')"><i data-lucide="layout-grid" class="w-5 h-5"></i>
                                 Стеклопакеты</button>
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('sandwich')"><i data-lucide="columns" class="w-5 h-5"></i>
+                                Сендвич-панели</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('glasses')"><i data-lucide="rectangle-horizontal" class="w-5 h-5"></i>
+                                Стёкла</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
                                 onclick="switchTab('nets')"><i data-lucide="grid-3x3" class="w-5 h-5"></i> Москитные
                                 сетки</button>
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
@@ -185,6 +191,9 @@
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
                                 onclick="switchTab('blinds')"><i data-lucide="app-window" class="w-5 h-5"></i>
                                 Жалюзи</button>
+                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                onclick="switchTab('hardware')"><i data-lucide="wrench" class="w-5 h-5"></i>
+                                Фурнитура</button>
                             <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
                                 onclick="switchTab('custom')"><i data-lucide="package-plus" class="w-5 h-5"></i>
                                 Прочее</button>
@@ -250,6 +259,86 @@
                                 <button onclick="addGlassItem()"
                                     class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(19,163,137,0.39)] hover:shadow-[0_6px_20px_rgba(19,163,137,0.23)] active:scale-[0.98]"><i
                                         data-lucide="plus" class="w-5 h-5"></i> Добавить стеклопакет</button>
+                            </div>
+
+                            <!-- TAB: SANDWICH -->
+                            <div id="tab-sandwich" class="category-content">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label><input type="number" id="sandwich-w" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1000"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label><input type="number" id="sandwich-h" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1200"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="sandwich-qty" value="1" min="1" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1"></div>
+                                </div>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Толщина панели</label>
+                                    <select id="sandwich-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="10">10 мм</option>
+                                        <option value="24">24 мм</option>
+                                        <option value="32">32 мм</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 relative overflow-hidden">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-primary"></div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Цвет снаружи</label>
+                                        <select id="sandwich-color-out" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                            <option value="Белый">Белый</option>
+                                            <option value="Антрацит-серый">Антрацит-серый</option>
+                                            <option value="Золотой дуб">Золотой дуб</option>
+                                            <option value="Тёмный дуб">Тёмный дуб</option>
+                                        </select>
+                                    </div>
+                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 relative overflow-hidden">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-secondary"></div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Цвет внутри</label>
+                                        <select id="sandwich-color-in" class="w-full p-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                            <option value="Белый">Белый</option>
+                                            <option value="Антрацит-серый">Антрацит-серый</option>
+                                            <option value="Золотой дуб">Золотой дуб</option>
+                                            <option value="Тёмный дуб">Тёмный дуб</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="sandwich-comment" placeholder="Напр.: на балконную дверь..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addSandwichItem()" class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(19,163,137,0.39)] hover:shadow-[0_6px_20px_rgba(19,163,137,0.23)] active:scale-[0.98]"><i data-lucide="plus" class="w-5 h-5"></i> Добавить сендвич-панель</button>
+                            </div>
+
+                            <!-- TAB: GLASSES -->
+                            <div id="tab-glasses" class="category-content">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label><input type="number" id="glasses-w" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1000"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label><input type="number" id="glasses-h" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1200"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="glasses-qty" value="1" min="1" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1"></div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Толщина</label>
+                                        <select id="glasses-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="4">4 мм</option>
+                                            <option value="6">6 мм</option>
+                                            <option value="8">8 мм</option>
+                                            <option value="10">10 мм</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
+                                        <select id="glasses-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                            <option value="Сырое">Сырое (обычное)</option>
+                                            <option value="Закалка">Закалка</option>
+                                            <option value="Триплекс">Триплекс</option>
+                                            <option value="Рифлёное">Рифлёное</option>
+                                            <option value="Тонированное">Тонированное</option>
+                                            <option value="Матовое">Матовое</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
+                                    <input type="text" id="glasses-comment" placeholder="Напр.: шлифовка кромок..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+                                <button onclick="addGlassesItem()" class="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(19,163,137,0.39)] hover:shadow-[0_6px_20px_rgba(19,163,137,0.23)] active:scale-[0.98]"><i data-lucide="plus" class="w-5 h-5"></i> Добавить стекло</button>
                             </div>
 
                             <!-- TAB: NETS -->
@@ -970,39 +1059,88 @@
                                     class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i
                                         data-lucide="plus" class="w-5 h-5"></i> Добавить жалюзи</button>
                             </div>
+                            <!-- TAB: HARDWARE -->
+                            <div id="tab-hardware" class="category-content p-4 sm:p-6">
+                                <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="wrench" class="w-5 h-5 text-brand-primary"></i> Фурнитура</h2>
+                                <p class="text-sm text-slate-500 mb-5">Оконная и дверная фурнитура для ремонта и модернизации.</p>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Наименование <span class="text-red-400">*</span></label>
+                                    <input type="text" id="hardware-name" placeholder="Напр.: Ручка с ключом, Петля дверная, Замок..." class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цена (₽)</label>
+                                        <input type="number" id="hardware-price" placeholder="0" min="0" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label>
+                                        <input type="number" id="hardware-qty" value="1" min="1" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий для клиента</label>
+                                    <input type="text" id="hardware-comment" placeholder="Напр.: замена сломанной петли..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                </div>
+
+                                <button onclick="addHardwareItem()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"><i data-lucide="plus" class="w-5 h-5"></i> Добавить фурнитуру</button>
+                            </div>
+
                             <!-- TAB: CUSTOM ITEMS -->
                             <div id="tab-custom" class="category-content p-4 sm:p-6">
-                                <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="package-plus" class="w-5 h-5 text-brand-primary"></i> Прочие позиции</h2>
-                                <p class="text-sm text-slate-500 mb-5">Любые изделия или работы, не входящие в другие разделы. Размеры, описание и комментарий попадут в КП.</p>
+                                <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="package-plus" class="w-5 h-5 text-brand-primary"></i> Прочие изделия и работы</h2>
+                                <p class="text-sm text-slate-500 mb-5">Универсальный раздел для любых позиций, отсутствующих в других категориях.</p>
+
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5">
+                                    <label class="block text-sm font-bold text-slate-700 mb-3">Тип добавляемой позиции</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="custom-type" value="simple" checked onchange="toggleCustomFields()" class="w-4 h-4 text-brand-primary focus:ring-brand-primary">
+                                            <span class="text-sm font-medium text-slate-700">Товар / Услуга (без размеров)</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="custom-type" value="sized" onchange="toggleCustomFields()" class="w-4 h-4 text-brand-primary focus:ring-brand-primary">
+                                            <span class="text-sm font-medium text-slate-700">Изделие (с размерами для эскиза)</span>
+                                        </label>
+                                    </div>
+                                </div>
 
                                 <!-- Наименование -->
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <label class="block text-sm font-medium text-slate-600 mb-1">Наименование <span class="text-red-400">*</span></label>
-                                    <input type="text" id="custom-name" placeholder="Напр.: Раздвижка REHAU, Ремонт рамы..."
+                                    <input type="text" id="custom-name" placeholder="Напр.: Регулировка окна, Доставка, Раздвижка REHAU..."
                                         class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
                                 </div>
 
-                                <!-- Размеры (необязательно) -->
-                                <div class="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">📐 Размеры (необязательно — для эскиза в КП)</label>
-                                    <div class="grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label class="block text-[10px] text-slate-400 mb-1">Ширина (мм)</label>
-                                            <input type="number" id="custom-w" placeholder="1200" min="0"
-                                                class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] text-slate-400 mb-1">Высота (мм)</label>
-                                            <input type="number" id="custom-h" placeholder="1400" min="0"
-                                                class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] text-slate-400 mb-1">Площадь (м²)</label>
-                                            <input type="text" id="custom-area-display" placeholder="авто" readonly
-                                                class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-500 cursor-default">
+                                <!-- Размеры (скрыто по умолчанию) -->
+                                <div id="custom-dimensions-block" class="mb-4 hidden">
+                                    <div class="p-4 bg-brand-light/30 rounded-xl border border-brand-primary/20 shadow-sm">
+                                        <label class="block text-xs font-semibold text-brand-dark uppercase tracking-wider mb-3">📐 Размеры (для эскиза и расчёта площади)</label>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label class="block text-xs text-slate-500 mb-1">Ширина (мм)</label>
+                                                <input type="number" id="custom-w" placeholder="1200" min="0"
+                                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-slate-500 mb-1">Высота (мм)</label>
+                                                <input type="number" id="custom-h" placeholder="1400" min="0"
+                                                    class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-slate-500 mb-1">Площадь (м²)</label>
+                                                <input type="text" id="custom-area-display" placeholder="авто" readonly
+                                                    class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-500 cursor-default">
+                                            </div>
                                         </div>
                                     </div>
                                     <script>
+                                        function toggleCustomFields() {
+                                            var isSized = document.querySelector('input[name="custom-type"]:checked').value === 'sized';
+                                            document.getElementById('custom-dimensions-block').style.display = isSized ? 'block' : 'none';
+                                        }
                                         (function() {
                                             function updateArea() {
                                                 var w = parseFloat(document.getElementById('custom-w').value) || 0;
@@ -1014,15 +1152,16 @@
                                             document.addEventListener('DOMContentLoaded', function() {
                                                 document.getElementById('custom-w').addEventListener('input', updateArea);
                                                 document.getElementById('custom-h').addEventListener('input', updateArea);
+                                                toggleCustomFields();
                                             });
                                         })();
                                     </script>
                                 </div>
 
                                 <!-- Цена / кол-во / ед. -->
-                                <div class="grid grid-cols-3 gap-3 mb-3">
+                                <div class="grid grid-cols-3 gap-3 mb-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цена (₽)</label>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Цена за ед. (₽)</label>
                                         <input type="number" id="custom-price" placeholder="0" min="0"
                                             class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
                                     </div>
@@ -1044,14 +1183,11 @@
                                 </div>
 
                                 <!-- Описание для КП -->
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <label class="block text-sm font-medium text-slate-600 mb-1">Описание для клиента <span class="text-slate-400 font-normal text-xs">(что будет в КП)</span></label>
-                                    <textarea id="custom-desc" rows="2" placeholder="Напр.: Раздвижная система 2 полотна, цвет Антрацит RAL 7016, стекло 6 мм..."
+                                    <textarea id="custom-desc" rows="2" placeholder="Напр.: Монтаж осуществляется по ГОСТ с использованием лент..."
                                         class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none resize-none"></textarea>
                                 </div>
-
-
-
                                 <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                     <p class="text-xs text-amber-800 font-medium">⚠️ Цена вводится итоговая для клиента. Глобальная наценка <strong>не применяется</strong>. Если введены размеры — в КП появится эскиз.</p>
                                 </div>
@@ -1260,31 +1396,29 @@
             </div>
             <div id="proposal-content" class="bg-white">
                 <div class="flex flex-col sm:flex-row justify-between items-start border-b-2 border-brand-primary pb-3 mb-4 mt-2 gap-4">
-                    <div class="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-4 w-full sm:w-auto"><img
-                            src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Логотип"
-                            class="w-52 sm:w-60 print:w-52 h-auto object-contain shrink-0">
-                        <div class="flex flex-col justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-slate-200 pt-2 sm:pt-0 pl-0 sm:pl-4 shrink-0 text-center sm:text-left w-full sm:w-auto">
-                            <p
-                                class="text-[11px] font-bold text-slate-800 uppercase tracking-wide leading-snug whitespace-nowrap">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-4 w-full sm:w-auto overflow-hidden">
+                        <img src="https://static.tildacdn.com/tild3262-6164-4464-a231-336136356536/_.png" alt="Логотип"
+                            class="w-48 sm:w-56 print:w-48 h-auto object-contain shrink-0">
+                        <div class="flex flex-col justify-center border-t-2 sm:border-t-0 sm:border-l-2 border-slate-200 pt-2 sm:pt-0 pl-0 sm:pl-4 text-center sm:text-left w-full sm:w-auto overflow-hidden">
+                            <p class="text-[11px] font-bold text-slate-800 uppercase tracking-wide leading-snug">
                                 Комплексные решения<br>для дома и бизнеса</p>
-                            <div class="text-[10px] text-slate-600 mt-1.5 space-y-1 font-medium whitespace-nowrap"
+                            <div class="text-[10px] text-slate-600 mt-1.5 space-y-1 font-medium"
                                 id="company-contacts"></div>
                         </div>
                     </div>
-                    <div class="w-full sm:max-w-[45%] text-left sm:text-right flex flex-col items-start sm:items-end shrink-0 pl-0 sm:pl-4 mt-4 sm:mt-0">
-                        <div class="flex items-baseline justify-start sm:justify-end flex-wrap gap-x-2 w-full">
-                            <h2
-                                class="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">
-                                Коммерческое предложение</h2>
-                            <h3 class="text-base sm:text-lg md:text-xl font-black text-brand-primary"
+                    <div class="w-full sm:w-auto flex-1 text-left sm:text-right flex flex-col items-start sm:items-end pl-0 sm:pl-4 mt-4 sm:mt-0 overflow-hidden box-border">
+                        <div class="flex flex-wrap items-baseline justify-start sm:justify-end gap-x-2 w-full">
+                            <h2 class="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight leading-tight">
+                                Коммерческое<br>предложение</h2>
+                            <h3 class="text-base sm:text-lg md:text-xl font-black text-brand-primary mt-1"
                                 id="kp-number-display-right"></h3>
                         </div>
-                        <p class="text-xs font-bold text-slate-500 uppercase mt-1">Счет-договор (Оферта)</p>
-                        <p class="text-slate-500 text-xs mt-1">Дата: <span id="kp-date"
+                        <p class="text-xs font-bold text-slate-500 uppercase mt-2 break-words max-w-full">Счет-договор (Оферта)</p>
+                        <p class="text-slate-500 text-xs mt-1 break-words max-w-full">Дата: <span id="kp-date"
                                 class="text-slate-900 font-bold"></span></p>
-                        <div class="mt-3 bg-slate-50 border border-slate-200 rounded p-2 text-left w-full sm:w-[220px]">
-                            <p class="text-[9px] text-slate-400 uppercase tracking-wider mb-0.5">Заказчик</p>
-                            <p id="kp-client-display" class="font-bold text-slate-800 text-xs break-words">
+                        <div class="mt-3 bg-slate-50 border border-slate-200 rounded p-3 text-left w-full sm:w-auto min-w-[220px] max-w-full overflow-hidden box-border">
+                            <p class="text-[9px] text-slate-400 uppercase tracking-wider mb-1">Заказчик</p>
+                            <p id="kp-client-display" class="font-bold text-slate-800 text-xs break-words whitespace-normal">
                                 _______________</p>
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // Oko Calculator — Основной скрипт
 // ==========================================
 
@@ -477,6 +477,39 @@ function setupEnterKeys() {
             addBlindsItem();
         }
     });
+    // Sandwich panels
+    document.getElementById('sandwich-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sandwich-h').focus();
+    });
+    document.getElementById('sandwich-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sandwich-qty').focus();
+    });
+    document.getElementById('sandwich-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addSandwichItem();
+    });
+    // Glasses
+    document.getElementById('glasses-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('glasses-h').focus();
+    });
+    document.getElementById('glasses-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('glasses-qty').focus();
+    });
+    document.getElementById('glasses-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addGlassesItem();
+    });
+    // Hardware
+    document.getElementById('hardware-name').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('hardware-price').focus();
+    });
+    document.getElementById('hardware-price').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('hardware-qty').focus();
+    });
+    document.getElementById('hardware-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('hardware-name').focus();
+            addHardwareItem();
+        }
+    });
 }
 
 // --- UI & TAB LOGIC ---
@@ -616,6 +649,107 @@ function addGlassItem() {
     document.getElementById('glass-comment').value = '';
     document.getElementById('glass-w').focus();
     if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-glass', _capturedData);
+    else renderCart();
+}
+
+// --- SANDWICH LOGIC ---
+function addSandwichItem() {
+    let _capturedData = captureRawData("tab-sandwich");
+    let _commitItems = [];
+    let w = parseFloat(document.getElementById('sandwich-w').value);
+    let h = parseFloat(document.getElementById('sandwich-h').value);
+    if (!w || !h) { alert('Введите ширину и высоту!'); return; }
+
+    let qty = parseInt(document.getElementById('sandwich-qty').value) || 1;
+    let thickness = document.getElementById('sandwich-thickness').value;
+    let colorOut = document.getElementById('sandwich-color-out').value;
+    let colorIn = document.getElementById('sandwich-color-in').value;
+    let comment = document.getElementById('sandwich-comment').value.trim();
+
+    let area = (w * h) / 1000000;
+    
+    // Заглушка цены (пока нет реального прайса)
+    let basePricePerSqM = 0; 
+    let unitCost = basePricePerSqM * area;
+
+    let optionsDesc = [
+        `Сендвич-панель: ${thickness} мм`,
+        `Снаружи: ${colorOut}`,
+        `Внутри: ${colorIn}`,
+        comment ? `📝 ${comment}` : null
+    ].filter(Boolean);
+
+    _commitItems.push({
+        id: Date.now(),
+        category: 'sandwich',
+        type: `Сендвич-панель ${thickness}мм`,
+        qty: qty,
+        w: w, h: h, area: area, calcArea: area,
+        shape: 'Прямоугольник',
+        isLarge: false,
+        unitCost: unitCost,
+        optionsDesc: optionsDesc,
+        baseTotal: unitCost * qty,
+        colorOut: colorOut,
+        colorIn: colorIn
+    });
+
+    document.getElementById('sandwich-w').value = '';
+    document.getElementById('sandwich-h').value = '';
+    document.getElementById('sandwich-qty').value = '1';
+    document.getElementById('sandwich-comment').value = '';
+    document.getElementById('sandwich-w').focus();
+    
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-sandwich', _capturedData);
+    else renderCart();
+}
+
+// --- GLASSES LOGIC ---
+function addGlassesItem() {
+    let _capturedData = captureRawData("tab-glasses");
+    let _commitItems = [];
+    let w = parseFloat(document.getElementById('glasses-w').value);
+    let h = parseFloat(document.getElementById('glasses-h').value);
+    if (!w || !h) { alert('Введите ширину и высоту!'); return; }
+
+    let qty = parseInt(document.getElementById('glasses-qty').value) || 1;
+    let thickness = document.getElementById('glasses-thickness').value;
+    let typeName = document.getElementById('glasses-type').value;
+    let comment = document.getElementById('glasses-comment').value.trim();
+
+    let area = (w * h) / 1000000;
+    
+    // Заглушка цены
+    let basePricePerSqM = 0;
+    let unitCost = basePricePerSqM * area;
+
+    let optionsDesc = [
+        `Стекло: ${typeName} ${thickness}мм`,
+        comment ? `📝 ${comment}` : null
+    ].filter(Boolean);
+
+    _commitItems.push({
+        id: Date.now(),
+        category: 'glasses',
+        type: `Стекло ${typeName} ${thickness}мм`,
+        qty: qty,
+        w: w, h: h, area: area, calcArea: area,
+        shape: 'Прямоугольник',
+        isLarge: false,
+        unitCost: unitCost,
+        optionsDesc: optionsDesc,
+        baseTotal: unitCost * qty,
+        thickness: thickness,
+        glassType: typeName
+    });
+
+    document.getElementById('glasses-w').value = '';
+    document.getElementById('glasses-h').value = '';
+    document.getElementById('glasses-qty').value = '1';
+    document.getElementById('glasses-comment').value = '';
+    document.getElementById('glasses-w').focus();
+    
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-glasses', _capturedData);
     else renderCart();
 }
 
@@ -1513,6 +1647,39 @@ function addShowerItem() {
 }
 
 // --- CUSTOM ITEMS LOGIC ---
+// --- HARDWARE LOGIC ---
+function addHardwareItem() {
+    let _capturedData = captureRawData("tab-hardware");
+    let _commitItems = [];
+    let name = document.getElementById('hardware-name').value.trim();
+    let price = parseFloat(document.getElementById('hardware-price').value) || 0;
+    let qty = parseInt(document.getElementById('hardware-qty').value) || 1;
+    let comment = document.getElementById('hardware-comment').value.trim();
+    
+    if (!name) { alert('Введите наименование!'); return; }
+
+    let optionsDesc = [];
+    if (comment) optionsDesc.push(`📝 ${comment}`);
+
+    _commitItems.push({
+        id: Date.now(), category: 'hardware', type: name,
+        qty: qty, w: 0, h: 0, l: 0, area: 0, calcArea: 0,
+        shape: '', isLarge: false,
+        unit: 'шт.', unitCost: price,
+        optionsDesc: optionsDesc, baseTotal: price * qty
+    });
+
+    document.getElementById('hardware-name').value = '';
+    document.getElementById('hardware-price').value = '';
+    document.getElementById('hardware-qty').value = '1';
+    document.getElementById('hardware-comment').value = '';
+    document.getElementById('hardware-name').focus();
+    
+    if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-hardware', _capturedData);
+    else renderCart();
+}
+
+// --- CUSTOM ITEMS LOGIC ---
 function addCustomItem() {
     let _capturedData = captureRawData("tab-custom");
     let _commitItems = [];
@@ -1520,16 +1687,24 @@ function addCustomItem() {
     let price = parseFloat(document.getElementById('custom-price').value) || 0;
     let qty = parseInt(document.getElementById('custom-qty').value) || 1;
     let unit = document.getElementById('custom-unit').value || 'шт.';
-    let w = parseFloat(document.getElementById('custom-w').value) || 0;
-    let h = parseFloat(document.getElementById('custom-h').value) || 0;
+    
+    let isSized = false;
+    let typeRadio = document.querySelector('input[name="custom-type"]:checked');
+    if (typeRadio && typeRadio.value === 'sized') isSized = true;
+
+    let w = 0, h = 0, area = 0;
+    if (isSized) {
+        w = parseFloat(document.getElementById('custom-w').value) || 0;
+        h = parseFloat(document.getElementById('custom-h').value) || 0;
+        area = (w > 0 && h > 0) ? (w * h / 1000000) : 0;
+    }
+
     let desc = document.getElementById('custom-desc').value.trim();
     if (!name) { alert('Введите наименование!'); return; }
 
-    let area = (w > 0 && h > 0) ? (w * h / 1000000) : 0;
     let optionsDesc = [];
-    let customSvg = null;
 
-    if (w > 0 && h > 0) {
+    if (isSized && w > 0 && h > 0) {
         optionsDesc.push(`Размер: ${w} × ${h} мм (${area.toFixed(3)} м²)`);
     }
     
@@ -1550,16 +1725,19 @@ function addCustomItem() {
         shape: '', isLarge: false,
         unit: unit, unitCost: price,
         optionsDesc: optionsDesc, baseTotal: effectiveTotal,
-        customSvg: customSvg
+        isSized: isSized
     });
     
     document.getElementById('custom-name').value = '';
     document.getElementById('custom-price').value = '';
     document.getElementById('custom-qty').value = '1';
-    document.getElementById('custom-w').value = '';
-    document.getElementById('custom-h').value = '';
-    document.getElementById('custom-area-display').value = '';
+    if (isSized) {
+        document.getElementById('custom-w').value = '';
+        document.getElementById('custom-h').value = '';
+        document.getElementById('custom-area-display').value = '';
+    }
     document.getElementById('custom-desc').value = '';
+    
     if(_commitItems.length > 0) commitItemsToCart(_commitItems, 'tab-custom', _capturedData);
     else renderCart();
 }
@@ -2496,6 +2674,28 @@ function generateSvgSketch(item) {
         
         // Верхняя штанга
         innerSvg += `<line x1="${x-10}" y1="${y}" x2="${x+svgW+10}" y2="${y}" stroke="#334155" stroke-width="12" stroke-linecap="round"/>`;
+    } else if (item.category === 'hardware') {
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+70}" font-family="Arial" font-size="200" fill="#94a3b8" text-anchor="middle">🔧</text>`;
+    } else if (item.category === 'glasses') {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#e0f2fe" stroke="#0284c7" stroke-width="8"/>`;
+        innerSvg += `<rect x="${x+16}" y="${y+16}" width="${svgW-32}" height="${svgH-32}" fill="none" stroke="#0284c7" stroke-width="4"/>`;
+        innerSvg += `<path d="M${x + svgW*0.1} ${y + svgH - 20} L${x + svgW - 20} ${y + svgH*0.1}" stroke="#ffffff" stroke-width="${svgW/3}" stroke-opacity="0.8" fill="none"/>`;
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+15}" font-family="Arial" font-size="42" font-weight="bold" fill="#0f172a" text-anchor="middle">${item.thickness}мм</text>`;
+    } else if (item.category === 'sandwich') {
+        let getColorHex = (c) => {
+            if (c === 'Белый') return '#ffffff';
+            if (c === 'Антрацит-серый') return '#475569';
+            if (c === 'Золотой дуб') return '#b45309';
+            if (c === 'Тёмный дуб') return '#78350f';
+            return '#f1f5f9';
+        };
+        let cOut = getColorHex(item.colorOut);
+        let cIn = getColorHex(item.colorIn);
+        
+        innerSvg += `<path d="M${x} ${y} L${x+svgW} ${y} L${x} ${y+svgH} Z" fill="${cOut}"/>`;
+        innerSvg += `<path d="M${x+svgW} ${y} L${x+svgW} ${y+svgH} L${x} ${y+svgH} Z" fill="${cIn}"/>`;
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="none" stroke="#1e293b" stroke-width="8"/>`;
+        innerSvg += `<line x1="${x}" y1="${y+svgH}" x2="${x+svgW}" y2="${y}" stroke="#94a3b8" stroke-width="2"/>`;
     } else {
         innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="#94a3b8" stroke-width="6" stroke-dasharray="10,10" rx="8"/>`;
         innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2-10}" font-family="Arial" font-size="56" fill="#cbd5e1" text-anchor="middle">✦</text>`;
@@ -2521,10 +2721,7 @@ function generateSvgSketch(item) {
         innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
     }
 
-    return `
-    <svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">
-        ${innerSvg}
-    </svg>`;
+    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/\\r\\n|\\n|\\r/g, '')}</svg>`;
 }
 
 
@@ -2978,7 +3175,7 @@ function renderArchiveList() {
 
 
 async function showArchive() { 
-    document.getElementById('calculator-screen').classList.add('hidden');
+    document.getElementById('calculator-screen').style.display = 'none';
     document.getElementById('archive-screen').classList.remove('hidden');
     document.getElementById('archive-screen').style.display = 'block';
     
@@ -3000,7 +3197,7 @@ async function showArchive() {
 function closeArchive() { 
     document.getElementById('archive-screen').classList.add('hidden');
     document.getElementById('archive-screen').style.display = 'none';
-    document.getElementById('calculator-screen').classList.remove('hidden');
+    document.getElementById('calculator-screen').style.display = 'block';
 }
 
 // --- Export to Factory Logic ---
