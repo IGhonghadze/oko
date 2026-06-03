@@ -403,6 +403,9 @@ function setupEnterKeys() {
         if (e.key === 'Enter') document.getElementById('net-h').focus();
     });
     document.getElementById('net-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('net-qty').focus();
+    });
+    document.getElementById('net-qty').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             document.getElementById('net-w').focus();
             addNetItem();
@@ -782,6 +785,7 @@ function addNetItem() {
     let _commitItems = [];
     let wIn = parseFloat(document.getElementById('net-w').value);
     let hIn = parseFloat(document.getElementById('net-h').value);
+    let qty = parseInt(document.getElementById('net-qty').value) || 1;
     if (!wIn || !hIn) { alert('Введите размеры сетки!'); return; }
 
     let isLumen = document.getElementById('net-is-lumen').checked;
@@ -848,15 +852,16 @@ function addNetItem() {
         id: Date.now(),
         category: 'net',
         type: itemName,
-        qty: 1,
+        qty: qty,
         w: w, h: h, area: area, calcArea: area,
         shape: 'Прямоугольник',
         isLarge: false,
         unitCost: baseRetailCost,
         optionsDesc: optionsDesc,
-        baseTotal: baseRetailCost
+        baseTotal: baseRetailCost * qty
     });
 
+    if(document.getElementById('net-qty')) document.getElementById('net-qty').value = '1';
     document.getElementById('net-w').value = '';
     document.getElementById('net-h').value = '';
     document.getElementById('net-comment').value = '';
@@ -2136,7 +2141,7 @@ function autoFillServices() {
             else sillLengthSimpleM += lenM * qty;
         } else if (it.category === 'net') {
             let isPleated = it.type && it.type.toLowerCase().includes('\u043f\u043b\u0438\u0441\u0441');
-            if (isPleated) netPleatedCount++; else netCount++;
+            if (isPleated) netPleatedCount += (it.qty || 1); else netCount += (it.qty || 1);
         }
     });
 
@@ -3364,3 +3369,52 @@ document.addEventListener('click', function(evt) {
 
 
 
+
+let Oko_User_Prices = {};
+const DEFAULT_OKO_PRICES = {};
+
+function initUserPrices() {
+    DEFAULT_OKO_PRICES.glasses = JSON.parse(JSON.stringify(typeof GLASS_TYPES !== 'undefined' ? GLASS_TYPES : []));
+    DEFAULT_OKO_PRICES.shapes = JSON.parse(JSON.stringify(typeof SHAPES !== 'undefined' ? SHAPES : []));
+    DEFAULT_OKO_PRICES.layouts = JSON.parse(JSON.stringify(typeof LAYOUTS !== 'undefined' ? LAYOUTS : []));
+    DEFAULT_OKO_PRICES.nets = JSON.parse(JSON.stringify(typeof NET_TYPES !== 'undefined' ? NET_TYPES : []));
+    DEFAULT_OKO_PRICES.salinox = JSON.parse(JSON.stringify(typeof SALINOX_PRICES !== 'undefined' ? SALINOX_PRICES : []));
+    DEFAULT_OKO_PRICES.options = JSON.parse(JSON.stringify(typeof OPTIONS !== 'undefined' ? OPTIONS : []));
+    DEFAULT_OKO_PRICES.sills = JSON.parse(JSON.stringify(typeof SILLS_DATA !== 'undefined' ? SILLS_DATA : []));
+    DEFAULT_OKO_PRICES.slopes = JSON.parse(JSON.stringify(typeof SLOPES_DATA !== 'undefined' ? SLOPES_DATA : []));
+    DEFAULT_OKO_PRICES.slopesProf = JSON.parse(JSON.stringify(typeof SLOPES_PROF_PRICES !== 'undefined' ? SLOPES_PROF_PRICES : {}));
+    DEFAULT_OKO_PRICES.partition = JSON.parse(JSON.stringify(typeof PARTITION_PRICES !== 'undefined' ? PARTITION_PRICES : []));
+    DEFAULT_OKO_PRICES.mount = JSON.parse(JSON.stringify(typeof MOUNT_PRICES !== 'undefined' ? MOUNT_PRICES : {}));
+    DEFAULT_OKO_PRICES.presetServices = JSON.parse(JSON.stringify(typeof PRESET_SERVICES_DB !== 'undefined' ? PRESET_SERVICES_DB : []));
+
+    let saved = localStorage.getItem('oko_user_prices');
+    let hasSaved = false;
+    if (saved) {
+        try { 
+            Oko_User_Prices = JSON.parse(saved); 
+            if (Object.keys(Oko_User_Prices).length > 0) hasSaved = true;
+        } catch(e) { Oko_User_Prices = null; }
+    }
+    
+    if (!hasSaved) {
+        Oko_User_Prices = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES));
+    }
+
+    if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
+    if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
+    if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
+    if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
+    if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
+    if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
+    if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
+    if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
+    if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
+    if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
+    if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
+    if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
+    
+    if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
+    if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
+}
+
+initUserPrices();

@@ -349,15 +349,10 @@
                                     <p>Указывайте размеры <b>готового изделия</b> или вводите <b>размеры светового
                                             проема</b>, нажав соответствующую галочку ниже.</p>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина
-                                            (мм)</label><input type="number" id="net-w"
-                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                                            placeholder="600"></div>
-                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота
-                                            (мм)</label><input type="number" id="net-h"
-                                            class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                                            placeholder="1300"></div>
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Ширина (мм)</label><input type="number" id="net-w" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" placeholder="600"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label><input type="number" id="net-h" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary" placeholder="1300"></div>
+                                    <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="net-qty" value="1" min="1" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"></div>
                                 </div>
                                 <div
                                     class="flex flex-col gap-2 mb-5 p-3 rounded-lg border border-slate-100 bg-slate-50">
@@ -410,6 +405,7 @@
                                                 <option value="Pro 40">Pro 40</option>
                                                 <option value="Standard 32">Standard 32</option>
                                                 <option value="Premium 50">Premium 50</option>
+                                                <option value="Профиль 20мм">Профиль 20мм</option>
                                             </select>
                                         </div>
                                         <div>
@@ -1510,6 +1506,67 @@
             </div>
         </div>
     </div>
+
+    <!-- ADMIN SCREEN -->
+    <div id="admin-screen" class="min-h-screen bg-slate-50 font-sans hidden pb-24">
+        <div class="max-w-6xl mx-auto p-4 md:p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight uppercase flex items-center gap-3">
+                        <i data-lucide="settings-2" class="w-8 h-8 text-brand-primary"></i> Панель управления
+                    </h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="saveAdminPrices()" class="bg-brand-primary hover:bg-brand-dark text-white px-5 py-2.5 rounded-xl font-bold shadow-md transition-all flex items-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Сохранить</button>
+                    <button onclick="closeAdminPanel()" class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2"><i data-lucide="x" class="w-5 h-5"></i> Закрыть</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-2">
+                <button class="admin-tab-btn bg-brand-primary text-white shadow-md px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-glasses" onclick="switchAdminTab('tab-admin-glasses')">Стеклопакеты</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-nets" onclick="switchAdminTab('tab-admin-nets')">Сетки</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-sills" onclick="switchAdminTab('tab-admin-sills')">Подоконники</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-slopes" onclick="switchAdminTab('tab-admin-slopes')">Откосы</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-hardware" onclick="switchAdminTab('tab-admin-hardware')">Фурнитура</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-sandwiches" onclick="switchAdminTab('tab-admin-sandwiches')">Сендвич-панели</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-mount" onclick="switchAdminTab('tab-admin-mount')">Монтаж</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-services" onclick="switchAdminTab('tab-admin-services')">Услуги</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-brand" onclick="switchAdminTab('tab-admin-brand')">Бренд и КП</button>
+            </div>
+
+            <div id="tab-admin-glasses" class="admin-tab-content">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Стеклопакеты</h3><div id="admin-glasses-container"></div>
+                <h3 class="text-lg font-bold text-slate-800 mb-4 mt-8">Шпросы и Раскладка</h3><div id="admin-layouts-container"></div>
+                <h3 class="text-lg font-bold text-slate-800 mb-4 mt-8">Формы (Наценка)</h3><div id="admin-shapes-container"></div>
+            </div>
+            <div id="tab-admin-nets" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Москитные сетки</h3><div id="admin-nets-container"></div>
+            </div>
+            <div id="tab-admin-sills" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Подоконники</h3><div id="admin-sills-container"></div>
+            </div>
+            <div id="tab-admin-slopes" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Откосы</h3><div id="admin-slopes-container"></div>
+            </div>
+            <div id="tab-admin-hardware" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Фурнитура</h3><div id="admin-hardware-container"></div>
+            </div>
+            <div id="tab-admin-sandwiches" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Сендвич-панели</h3><div id="admin-sandwiches-container"></div>
+            </div>
+            <div id="tab-admin-mount" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Базовые тарифы монтажа</h3><div id="admin-mount-container"></div>
+            </div>
+            <div id="tab-admin-services" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Дополнительные услуги</h3><div id="admin-services-container"></div>
+            </div>
+            <div id="tab-admin-brand" class="admin-tab-content hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-brand-primary"></i> Настройки бренда и структура КП</h3>
+                <div id="admin-brand-container"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- SETTINGS MODAL -->
     <div id="settings-modal"
         class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -1767,6 +1824,8 @@
 
     <script src="contract_template_base64.js" defer></script>
     <script src="contract.js" defer></script>
+    <script src="brand.js" defer></script>
+    <script src="admin.js" defer></script>
     <script src="script.js?v=4" defer></script>
 
     <!-- ПЕРЕКЛЮЧЕНИЕ ПО ENTER В ДОГОВОРЕ -->
