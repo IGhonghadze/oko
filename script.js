@@ -2086,6 +2086,23 @@ function editService(idx) {
     renderCart();
 }
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    let srvName = document.getElementById('srv-new-name');
+    let srvAmount = document.getElementById('srv-new-amount');
+    if (srvName && srvAmount) {
+        srvName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') srvAmount.focus();
+        });
+        srvAmount.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addServiceFromInput();
+                srvName.focus();
+            }
+        });
+    }
+});
+
 function addServiceFromInput() {
     let nameEl = document.getElementById('srv-new-name');
     let amountEl = document.getElementById('srv-new-amount');
@@ -2242,6 +2259,16 @@ function calculateTotals() {
 function clearCart() {
     if (confirm("Вы действительно хотите полностью очистить смету? Это действие нельзя отменить.")) {
         ITEMS = [];
+        SERVICES = [];
+        if(document.getElementById("client-name")) document.getElementById("client-name").value = "";
+        if(document.getElementById("kp-number-input")) document.getElementById("kp-number-input").value = "";
+        if(document.getElementById("manual-markup-rub")) document.getElementById("manual-markup-rub").value = "";
+        if(document.getElementById("manual-markup-pct")) document.getElementById("manual-markup-pct").value = "";
+        if(document.getElementById("manual-discount-rub")) document.getElementById("manual-discount-rub").value = "";
+        if(document.getElementById("manual-discount-pct")) document.getElementById("manual-discount-pct").value = "";
+        if(document.getElementById("srv-new-name")) document.getElementById("srv-new-name").value = "";
+        if(document.getElementById("srv-new-amount")) document.getElementById("srv-new-amount").value = "";
+        if(typeof renderServicesList === 'function') renderServicesList();
         renderCart();
     }
 }
@@ -2733,7 +2760,7 @@ function generateSvgSketch(item) {
         innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
     }
 
-    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
+    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
 }
 
 
@@ -3121,7 +3148,7 @@ function renderArchiveList() {
                 
                 <div class="p-5 flex flex-col h-full cursor-pointer" onclick="loadCalculation(${e.id})">
                     <div class="flex gap-5 mb-4">
-                        <div class="w-20 h-20 flex-shrink-0 flex items-center justify-center p-2 border border-slate-100 rounded-xl bg-white shadow-inner group-hover:scale-105 transition-transform duration-300">
+                        <div class="w-28 h-28 flex-shrink-0 flex items-center justify-center p-1 border border-slate-100 rounded-xl bg-white shadow-inner group-hover:scale-105 transition-transform duration-300">
                             ${sketchHtml}
                         </div>
                         <div class="flex-1 flex flex-col justify-center min-w-0">
