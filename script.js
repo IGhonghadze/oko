@@ -2726,7 +2726,7 @@ function generateSvgSketch(item) {
         innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
     }
 
-    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/\\r\\n|\\n|\\r/g, '')}</svg>`;
+    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
 }
 
 
