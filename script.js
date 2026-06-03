@@ -1159,8 +1159,8 @@ function addSlopeItem() {
             <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5" />
             ${isProfStart ? `<line x1="0" y1="0" x2="${svgWidth}" y2="0" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>` : ''}
             ${(isProfF28 || isProfF50) ? `<line x1="0" y1="${svgHeight}" x2="${svgWidth}" y2="${svgHeight}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` : ''}
-            <text x="${svgWidth/2}" y="-10" font-size="22" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">${wIn} мм</text>
-            <text x="${svgWidth+20}" y="${svgHeight/2}" font-size="22" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(-90, ${svgWidth+20}, ${svgHeight/2})">${lenIn} мм</text>
+            <text x="${svgWidth/2}" y="-10" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle">${wIn}</text>
+            <text x="${svgWidth+10}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+10}, ${svgHeight/2})">${lenIn}</text>
         </svg>
     `;
 
@@ -1928,8 +1928,8 @@ function addBlindsItem() {
             <!-- Цепочка управления -->
             ${chainHtml}
             <!-- Размеры -->
-            <text x="${svgWidth/2}" y="-10" font-size="22" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">${widthMm} мм</text>
-            <text x="${svgWidth+20}" y="${svgHeight/2}" font-size="22" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(-90, ${svgWidth+20}, ${svgHeight/2})">${heightMm} мм</text>
+            <text x="${svgWidth/2}" y="-10" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle">${widthMm}</text>
+            <text x="${svgWidth+10}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+10}, ${svgHeight/2})">${heightMm}</text>
         </svg>
     `;
 
