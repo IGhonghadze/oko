@@ -1160,7 +1160,7 @@ function addSlopeItem() {
             ${isProfStart ? `<line x1="0" y1="0" x2="${svgWidth}" y2="0" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>` : ''}
             ${(isProfF28 || isProfF50) ? `<line x1="0" y1="${svgHeight}" x2="${svgWidth}" y2="${svgHeight}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` : ''}
             <text x="${svgWidth/2}" y="-15" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle">${wIn} мм</text>
-            <text x="${svgWidth+15}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+15}, ${svgHeight/2})">${lenIn} мм</text>
+            <text x="${svgWidth+22}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+22}, ${svgHeight/2})">${lenIn} мм</text>
         </svg>
     `;
 
@@ -1928,8 +1928,8 @@ function addBlindsItem() {
             <!-- Цепочка управления -->
             ${chainHtml}
             <!-- Размеры -->
-            <text x="${svgWidth/2}" y="-15" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle">${widthMm} мм</text>
-            <text x="${svgWidth+15}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+15}, ${svgHeight/2})">${heightMm} мм</text>
+            <text x="${svgWidth/2}" y="-12" font-family="Arial, sans-serif" font-size="15" fill="#334155" text-anchor="middle">${widthMm} мм</text>
+            <text x="${svgWidth+18}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="15" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+18}, ${svgHeight/2})">${heightMm} мм</text>
         </svg>
     `;
 
