@@ -1155,12 +1155,12 @@ function addSlopeItem() {
     let svgHeight = Math.max(30, (wIn / lenIn) * 100);
     if (svgHeight > 60) { svgHeight = 60; svgWidth = (lenIn / wIn) * 60; }
     let slopeSvg = `
-        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1">
+        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1 overflow-visible">
             <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5" />
             ${isProfStart ? `<line x1="0" y1="0" x2="${svgWidth}" y2="0" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>` : ''}
             ${(isProfF28 || isProfF50) ? `<line x1="0" y1="${svgHeight}" x2="${svgWidth}" y2="${svgHeight}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` : ''}
-            <text x="${svgWidth/2}" y="-10" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle">${wIn}</text>
-            <text x="${svgWidth+10}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+10}, ${svgHeight/2})">${lenIn}</text>
+            <text x="${svgWidth/2}" y="-15" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle">${wIn} мм</text>
+            <text x="${svgWidth+15}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+15}, ${svgHeight/2})">${lenIn} мм</text>
         </svg>
     `;
 
@@ -1917,7 +1917,7 @@ function addBlindsItem() {
     let typeDisplay = isHoriz ? 'Жалюзи Горизонтальные алюминиевые' : `Жалюзи ${system === 'UNI1' ? 'UNI 1' : system === 'MINI_D19' ? 'MINI (D 19)' : 'D 25'} + ${fabric.name}`;
 
     let blindsSvg = `
-        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1">
+        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1 overflow-visible">
             <!-- Полотно -->
             <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="${isHoriz ? 'none' : '#f8fafc'}" stroke="#64748b" stroke-width="1.5" />
             ${stripesHtml}
@@ -1928,8 +1928,8 @@ function addBlindsItem() {
             <!-- Цепочка управления -->
             ${chainHtml}
             <!-- Размеры -->
-            <text x="${svgWidth/2}" y="-10" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle">${widthMm}</text>
-            <text x="${svgWidth+10}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="22" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+10}, ${svgHeight/2})">${heightMm}</text>
+            <text x="${svgWidth/2}" y="-15" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle">${widthMm} мм</text>
+            <text x="${svgWidth+15}" y="${svgHeight/2}" font-family="Arial, sans-serif" font-size="18" fill="#334155" text-anchor="middle" transform="rotate(-90, ${svgWidth+15}, ${svgHeight/2})">${heightMm} мм</text>
         </svg>
     `;
 
