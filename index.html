@@ -906,7 +906,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                     <div>
                                         <label class="block text-sm font-medium text-slate-600 mb-1">Вид изделия</label>
-                                        <select id="roller-type" onchange="if(this.value==='gate'){document.getElementById('roller-brand').value='DoorHan'; updateRollerProfiles();}" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <select id="roller-type" onchange="if(this.value==='gate'){document.getElementById('roller-brand').value='DoorHan'; updateRollerProfiles(); document.getElementById('gate-panel-dir-block').classList.remove('hidden');} else {document.getElementById('gate-panel-dir-block').classList.add('hidden');}" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
                                             <option value="roller">Защитная роллета</option>
                                             <option value="gate">Секционные ворота</option>
                                         </select>
@@ -966,6 +966,14 @@
                                             <option value="Золотой дуб">Золотой дуб</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div id="gate-panel-dir-block" class="mb-4 hidden">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Направление панелей</label>
+                                    <select id="gate-panel-dir"
+                                        class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <option value="horizontal">Горизонтальные панели</option>
+                                        <option value="vertical">Вертикальные панели</option>
+                                    </select>
                                 </div>
                                 <div class="mb-5 p-4 bg-brand-light/50 border border-brand-primary/20 rounded-2xl shadow-sm">
                                     <label class="block text-sm font-bold text-brand-dark mb-1 flex items-center gap-2">
@@ -1414,7 +1422,7 @@
                     <thead>
                         <tr class="bg-slate-100 text-left border-b border-slate-300">
                             <th class="p-3 font-semibold text-slate-700 w-10">№</th>
-                            <th class="p-3 font-semibold text-slate-700 w-24 text-center">Эскиз</th>
+                            <th class="p-3 font-semibold text-slate-700 w-32 text-center">Эскиз</th>
                             <th class="p-3 font-semibold text-slate-700">Наименование / Параметры</th>
                             <th class="p-3 font-semibold text-slate-700 text-center">Кол-во</th>
                             <th class="p-3 font-semibold text-slate-700 text-right">Цена за ед.</th>

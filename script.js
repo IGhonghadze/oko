@@ -1445,7 +1445,14 @@ function addRollerItem() {
     let typeStr = rType === 'gate' ? `Секционные ворота ${brand} (${w}×${h}мм)` : `Защитная роллета ${brand} (${w}×${h}мм)`;
 
     // SVG эскиз для роллеты
-    _commitItems.push({
+    
+    let gatePanelDir = 'horizontal';
+    if (rType === 'gate') {
+        let dirEl = document.getElementById('gate-panel-dir');
+        if (dirEl) gatePanelDir = dirEl.value;
+    }
+
+_commitItems.push({
         id: Date.now(),
         category: 'roller',
         type: typeStr,
@@ -1455,7 +1462,8 @@ function addRollerItem() {
         isLarge: false,
         unitCost: priceMan,
         optionsDesc: optionsDesc,
-        baseTotal: priceMan * qty, customSvg: null
+        baseTotal: priceMan * qty, customSvg: null,
+        gatePanelDir: gatePanelDir
     });
 
     // Очистка полей
@@ -2646,12 +2654,21 @@ function generateSvgSketch(item) {
         let isGate = typeStr.includes('ворот');
         let rColor = getFrameColor();
         innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="${rColor}" stroke-width="8"/>`;
-        if (isGate) {
-            let panelH = 50;
-            for(let i=y+panelH; i<y+svgH; i+=panelH) {
-                innerSvg += `<line x1="${x}" y1="${i}" x2="${x+svgW}" y2="${i}" stroke="${rColor}" stroke-width="6"/>`;
-                innerSvg += `<rect x="${x+16}" y="${i-panelH+8}" width="${svgW-32}" height="${panelH-16}" fill="#f1f5f9" stroke="${rColor}" stroke-width="2"/>`;
-            }
+            if (isGate) {
+                let panelDir = item.gatePanelDir || 'horizontal';
+                if (panelDir === 'vertical') {
+                    let panelW = 50;
+                    for(let i=x+panelW; i<x+svgW; i+=panelW) {
+                        innerSvg += `<line x1="${i}" y1="${y}" x2="${i}" y2="${y+svgH}" stroke="${rColor}" stroke-width="6"/>`;
+                        innerSvg += `<rect x="${i-panelW+8}" y="${y+16}" width="${panelW-16}" height="${svgH-32}" fill="#f1f5f9" stroke="${rColor}" stroke-width="2"/>`;
+                    }
+                } else {
+                    let panelH = 50;
+                    for(let i=y+panelH; i<y+svgH; i+=panelH) {
+                        innerSvg += `<line x1="${x}" y1="${i}" x2="${x+svgW}" y2="${i}" stroke="${rColor}" stroke-width="6"/>`;
+                        innerSvg += `<rect x="${x+16}" y="${i-panelH+8}" width="${svgW-32}" height="${panelH-16}" fill="#f1f5f9" stroke="${rColor}" stroke-width="2"/>`;
+                    }
+                }
         } else {
             for(let i=16; i<svgH; i+=16) {
                 innerSvg += `<line x1="${x}" y1="${y+i}" x2="${x+svgW}" y2="${y+i}" stroke="${rColor}" stroke-width="3"/>`;
