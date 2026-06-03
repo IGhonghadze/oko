@@ -2764,7 +2764,7 @@ function generateSvgSketch(item) {
     let cropY = y - 60;
     let cropW = svgW + 120;
     let cropH = svgH + 110;
-    if (isPleated) { cropW = svgW + 240; cropX = x - 120; cropY = y - 20; cropH = svgH + 40; } // wide arrows
+    if (typeStr.includes('плисс')) { cropW = svgW + 240; cropX = x - 120; cropY = y - 20; cropH = svgH + 40; } // wide arrows
     return `<svg viewBox="${cropX} ${cropY} ${cropW} ${cropH}" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
 
 }
