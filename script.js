@@ -1153,14 +1153,13 @@ function addSlopeItem() {
     let svgWidth = 100;
     let svgHeight = Math.max(30, (wIn / lenIn) * 100);
     if (svgHeight > 60) { svgHeight = 60; svgWidth = (lenIn / wIn) * 60; }
-    let vbPad = 25;
     let slopeSvg = `
-        <svg viewBox="-${vbPad} -${vbPad/2} ${svgWidth + vbPad*2} ${svgHeight + vbPad}" class="w-32 h-32 mx-auto mb-1">
+        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1">
             <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5" />
             ${isProfStart ? `<line x1="0" y1="0" x2="${svgWidth}" y2="0" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>` : ''}
             ${(isProfF28 || isProfF50) ? `<line x1="0" y1="${svgHeight}" x2="${svgWidth}" y2="${svgHeight}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` : ''}
-            <text x="${svgWidth/2}" y="-6" font-size="11" fill="#64748b" text-anchor="middle" font-family="sans-serif" font-weight="bold">${lenIn}</text>
-            <text x="-6" y="${svgHeight/2 + 4}" font-size="11" fill="#64748b" text-anchor="end" font-family="sans-serif" font-weight="bold">${wIn}</text>
+            <text x="${svgWidth/2}" y="-10" font-size="16" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">${wIn} мм</text>
+            <text x="${svgWidth+20}" y="${svgHeight/2}" font-size="16" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(-90, ${svgWidth+20}, ${svgHeight/2})">${lenIn} мм</text>
         </svg>
     `;
 
@@ -1917,7 +1916,7 @@ function addBlindsItem() {
     let typeDisplay = isHoriz ? 'Жалюзи Горизонтальные алюминиевые' : `Жалюзи ${system === 'UNI1' ? 'UNI 1' : system === 'MINI_D19' ? 'MINI (D 19)' : 'D 25'} + ${fabric.name}`;
 
     let blindsSvg = `
-        <svg viewBox="-${vbPad} -${vbPad} ${svgWidth + vbPad*2} ${svgHeight + vbPad*1.5}" class="w-32 h-32 mx-auto mb-1">
+        <svg viewBox="-20 -25 ${svgWidth + 60} ${svgHeight + 50}" class="w-32 h-32 mx-auto mb-1">
             <!-- Полотно -->
             <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="${isHoriz ? 'none' : '#f8fafc'}" stroke="#64748b" stroke-width="1.5" />
             ${stripesHtml}
@@ -1928,8 +1927,8 @@ function addBlindsItem() {
             <!-- Цепочка управления -->
             ${chainHtml}
             <!-- Размеры -->
-            <text x="${svgWidth/2}" y="-12" font-size="10" fill="#64748b" text-anchor="middle" font-family="sans-serif" font-weight="bold">${widthMm}</text>
-            <text x="-6" y="${svgHeight/2 + 3}" font-size="10" fill="#64748b" text-anchor="end" font-family="sans-serif" font-weight="bold">${heightMm}</text>
+            <text x="${svgWidth/2}" y="-10" font-size="16" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">${widthMm} мм</text>
+            <text x="${svgWidth+20}" y="${svgHeight/2}" font-size="16" fill="#334155" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(-90, ${svgWidth+20}, ${svgHeight/2})">${heightMm} мм</text>
         </svg>
     `;
 
@@ -2760,7 +2759,14 @@ function generateSvgSketch(item) {
         innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
     }
 
-    return `<svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
+    
+    let cropX = x - 30;
+    let cropY = y - 60;
+    let cropW = svgW + 120;
+    let cropH = svgH + 110;
+    if (isPleated) { cropW = svgW + 240; cropX = x - 120; cropY = y - 20; cropH = svgH + 40; } // wide arrows
+    return `<svg viewBox="${cropX} ${cropY} ${cropW} ${cropH}" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
+
 }
 
 
