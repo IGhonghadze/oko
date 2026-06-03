@@ -2239,6 +2239,13 @@ function calculateTotals() {
     };
 }
 
+function clearCart() {
+    if (confirm("Вы действительно хотите полностью очистить смету? Это действие нельзя отменить.")) {
+        ITEMS = [];
+        renderCart();
+    }
+}
+
 function renderCart() {
     let list = document.getElementById('cart-items'); list.innerHTML = '';
     let totals = calculateTotals();
