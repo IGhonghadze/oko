@@ -552,10 +552,11 @@ function updateDropdownPrices() {
     let gSel = document.getElementById('glass-type'); let prevG = gSel.value; gSel.innerHTML = '';
     let sortedIndices = GLASS_TYPES.map((g, i) => ({ g, i }));
     sortedIndices.sort((a, b) => {
-        let aMatch = a.g.name.match(/Ст\/п\s+(\d+)/);
-        let bMatch = b.g.name.match(/Ст\/п\s+(\d+)/);
-        let aThick = aMatch ? parseInt(aMatch[1]) : 999;
-        let bThick = bMatch ? parseInt(bMatch[1]) : 999;
+        let an = a.g.name || ''; let bn = b.g.name || '';
+        let aMatch = an.match(/С\/П\s+(\d+)/);
+        let bMatch = bn.match(/С\/П\s+(\d+)/);
+        let aThick = aMatch ? parseInt(aMatch[1]) : (an.match(/\d+/) ? parseInt(an.match(/\d+/)[0]) : 999);
+        let bThick = bMatch ? parseInt(bMatch[1]) : (bn.match(/\d+/) ? parseInt(bn.match(/\d+/)[0]) : 999);
         return aThick - bThick;
     });
     sortedIndices.forEach(({ g, i }) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
@@ -2760,12 +2761,7 @@ function generateSvgSketch(item) {
     }
 
     
-    let cropX = x - 30;
-    let cropY = y - 80;
-    let cropW = svgW + 120;
-    let cropH = svgH + 150;
-    if (typeStr.includes('плисс')) { cropW = svgW + 240; cropX = x - 120; cropY = y - 80; cropH = svgH + 120; } // wide arrows
-    return `<svg viewBox="${cropX} ${cropY} ${cropW} ${cropH}" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
+    return `<svg viewBox="0 0 500 500" style="width: 100%; height: 100%; max-height: 280px; min-height: 100px; object-fit: contain; display: block; margin: 0 auto;">${innerSvg.replace(/[\r\n]/g, '')}</svg>`;
 
 }
 
