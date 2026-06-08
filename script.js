@@ -217,14 +217,14 @@ let SLOPES_DATA = [
     }
 ];
 const SLOPES_LENGTHS = [1.0, 1.3, 1.5, 1.7, 2.0, 2.5]; // Метры
-const SLOPES_PROF_PRICES = {
+let SLOPES_PROF_PRICES = {
     start: 1380, // П Профиль
     h: 2160,     // Н Профиль
     f28: 2040,   // Ф 28x32
     f50: 2640    // Ф 50x30
 };
 
-const PARTITION_PRICES = {
+let PARTITION_PRICES = {
     '8_clear': 3050,
     '8_tinted': 4400,
     '10_clear': 3550,
@@ -374,6 +374,7 @@ window.onload = function () {
 
     document.getElementById('g-sheets-url').value = googleSheetsUrl;
     loadPricesFromStorage();
+    initUserPrices();
 
     let shapeSelect = document.getElementById('glass-shape');
     shapeSelect.innerHTML = '';
@@ -801,7 +802,7 @@ function addNetItem() {
 
     let w = wIn, h = hIn;
     if (isLumen) {
-        if (type.startsWith('window_') || type === 'vsn') { w += 50; h += 50; }
+        if (type.startsWith('window_') || type === 'vsn' || type === 'pleated' || type === 'pleated_20') { w += 50; h += 50; }
         else if (type === 'door_32') { w += 64; h += 64; }
         else if (type === 'door_42') { w += 84; h += 84; }
         else if (type === 'door_52') { w += 84; h += 84; }
@@ -1969,7 +1970,7 @@ function addBlindsItem() {
 
 // --- SERVICES AUTO-FILL ---
 // Цены из Прайса по монтажу: [Офис, Монтажник, Бригада]
-const MOUNT_PRICES = {
+let MOUNT_PRICES = {
     montaz58:   [1300, 1200, 1000],
     razdvizh:   [2000, 1600, 1400],
     shower:     [8000, 6500, 5500],
@@ -2517,8 +2518,16 @@ function generateSvgSketch(item) {
     } else {
         svgW = maxDrawH * ratio;
     }
-    if (svgW < 80) svgW = 80;
-    if (svgH < 80) svgH = 80;
+    
+    let minW = 80;
+    let minH = 80;
+    if (item.category === 'net') {
+        minW = 160; 
+        minH = 160;
+    }
+    
+    if (svgW < minW) svgW = minW;
+    if (svgH < minH) svgH = minH;
 
     let x = (VB_SIZE - svgW) / 2 - 40; 
     let y = (VB_SIZE - svgH) / 2 + 40; 
@@ -2813,6 +2822,16 @@ function savePricesToStorage() {
     const data = { version: PRICES_VERSION, glass: GLASS_TYPES, shapes: SHAPES, layouts: LAYOUTS, nets: NET_TYPES, salinox: SALINOX_PRICES, options: OPTIONS, source: currentPricesSource, date: new Date().toLocaleString('ru-RU') };
     localStorage.setItem('oko_prices_data', JSON.stringify(data));
     currentPricesDate = data.date; updateSettingsUI();
+    
+    if (typeof Oko_User_Prices !== 'undefined') {
+        Oko_User_Prices.glasses = JSON.parse(JSON.stringify(GLASS_TYPES));
+        Oko_User_Prices.shapes = JSON.parse(JSON.stringify(SHAPES));
+        Oko_User_Prices.layouts = JSON.parse(JSON.stringify(LAYOUTS));
+        Oko_User_Prices.nets = JSON.parse(JSON.stringify(NET_TYPES));
+        Oko_User_Prices.salinox = JSON.parse(JSON.stringify(SALINOX_PRICES));
+        Oko_User_Prices.options = JSON.parse(JSON.stringify(OPTIONS));
+        localStorage.setItem('oko_user_prices', JSON.stringify(Oko_User_Prices));
+    }
 }
 function applyPrices(glassData, shapesData, layoutsData, netsData, salinoxData, optionsData) {
     if (glassData) GLASS_TYPES = glassData; if (shapesData) SHAPES = shapesData;
@@ -2919,13 +2938,32 @@ const API_URL = 'http://w98834km.beget.tech/api.php';
 let GLOBAL_ARCHIVE_CACHE = [];
 
 async function fetchArchive() {
+    let localArchive = [];
     try {
-        let res = await fetch(API_URL + '?action=list');
-        if (!res.ok) throw new Error('API error');
-        GLOBAL_ARCHIVE_CACHE = await res.json();
+        let saved = localStorage.getItem('oko_archive');
+        if (saved) {
+            let parsed = JSON.parse(saved);
+            localArchive = Array.isArray(parsed) ? parsed : [];
+        }
+    } catch(e) { console.error('Local archive error', e); }
+
+    let begetArchive = [];
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        let res = await fetch(API_URL + '?action=list', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) begetArchive = await res.json();
     } catch(e) {
-        console.error('Ошибка загрузки архива:', e);
+        console.warn('Ошибка загрузки архива из облака (скорее всего сервер недоступен):', e.message);
     }
+    
+    let merged = new Map();
+    localArchive.forEach(item => merged.set(item.id, item));
+    begetArchive.forEach(item => merged.set(item.id, item));
+    
+    GLOBAL_ARCHIVE_CACHE = Array.from(merged.values());
+    GLOBAL_ARCHIVE_CACHE.sort((a, b) => b.id - a.id);
 }
 
 function collectState() {
@@ -2998,13 +3036,30 @@ async function saveCalculation(btn) {
     try {
         if(btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Сохраняем...'; lucide.createIcons(); }
         
-        let res = await fetch(API_URL + '?action=save', { method:'POST', body: JSON.stringify(entry) });
-        if(!res.ok) throw new Error('Network error');
-        alert(`\u2705 Просчёт "${name.trim()}" сохранён в облако!`);
+        let saved = localStorage.getItem('oko_archive');
+        let parsed = saved ? JSON.parse(saved) : [];
+        let localArchive = Array.isArray(parsed) ? parsed : [];
+        let existingIdx = localArchive.findIndex(e => e.id == entry.id);
+        if (existingIdx !== -1) localArchive[existingIdx] = entry;
+        else localArchive.push(entry);
+        localStorage.setItem('oko_archive', JSON.stringify(localArchive));
+        
+        let entryStr = JSON.stringify(entry);
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            let res = await fetch(API_URL + '?action=save', { method:'POST', body: entryStr, signal: controller.signal });
+            clearTimeout(timeoutId);
+            if(!res.ok) throw new Error('Network error');
+            alert(`\u2705 Просчёт "${name.trim()}" сохранён в архив!`);
+        } catch(cloudErr) {
+            alert(`\u26A0 Просчёт "${name.trim()}" сохранён ТОЛЬКО ЛОКАЛЬНО (облако недоступно)`);
+        }
     } catch(e) {
-        alert('Ошибка при сохранении в облако: ' + e.message);
+        alert('Ошибка при сохранении: ' + e.message);
     } finally {
         if(btn) { btn.disabled = false; btn.innerHTML = origBtnContent; lucide.createIcons(); }
+        fetchArchive();
     }
 }
 
@@ -3020,11 +3075,23 @@ function loadCalculation(id) {
 async function deleteCalculation(id) {
     let entry = GLOBAL_ARCHIVE_CACHE.find(e => e.id == id);
     if (!entry || !confirm(`Удалить "${entry.name}" навсегда?`)) return;
+    
+    try {
+        let saved = localStorage.getItem('oko_archive');
+        if (saved) {
+            let parsed = JSON.parse(saved);
+            let localArchive = Array.isArray(parsed) ? parsed : [];
+            localArchive = localArchive.filter(e => e.id != id);
+            localStorage.setItem('oko_archive', JSON.stringify(localArchive));
+        }
+    } catch(e) {}
+    
     try {
         await fetch(API_URL + '?action=delete', { method:'POST', body: JSON.stringify({id}) });
-        await fetchArchive();
-        renderArchiveList();
-    } catch(e) { alert('Ошибка удаления'); }
+    } catch(e) { console.error('Ошибка удаления в облаке'); }
+    
+    await fetchArchive();
+    renderArchiveList();
 }
 
 async function renameCalculation(id) {
@@ -3032,11 +3099,26 @@ async function renameCalculation(id) {
     if (!entry) return;
     let newName = prompt('Новое имя:', entry.name);
     if (!newName || !newName.trim()) return;
+    
+    try {
+        let saved = localStorage.getItem('oko_archive');
+        if (saved) {
+            let parsed = JSON.parse(saved);
+            let localArchive = Array.isArray(parsed) ? parsed : [];
+            let locEntry = localArchive.find(e => e.id == id);
+            if (locEntry) {
+                locEntry.name = newName.trim();
+                localStorage.setItem('oko_archive', JSON.stringify(localArchive));
+            }
+        }
+    } catch(e) {}
+
     try {
         await fetch(API_URL + '?action=rename', { method:'POST', body: JSON.stringify({id, name: newName.trim()}) });
-        await fetchArchive();
-        renderArchiveList();
-    } catch(e) { alert('Ошибка переименования'); }
+    } catch(e) { console.error('Ошибка переименования в облаке'); }
+    
+    await fetchArchive();
+    renderArchiveList();
 }
 
 let archiveViewMode = localStorage.getItem('oko_archive_view') || 'grid';
@@ -3451,6 +3533,13 @@ function initUserPrices() {
     
     if (!hasSaved) {
         Oko_User_Prices = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES));
+    } else {
+        // Ensure all keys exist in case of old localStorage saves
+        for (let key in DEFAULT_OKO_PRICES) {
+            if (Oko_User_Prices[key] === undefined) {
+                Oko_User_Prices[key] = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES[key]));
+            }
+        }
     }
 
     if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];

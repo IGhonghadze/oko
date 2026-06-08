@@ -317,7 +317,7 @@ function addAdminService() { requirePin('Добавить услугу', () => {
 
 function saveAdminPrices() {
     ['glasses', 'layouts', 'hardware', 'sandwiches'].forEach(cat => {
-        Oko_User_Prices[cat].forEach((g, idx) => {
+        (Oko_User_Prices[cat] || []).forEach((g, idx) => {
             const elName = document.getElementById(`adm-${cat.replace(/es$|s$/, '')}-name-${idx}`);
             const elPrice = document.getElementById(`adm-${cat.replace(/es$|s$/, '')}-price-${idx}`);
             if(elName) g.name = elName.value;
@@ -325,14 +325,14 @@ function saveAdminPrices() {
         });
     });
 
-    Oko_User_Prices.shapes.forEach((s, idx) => {
+    (Oko_User_Prices.shapes || []).forEach((s, idx) => {
         const elName = document.getElementById(`adm-shape-name-${idx}`);
         const elPrice = document.getElementById(`adm-shape-price-${idx}`);
         if(elName) s.name = elName.value;
         if(elPrice) s.markup = parseFloat(elPrice.value) || 0;
     });
 
-    Oko_User_Prices.nets.forEach((n, idx) => {
+    (Oko_User_Prices.nets || []).forEach((n, idx) => {
         const elName = document.getElementById(`adm-net-name-${idx}`);
         const elMin = document.getElementById(`adm-net-min-${idx}`);
         const elSqm = document.getElementById(`adm-net-sqm-${idx}`);
@@ -341,10 +341,10 @@ function saveAdminPrices() {
         if(elSqm) n.price_sqm = parseFloat(elSqm.value) || 0;
     });
 
-    Oko_User_Prices.sills.forEach((brand, bIdx) => {
+    (Oko_User_Prices.sills || []).forEach((brand, bIdx) => {
         const elB = document.getElementById(`adm-sill-bname-${bIdx}`);
         if(elB) brand.brand = elB.value;
-        brand.groups.forEach((grp, gIdx) => {
+        (brand.groups || []).forEach((grp, gIdx) => {
             const elG = document.getElementById(`adm-sill-gname-${bIdx}-${gIdx}`);
             if(elG) grp.name = elG.value;
             const elCap = document.getElementById(`adm-sill-cap-${bIdx}-${gIdx}`);
@@ -353,7 +353,7 @@ function saveAdminPrices() {
             if(elCap) grp.cap = parseFloat(elCap.value)||0;
             if(elC90) grp.conn90 = parseFloat(elC90.value)||0;
             if(elC150) grp.conn150 = parseFloat(elC150.value)||0;
-            Object.keys(grp.widths).forEach(w => {
+            Object.keys(grp.widths || {}).forEach(w => {
                 const elW = document.getElementById(`adm-sill-w-${bIdx}-${gIdx}-${w}`);
                 if(elW) grp.widths[w] = parseFloat(elW.value)||0;
             });
@@ -362,17 +362,17 @@ function saveAdminPrices() {
 
     ['start', 'h', 'f28', 'f50'].forEach(k => {
         const el = document.getElementById(`adm-slope-prof-${k}`);
-        if(el) Oko_User_Prices.slopesProf[k] = parseFloat(el.value)||0;
+        if(el && Oko_User_Prices.slopesProf) Oko_User_Prices.slopesProf[k] = parseFloat(el.value)||0;
     });
 
-    Object.keys(Oko_User_Prices.mount).forEach(k => {
+    Object.keys(Oko_User_Prices.mount || {}).forEach(k => {
         for(let i=0; i<3; i++) {
             const el = document.getElementById(`adm-mount-${k}-${i}`);
             if(el) Oko_User_Prices.mount[k][i] = parseFloat(el.value)||0;
         }
     });
 
-    Oko_User_Prices.presetServices.forEach((srv, idx) => {
+    (Oko_User_Prices.presetServices || []).forEach((srv, idx) => {
         const elName = document.getElementById(`adm-srv-name-${idx}`);
         const elUnit = document.getElementById(`adm-srv-unit-${idx}`);
         if(elName) srv.name = elName.value;
@@ -387,6 +387,22 @@ function saveAdminPrices() {
     
     // Save brand settings too
     if (typeof saveBrandFromAdmin === 'function') saveBrandFromAdmin();
+    
+    // Sync global arrays from Oko_User_Prices so dropdowns reflect new items
+    if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
+    if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
+    if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
+    if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
+    if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
+    if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
+    if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
+    if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
+    if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
+    if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
+    if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
+    if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
+    if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
+    if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
     
     alert('Настройки успешно сохранены!');
     
