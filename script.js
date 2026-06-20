@@ -2,40 +2,303 @@
 // Oko Calculator — Основной скрипт
 // ==========================================
 
-// === АВТОРИЗАЦИЯ ===
-const APP_PASSWORD = 'oko'; // Пароль калькулятора по умолчанию
+function getApiUrl() {
+    if (window.location.protocol === 'file:') {
+        return 'http://w98834km.beget.tech/api.php';
+    }
+    return 'api.php';
+}
+const API_URL_AUTH = getApiUrl();
 
-function checkPwd() {
-    const input = document.getElementById('pwd-input');
-    if (input.value === APP_PASSWORD || input.value === '47474') {
-        document.getElementById('pwd-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        sessionStorage.setItem('oko_auth', '1');
-    } else {
-        const errorEl = document.getElementById('pwd-error');
-        errorEl.classList.remove('hidden');
-        input.classList.add('border-red-500');
-        input.classList.remove('border-slate-200');
-        input.value = '';
-        setTimeout(() => { 
-            input.classList.remove('border-red-500'); 
-            input.classList.add('border-slate-200');
+async function doLogin() {
+    const userInp = document.getElementById('login-username');
+    const passInp = document.getElementById('login-password');
+    const errorEl = document.getElementById('login-error');
+    
+    if (!userInp.value || !passInp.value) return;
+
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: userInp.value, password: passInp.value })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            localStorage.setItem('oko_token', data.token);
+            localStorage.setItem('oko_company', data.company_name);
+            localStorage.setItem('oko_username', userInp.value);
+            localStorage.setItem('oko_is_admin', data.is_admin ? 'true' : 'false');
+            if (data.subscription_until) {
+                localStorage.setItem('oko_subscription_until', data.subscription_until);
+            } else {
+                localStorage.removeItem('oko_subscription_until');
+            }
+            
+            if (data.modules === undefined) {
+                alert("ВНИМАНИЕ! Вы забыли загрузить обновленный файл api.php на хостинг Beget! Сервер не вернул доступы к разделам, поэтому у нового аккаунта отображается только раздел 'Прочее'. Пожалуйста, загрузите api.php на сервер.");
+            }
+            
+            localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
+            document.getElementById('pwd-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('current-company-name').textContent = data.company_name;
+            updateTrialCounter();
             errorEl.classList.add('hidden');
-        }, 1500);
+            
+            applyModules();
+            
+            // Перезагрузим архив, если он есть
+            if (typeof fetchArchive === 'function') fetchArchive();
+        } else {
+            if (data.error) {
+                errorEl.textContent = data.error;
+            } else {
+                errorEl.textContent = 'Неверный логин или пароль';
+            }
+            showLoginError(errorEl, userInp, passInp);
+        }
+    } catch (e) {
+        console.error(e);
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        showLoginError(errorEl, userInp, passInp);
     }
 }
 
+function showLoginError(errorEl, userInp, passInp) {
+    errorEl.classList.remove('hidden');
+    userInp.classList.add('border-red-500');
+    passInp.classList.add('border-red-500');
+    setTimeout(() => { 
+        userInp.classList.remove('border-red-500'); 
+        passInp.classList.remove('border-red-500'); 
+        errorEl.classList.add('hidden');
+    }, 1500);
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+    } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function doLogout() {
+    localStorage.removeItem('oko_token');
+    localStorage.removeItem('oko_company');
+    localStorage.removeItem('oko_username');
+    localStorage.removeItem('oko_is_admin');
+    localStorage.removeItem('oko_modules');
+    location.reload();
+}
+
 // Проверяем статус при загрузке скрипта
-if (sessionStorage.getItem('oko_auth') === '1') {
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('oko_token');
+    const comp = localStorage.getItem('oko_company');
+    if (token && comp) {
         document.getElementById('pwd-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-    });
-} else {
-    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('current-company-name');
+        if (el) el.textContent = comp;
+        updateTrialCounter();
+        applyModules();
+        loadTabsOrder();
+    } else {
         document.getElementById('pwd-screen').style.display = 'flex';
         document.getElementById('app').style.display = 'none';
-        setTimeout(() => document.getElementById('pwd-input').focus(), 100);
+        setTimeout(() => document.getElementById('login-username').focus(), 100);
+    }
+});
+
+function updateTrialCounter() {
+    const el = document.getElementById('trial-counter');
+    if (!el) return;
+    
+    let isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_is_admin') === '1' || localStorage.getItem('oko_username') === 'admin';
+    if (isAdmin) {
+        el.style.display = 'none';
+        return;
+    }
+    
+    const subUntil = localStorage.getItem('oko_subscription_until');
+    if (!subUntil) {
+        el.style.display = 'none';
+        return;
+    }
+    
+    const until = new Date(subUntil);
+    const now = new Date();
+    const diffMs = until - now;
+    const diffSec = Math.floor(diffMs / 1000);
+    
+    el.style.display = 'inline-block';
+    
+    if (diffMs <= 0) {
+        el.textContent = 'Подписка истекла';
+        el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+    } else if (diffSec < 60) {
+        el.textContent = 'Осталось: ' + diffSec + ' сек.';
+        el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+    } else if (diffSec < 3600) {
+        const min = Math.floor(diffSec / 60);
+        el.textContent = 'Осталось: ' + min + ' мин.';
+        el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+    } else if (diffSec < 86400) {
+        const hours = Math.floor(diffSec / 3600);
+        const min = Math.floor((diffSec % 3600) / 60);
+        el.textContent = 'Осталось: ' + hours + ' ч. ' + min + ' мин.';
+        el.className = 'px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-md ml-2';
+    } else {
+        const daysLeft = Math.ceil(diffMs / (1000*60*60*24));
+        if (daysLeft <= 3) {
+            el.textContent = 'Осталось: ' + daysLeft + ' дн.';
+            el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+        } else {
+            el.textContent = 'Пробный период: ' + daysLeft + ' дн.';
+            el.className = 'px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-md ml-2';
+        }
+    }
+}
+
+function applyModules() {
+    let isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_is_admin') === '1' || localStorage.getItem('oko_username') === 'admin';
+    
+    const warehouseBtn = document.getElementById('warehouse-btn');
+    if (warehouseBtn) {
+        warehouseBtn.style.display = isAdmin ? '' : 'none';
+    }
+
+    // Если токен есть, но oko_modules вообще нет в localStorage (старая сессия до обновления), 
+    // давайте по умолчанию покажем все вкладки или вызовем /api.php?action=me
+    const storedModules = localStorage.getItem('oko_modules');
+    if (storedModules === null && !isAdmin) {
+        // Fallback for old sessions that haven't re-logged in: show everything until they log out
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.style.display = '';
+            btn.classList.remove('tab-locked');
+        });
+        clearAllLockOverlays();
+        return;
+    }
+    
+    if (isAdmin) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.style.display = '';
+            btn.classList.remove('tab-locked');
+        });
+        clearAllLockOverlays();
+        return;
+    }
+    
+    let modules = [];
+    try {
+        modules = JSON.parse(storedModules || '[]');
+    } catch (e) {}
+    
+    // Always allow custom
+    if (!modules.includes('custom')) modules.push('custom');
+    
+    let firstUnlockedTab = null;
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        const onclickAttr = btn.getAttribute('onclick') || '';
+        const match = onclickAttr.match(/switchTab\('([^']+)'\)/);
+        if (match) {
+            const tabId = match[1];
+            btn.style.display = ''; // Всегда показываем все вкладки
+            if (modules.includes(tabId)) {
+                btn.classList.remove('tab-locked');
+                if (!firstUnlockedTab) firstUnlockedTab = tabId;
+            } else {
+                btn.classList.add('tab-locked');
+            }
+        }
+    });
+    
+    // Расставляем замочки на контент-блоках
+    applyLockedOverlays(modules);
+    
+    // Auto-switch to the first available tab if current is hidden
+    if (firstUnlockedTab && typeof switchTab === 'function') {
+        switchTab(firstUnlockedTab);
+    }
+}
+
+// --- Locked Modules: вспомогательные функции ---
+
+const MODULE_NAMES = {
+    glass: 'Стеклопакеты',
+    sandwich: 'Сендвич-панели',
+    glasses: 'Стёкла / Резка',
+    nets: 'Москитные сетки',
+    frameless: 'Безрамное остекление',
+    sills: 'Подоконники',
+    slopes: 'Откосы',
+    shower: 'Душевые',
+    rollers: 'Рольставни / Ворота',
+    blinds: 'Жалюзи',
+    hardware: 'Фурнитура',
+    custom: 'Прочее'
+};
+
+function applyLockedOverlays(modules) {
+    document.querySelectorAll('.category-content').forEach(content => {
+        const tabId = content.id.replace('tab-', '');
+        const existingOverlay = content.querySelector('.locked-overlay');
+        
+        if (modules.includes(tabId)) {
+            // Модуль доступен — убираем замочек
+            content.classList.remove('module-locked');
+            if (existingOverlay) existingOverlay.remove();
+        } else {
+            // Модуль заблокирован — ставим замочек
+            content.classList.add('module-locked');
+            if (!existingOverlay) {
+                content.appendChild(createLockOverlay(tabId));
+            }
+        }
+    });
+}
+
+function createLockOverlay(tabId) {
+    const moduleName = MODULE_NAMES[tabId] || tabId;
+    const overlay = document.createElement('div');
+    overlay.className = 'locked-overlay';
+    overlay.innerHTML = 
+        '<div class="locked-overlay-center">' +
+            '<div class="lock-icon-wrap">' +
+                '<svg class="lock-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
+                    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>' +
+                    '<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>' +
+                '</svg>' +
+                '<div class="lock-text">Раздел заблокирован</div>' +
+            '</div>' +
+            '<div class="lock-buy-wrap">' +
+                '<a href="#" class="buy-section-btn" onclick="event.stopPropagation();">' +
+                    '<span class="buy-section-btn-icon">🔓</span>' +
+                    'Запросить доступ' +
+                '</a>' +
+                '<div class="lock-sub-text">Нажмите, чтобы запросить тестовый<br>период для раздела «' + moduleName + '»</div>' +
+            '</div>' +
+        '</div>';
+    return overlay;
+}
+
+function clearAllLockOverlays() {
+    document.querySelectorAll('.module-locked').forEach(el => {
+        el.classList.remove('module-locked');
+    });
+    document.querySelectorAll('.locked-overlay').forEach(el => {
+        el.remove();
     });
 }
 
@@ -56,6 +319,12 @@ let GLASS_TYPES = [
     { name: 'Ст/п 24мм Сатинат/Кризет/Диамант б/цв', price: 2800 },
     { name: 'Ст/п 24мм SOLAR Light Bronze/Silver/Blue/Sky Grey', price: 3000 }
 ];
+
+let RAW_GLASS_TYPES = [];
+let SANDWICH_TYPES = [];
+let HARDWARE_TYPES = [];
+let BLINDS_TYPES = [];
+
 let SHAPES = [
     { name: 'Прямоугольник', multiplier: 0 },
     { name: 'Треугольник / Трапеция', multiplier: 0.25 },
@@ -274,7 +543,7 @@ const BLINDS_UNI1_GRID = [
     [1200, 1230, 1360, 1430, 1530, 1600, 1670, 1760, 1890, 1950, 2050, 2130, 2210]
 ];
 
-const BLINDS_FABRICS = [
+let BLINDS_FABRICS = [
     { id: 1,  name: 'Респект',                        width: 210, price: 1440, isZebra: false },
     { id: 1.1,name: 'Респект алю',                     width: 250, price: 1500, isZebra: false },
     { id: 2,  name: 'Жемчуг',                          width: 210, price: 1900, isZebra: false },
@@ -517,11 +786,97 @@ function setupEnterKeys() {
 }
 
 // --- UI & TAB LOGIC ---
+let isTabsEditMode = false;
+let tabsSortable = null;
+
+function toggleTabsEditMode() {
+    const container = document.getElementById('calc-tabs-container');
+    const btn = document.getElementById('edit-tabs-btn');
+    if(!container || !btn) return;
+    
+    isTabsEditMode = !isTabsEditMode;
+    
+    if (isTabsEditMode) {
+        btn.classList.add('text-brand-primary', 'opacity-100');
+        btn.classList.remove('text-slate-400', 'opacity-50');
+        btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+        
+        container.classList.add('cursor-move');
+        
+        document.querySelectorAll('.tab-btn').forEach(tb => {
+            tb.classList.add('ring-2', 'ring-brand-primary/50', 'bg-white');
+        });
+
+        if (!tabsSortable) {
+            tabsSortable = new Sortable(container, {
+                animation: 150,
+                ghostClass: 'opacity-50',
+                onEnd: function() {
+                    saveTabsOrder();
+                }
+            });
+        }
+        tabsSortable.option("disabled", false);
+    } else {
+        btn.classList.remove('text-brand-primary', 'opacity-100');
+        btn.classList.add('text-slate-400', 'opacity-50');
+        btn.innerHTML = '<i data-lucide="arrow-left-right" class="w-4 h-4"></i>';
+        
+        container.classList.remove('cursor-move');
+        document.querySelectorAll('.tab-btn').forEach(tb => {
+            tb.classList.remove('ring-2', 'ring-brand-primary/50', 'bg-white');
+        });
+        
+        if (tabsSortable) {
+            tabsSortable.option("disabled", true);
+        }
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function saveTabsOrder() {
+    const container = document.getElementById('calc-tabs-container');
+    if(!container) return;
+    const tabs = container.querySelectorAll('.tab-btn');
+    const order = Array.from(tabs).map(t => t.getAttribute('data-id'));
+    localStorage.setItem('oko_tabs_order', JSON.stringify(order));
+}
+
+function loadTabsOrder() {
+    const saved = localStorage.getItem('oko_tabs_order');
+    if (!saved) return;
+    try {
+        const order = JSON.parse(saved);
+        const container = document.getElementById('calc-tabs-container');
+        if (!container) return;
+        
+        order.forEach(tabId => {
+            const btn = container.querySelector(`.tab-btn[data-id="${tabId}"]`);
+            if (btn) {
+                container.appendChild(btn);
+            }
+        });
+    } catch (e) {
+        console.error('Ошибка загрузки порядка вкладок:', e);
+    }
+}
+
 function switchTab(tabId) {
+    if (isTabsEditMode) return;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    
+    // Попробуем найти кнопку для этого таба и сделать её активной
+    const targetBtn = document.querySelector(`.tab-btn[onclick*="switchTab('${tabId}')"]`);
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
     document.querySelectorAll('.category-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('tab-' + tabId).classList.add('active');
+    
+    const targetTab = document.getElementById('tab-' + tabId);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
 }
 
 function handleSettingsChange() {
@@ -548,36 +903,71 @@ function handleSettingsChange() {
 function getGlobalMarkup() { return parseFloat(document.getElementById('select-global-markup').value); }
 
 function updateDropdownPrices() {
-    if (GLASS_TYPES.length === 0) return;
     const markup = getGlobalMarkup();
+    
     let gSel = document.getElementById('glass-type'); let prevG = gSel.value; gSel.innerHTML = '';
-    let sortedIndices = GLASS_TYPES.map((g, i) => ({ g, i }));
-    sortedIndices.sort((a, b) => {
-        let an = a.g.name || ''; let bn = b.g.name || '';
-        let aMatch = an.match(/С\/П\s+(\d+)/);
-        let bMatch = bn.match(/С\/П\s+(\d+)/);
-        let aThick = aMatch ? parseInt(aMatch[1]) : (an.match(/\d+/) ? parseInt(an.match(/\d+/)[0]) : 999);
-        let bThick = bMatch ? parseInt(bMatch[1]) : (bn.match(/\d+/) ? parseInt(bn.match(/\d+/)[0]) : 999);
-        return aThick - bThick;
-    });
-    sortedIndices.forEach(({ g, i }) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
-    if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+    if (!GLASS_TYPES || GLASS_TYPES.length === 0) {
+        gSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+    } else {
+        GLASS_TYPES.forEach((g, i) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
+        if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+    }
+
+    let hwSel = document.getElementById('hardware-select');
+    if (hwSel) {
+        let prevHw = hwSel.value; hwSel.innerHTML = '<option value="custom">Свой вариант (ввести вручную)</option>';
+        if (typeof HARDWARE_TYPES !== 'undefined' && HARDWARE_TYPES.length > 0) {
+            HARDWARE_TYPES.forEach((h, i) => hwSel.innerHTML += `<option value="${i}">${h.name} — ${Math.ceil(h.price * markup)} ₽</option>`);
+        }
+        if (prevHw) hwSel.value = prevHw;
+        if (typeof handleHardwareSelectChange === 'function') handleHardwareSelectChange();
+    }
+
+    let swSel = document.getElementById('sandwich-type');
+    if (swSel) {
+        let prevSw = swSel.value; swSel.innerHTML = '';
+        if (typeof SANDWICH_TYPES !== 'undefined' && SANDWICH_TYPES.length > 0) {
+            SANDWICH_TYPES.forEach((s, i) => swSel.innerHTML += `<option value="${i}">${s.name} — ${Math.ceil(s.price * markup)} ₽/м²</option>`);
+        } else {
+            swSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        }
+        if (prevSw) swSel.value = prevSw;
+    }
+
+    let rawGSel = document.getElementById('glasses-item');
+    if (rawGSel) {
+        let prevRG = rawGSel.value; rawGSel.innerHTML = '';
+        if (typeof RAW_GLASS_TYPES !== 'undefined' && RAW_GLASS_TYPES.length > 0) {
+            RAW_GLASS_TYPES.forEach((g, i) => rawGSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
+        } else {
+            rawGSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        }
+        if (prevRG) rawGSel.value = prevRG;
+    }
+
+    if (typeof initBlindsTab === 'function') initBlindsTab();
 
     let lSel = document.getElementById('glass-layout'); let prevL = lSel.value; lSel.innerHTML = '<option value="none">Без раскладки</option>';
-    LAYOUTS.forEach((l, i) => lSel.innerHTML += `<option value="${i}">${l.name} ${l.price > 0 ? `(+${Math.ceil(l.price * markup)} ₽/м)` : ''}</option>`);
-    if (prevL) lSel.value = prevL;
+    if (LAYOUTS && LAYOUTS.length > 0) {
+        LAYOUTS.forEach((l, i) => lSel.innerHTML += `<option value="${i}">${l.name} ${l.price > 0 ? `(+${Math.ceil(l.price * markup)} ₽/м)` : ''}</option>`);
+        if (prevL) lSel.value = prevL;
+    }
 
     let nSel = document.getElementById('net-type'); let prevN = nSel.value; nSel.innerHTML = '';
-    NET_TYPES.forEach((n, i) => {
-        let priceText = '';
-        let minP = Math.ceil(n.price_min * markup);
-        let sqmP = Math.ceil(n.price_sqm * markup);
-        if (n.price_min > 0 && n.price_sqm > 0) priceText = `мин. ${minP}₽, далее ${sqmP}₽/м²`;
-        else if (n.price_min > 0) priceText = `${minP}₽ за шт.`;
-        else priceText = `${sqmP}₽/м²`;
-        nSel.innerHTML += `<option value="${i}">${n.name} — ${priceText}</option>`;
-    });
-    if (prevN && prevN !== 'loading') nSel.value = prevN;
+    if (!NET_TYPES || NET_TYPES.length === 0) {
+        nSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+    } else {
+        NET_TYPES.forEach((n, i) => {
+            let priceText = '';
+            let minP = Math.ceil(n.price_min * markup);
+            let sqmP = Math.ceil(n.price_sqm * markup);
+            if (n.price_min > 0 && n.price_sqm > 0) priceText = `мин. ${minP}₽, далее ${sqmP}₽/м²`;
+            else if (n.price_min > 0) priceText = `${minP}₽ за шт.`;
+            else priceText = `${sqmP}₽/м²`;
+            nSel.innerHTML += `<option value="${i}">${n.name} — ${priceText}</option>`;
+        });
+        if (prevN && prevN !== 'loading' && prevN !== 'none') nSel.value = prevN;
+    }
 }
 
 function toggleGlassLayoutInputs() {
@@ -666,19 +1056,25 @@ function addSandwichItem() {
     if (!w || !h) { alert('Введите ширину и высоту!'); return; }
 
     let qty = parseInt(document.getElementById('sandwich-qty').value) || 1;
-    let thickness = document.getElementById('sandwich-thickness').value;
+    let typeIdx = document.getElementById('sandwich-type').value;
     let colorOut = document.getElementById('sandwich-color-out').value;
     let colorIn = document.getElementById('sandwich-color-in').value;
     let comment = document.getElementById('sandwich-comment').value.trim();
 
+    if (!SANDWICH_TYPES || SANDWICH_TYPES.length === 0 || typeIdx === "none") {
+        alert("Цены на сендвич-панели не заданы!"); return;
+    }
+
+    let sType = SANDWICH_TYPES[parseInt(typeIdx)];
+    if (!sType) return;
+
     let area = (w * h) / 1000000;
     
-    // Заглушка цены (пока нет реального прайса)
-    let basePricePerSqM = 0; 
+    let basePricePerSqM = sType.price * getGlobalMarkup(); 
     let unitCost = basePricePerSqM * area;
 
     let optionsDesc = [
-        `Сендвич-панель: ${thickness} мм`,
+        `Тип: ${sType.name}`,
         `Снаружи: ${colorOut}`,
         `Внутри: ${colorIn}`,
         comment ? `📝 ${comment}` : null
@@ -687,7 +1083,7 @@ function addSandwichItem() {
     _commitItems.push({
         id: Date.now(),
         category: 'sandwich',
-        type: `Сендвич-панель ${thickness}мм`,
+        type: sType.name,
         qty: qty,
         w: w, h: h, area: area, calcArea: area,
         shape: 'Прямоугольник',
@@ -718,25 +1114,30 @@ function addGlassesItem() {
     if (!w || !h) { alert('Введите ширину и высоту!'); return; }
 
     let qty = parseInt(document.getElementById('glasses-qty').value) || 1;
-    let thickness = document.getElementById('glasses-thickness').value;
-    let typeName = document.getElementById('glasses-type').value;
+    let itemIdx = document.getElementById('glasses-item').value;
     let comment = document.getElementById('glasses-comment').value.trim();
+
+    if (!RAW_GLASS_TYPES || RAW_GLASS_TYPES.length === 0 || itemIdx === "none") {
+        alert("Цены на стёкла не заданы!"); return;
+    }
+
+    let gType = RAW_GLASS_TYPES[parseInt(itemIdx)];
+    if (!gType) return;
 
     let area = (w * h) / 1000000;
     
-    // Заглушка цены
-    let basePricePerSqM = 0;
+    let basePricePerSqM = gType.price * getGlobalMarkup();
     let unitCost = basePricePerSqM * area;
 
     let optionsDesc = [
-        `Стекло: ${typeName} ${thickness}мм`,
+        `Стекло: ${gType.name}`,
         comment ? `📝 ${comment}` : null
     ].filter(Boolean);
 
     _commitItems.push({
         id: Date.now(),
         category: 'glasses',
-        type: `Стекло ${typeName} ${thickness}мм`,
+        type: `Стекло ${gType.name}`,
         qty: qty,
         w: w, h: h, area: area, calcArea: area,
         shape: 'Прямоугольник',
@@ -744,8 +1145,8 @@ function addGlassesItem() {
         unitCost: unitCost,
         optionsDesc: optionsDesc,
         baseTotal: unitCost * qty,
-        thickness: thickness,
-        glassType: typeName
+        thickness: '',
+        glassType: gType.name
     });
 
     document.getElementById('glasses-w').value = '';
@@ -1069,6 +1470,11 @@ function addFramelessItem() {
 function initSlopesTab() {
     let sel = document.getElementById('slope-brand');
     sel.innerHTML = '';
+    if (!SLOPES_DATA || SLOPES_DATA.length === 0) {
+        sel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        document.getElementById('slope-color').innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        return;
+    }
     SLOPES_DATA.forEach((b, i) => sel.innerHTML += `<option value="${i}">${b.brand}</option>`);
     updateSlopeColors();
 }
@@ -1264,6 +1670,12 @@ function initSillsTab() {
     let bSel = document.getElementById('sill-brand');
     if (!bSel) return;
     bSel.innerHTML = '';
+    if (!SILLS_DATA || SILLS_DATA.length === 0) {
+        bSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        document.getElementById('sill-color').innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        document.getElementById('sill-width').innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        return;
+    }
     SILLS_DATA.forEach((b, i) => {
         bSel.innerHTML += `<option value="${i}">${b.brand}</option>`;
     });
@@ -1662,6 +2074,27 @@ function addShowerItem() {
 
 // --- CUSTOM ITEMS LOGIC ---
 // --- HARDWARE LOGIC ---
+function handleHardwareSelectChange() {
+    let sel = document.getElementById('hardware-select');
+    let nameInput = document.getElementById('hardware-name');
+    let priceInput = document.getElementById('hardware-price');
+    
+    if (!sel || !nameInput || !priceInput) return;
+    
+    if (sel.value === 'custom') {
+        nameInput.style.display = 'block';
+        nameInput.value = '';
+        priceInput.value = '';
+    } else {
+        nameInput.style.display = 'none';
+        let idx = parseInt(sel.value);
+        if (HARDWARE_TYPES && HARDWARE_TYPES[idx]) {
+            nameInput.value = HARDWARE_TYPES[idx].name;
+            priceInput.value = Math.ceil(HARDWARE_TYPES[idx].price * getGlobalMarkup());
+        }
+    }
+}
+
 function addHardwareItem() {
     let _capturedData = captureRawData("tab-hardware");
     let _commitItems = [];
@@ -1683,6 +2116,8 @@ function addHardwareItem() {
         optionsDesc: optionsDesc, baseTotal: price * qty
     });
 
+    document.getElementById('hardware-select').value = 'custom';
+    handleHardwareSelectChange();
     document.getElementById('hardware-name').value = '';
     document.getElementById('hardware-price').value = '';
     document.getElementById('hardware-qty').value = '1';
@@ -2298,7 +2733,7 @@ function renderCart() {
             let qtyBadge = (it.qty && it.qty > 1) ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-1">×${it.qty}</span>` : '';
             let totalArea = it.area * (it.qty || 1);
             let dimLine;
-            if (it.category === 'custom' || it.category === 'slope_profile') {
+            if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'hardware') {
                 dimLine = `${it.qty || 1} ${it.unit || 'шт.'}`;
             } else if (it.category === 'shower') {
                 dimLine = getShowerDimensionLine(it, true);
@@ -2327,45 +2762,54 @@ function showProposal() {
     let markup = getGlobalMarkup();
     
     // Для распределения наценки по строкам таблицы
-    let sumWithManualMarkup = Math.round(totals.baseSum + totals.totalManualMarkup);
-    let markupFactor = totals.baseSum > 0 ? (sumWithManualMarkup / totals.baseSum) : 1;
-    let runningSum = 0;
+    let targetSumWithManualMarkup = Math.round(totals.baseSum + totals.totalManualMarkup);
+    let markupFactor = totals.baseSum > 0 ? (targetSumWithManualMarkup / totals.baseSum) : 1;
+    let sumWithManualMarkup = 0; // Будем накапливать точную сумму строк
 
     let totalArea = 0;
     ITEMS.forEach((it, idx) => {
         let costMult = (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') ? 1 : markup;
         let baseWithMarkup = Math.ceil(it.baseTotal * costMult);
         
-        let cost = 0;
-        if (idx === ITEMS.length - 1) {
-            cost = sumWithManualMarkup - runningSum;
-        } else {
-            cost = Math.ceil(baseWithMarkup * markupFactor);
-            runningSum += cost;
-        }
-
-        totalArea += it.area * (it.qty || 1);
-        let opts = it.optionsDesc.length > 0 ? `<div class="mt-1 space-y-[2px]">${it.optionsDesc.map(o => `<div class="text-[10px] text-slate-500">• ${o}</div>`).join('')}</div>` : '';
-        let canvasId = `sketch-${it.id}`;
         let qty = it.qty || 1;
-        
-        // Цена за единицу
+        let area = it.area || 0;
+        let cost = 0;
         let unitCostDisplay = '';
-        if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') {
-            unitCostDisplay = it.unitCost > 0 ? `${Math.ceil(it.unitCost).toLocaleString()} ₽/${it.unit || 'шт.'}` : '—';
-        } else if (it.category === 'blinds') {
-            unitCostDisplay = `${Math.ceil(cost / qty).toLocaleString()} ₽/шт.`;
-        } else if (it.area > 0 && qty === 1) {
-            unitCostDisplay = `${Math.ceil(cost / it.area).toLocaleString()} ₽/м²`;
+        let uLabel = (it.category === 'custom' || it.category === 'slope_profile') ? (it.unit || 'шт.') : 'шт.';
+        
+        // 1. Вычисляем итоговую стоимость строки с наценкой
+        let rawCost = baseWithMarkup * markupFactor;
+        cost = Math.round(rawCost);
+
+        // 2. Из итоговой стоимости строго выводим цену за единицу
+        if (area > 0 && qty === 1 && it.category !== 'hardware' && it.category !== 'custom' && it.category !== 'slope_profile') {
+            // Для окон/сеток — цена за м²
+            let unitCost = Math.round(cost / area);
+            cost = Math.round(unitCost * area); // пересчёт обратно, чтобы cost == unitCost × area
+            unitCostDisplay = `${unitCost.toLocaleString()} ₽/м²`;
         } else if (qty > 1) {
-            unitCostDisplay = `${Math.ceil(cost / qty).toLocaleString()} ₽/шт.`;
+            // Для штучных товаров с qty > 1
+            let unitCost = Math.round(cost / qty);
+            cost = unitCost * qty; // пересчёт обратно, чтобы cost == unitCost × qty
+            unitCostDisplay = unitCost > 0 ? `${unitCost.toLocaleString()} ₽/${uLabel}` : '—';
+        } else if (cost > 0) {
+            // Одна штука — цена за ед. = стоимость строки
+            unitCostDisplay = `${cost.toLocaleString()} ₽/${uLabel}`;
         } else {
             unitCostDisplay = '—';
         }
+
+        sumWithManualMarkup += cost;
+        totalArea += area * qty;
+
+        let opts = it.optionsDesc.length > 0 ? `<div class="mt-1 space-y-[2px]">${it.optionsDesc.map(o => `<div class="text-[10px] text-slate-500">• ${o}</div>`).join('')}</div>` : '';
+        let canvasId = `sketch-${it.id}`;
         
-        let itemTotalArea = it.area * qty;
+        let itemTotalArea = area * qty;
         let dimLine = '';
-        if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller' || it.category === 'blinds') {
+        if (it.category === 'hardware') {
+            dimLine = '';
+        } else if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller' || it.category === 'blinds') {
             if (it.w > 0 && it.h > 0) dimLine = `Размеры: ${it.w} × ${it.h} мм`;
             if (it.category === 'roller' || it.category === 'blinds') dimLine += ` (S = ${itemTotalArea.toFixed(2)} м²)`;
         } else if (it.category === 'shower') {
@@ -2809,10 +3253,11 @@ function setStatus(id, msg, isError = false) {
 const PRICES_VERSION = 'v2_dealer';
 function loadPricesFromStorage() {
     try {
-        const saved = localStorage.getItem('oko_prices_data');
+        let username = localStorage.getItem('oko_username') || 'admin';
+        const saved = localStorage.getItem('oko_prices_data_' + username);
         if (saved) {
             const data = JSON.parse(saved);
-            if (data.version !== PRICES_VERSION) { localStorage.removeItem('oko_prices_data'); return; }
+            if (data.version !== PRICES_VERSION) { localStorage.removeItem('oko_prices_data_' + username); return; }
             applyPrices(data.glass, data.shapes, data.layouts, data.nets, data.salinox, data.options);
             currentPricesSource = data.source; currentPricesDate = data.date; updateSettingsUI();
         }
@@ -2820,7 +3265,8 @@ function loadPricesFromStorage() {
 }
 function savePricesToStorage() {
     const data = { version: PRICES_VERSION, glass: GLASS_TYPES, shapes: SHAPES, layouts: LAYOUTS, nets: NET_TYPES, salinox: SALINOX_PRICES, options: OPTIONS, source: currentPricesSource, date: new Date().toLocaleString('ru-RU') };
-    localStorage.setItem('oko_prices_data', JSON.stringify(data));
+    let username = localStorage.getItem('oko_username') || 'admin';
+    localStorage.setItem('oko_prices_data_' + username, JSON.stringify(data));
     currentPricesDate = data.date; updateSettingsUI();
     
     if (typeof Oko_User_Prices !== 'undefined') {
@@ -2830,7 +3276,8 @@ function savePricesToStorage() {
         Oko_User_Prices.nets = JSON.parse(JSON.stringify(NET_TYPES));
         Oko_User_Prices.salinox = JSON.parse(JSON.stringify(SALINOX_PRICES));
         Oko_User_Prices.options = JSON.parse(JSON.stringify(OPTIONS));
-        localStorage.setItem('oko_user_prices', JSON.stringify(Oko_User_Prices));
+        let username = localStorage.getItem('oko_username') || 'admin';
+        localStorage.setItem('oko_user_prices_' + username, JSON.stringify(Oko_User_Prices));
     }
 }
 function applyPrices(glassData, shapesData, layoutsData, netsData, salinoxData, optionsData) {
@@ -2934,7 +3381,7 @@ function downloadExcelTemplate() {
 // ==========================================
 // АРХИВ ПРОСЧЁТОВ (localStorage)
 // ==========================================
-const API_URL = 'http://w98834km.beget.tech/api.php';
+const API_URL = typeof getApiUrl === 'function' ? getApiUrl() : 'api.php';
 let GLOBAL_ARCHIVE_CACHE = [];
 
 async function fetchArchive() {
@@ -2951,7 +3398,10 @@ async function fetchArchive() {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
-        let res = await fetch(API_URL + '?action=list', { signal: controller.signal });
+        let res = await fetch(API_URL + '?action=list', { 
+            signal: controller.signal,
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
         clearTimeout(timeoutId);
         if (res.ok) begetArchive = await res.json();
     } catch(e) {
@@ -3048,7 +3498,12 @@ async function saveCalculation(btn) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2500);
-            let res = await fetch(API_URL + '?action=save', { method:'POST', body: entryStr, signal: controller.signal });
+            let res = await fetch(API_URL + '?action=save', { 
+                method:'POST', 
+                body: entryStr, 
+                signal: controller.signal,
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+            });
             clearTimeout(timeoutId);
             if(!res.ok) throw new Error('Network error');
             alert(`\u2705 Просчёт "${name.trim()}" сохранён в архив!`);
@@ -3087,7 +3542,11 @@ async function deleteCalculation(id) {
     } catch(e) {}
     
     try {
-        await fetch(API_URL + '?action=delete', { method:'POST', body: JSON.stringify({id}) });
+        await fetch(API_URL + '?action=delete', { 
+            method:'POST', 
+            body: JSON.stringify({id}),
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
     } catch(e) { console.error('Ошибка удаления в облаке'); }
     
     await fetchArchive();
@@ -3114,7 +3573,11 @@ async function renameCalculation(id) {
     } catch(e) {}
 
     try {
-        await fetch(API_URL + '?action=rename', { method:'POST', body: JSON.stringify({id, name: newName.trim()}) });
+        await fetch(API_URL + '?action=rename', { 
+            method:'POST', 
+            body: JSON.stringify({id, name: newName.trim()}),
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
     } catch(e) { console.error('Ошибка переименования в облаке'); }
     
     await fetchArchive();
@@ -3521,8 +3984,13 @@ function initUserPrices() {
     DEFAULT_OKO_PRICES.partition = JSON.parse(JSON.stringify(typeof PARTITION_PRICES !== 'undefined' ? PARTITION_PRICES : []));
     DEFAULT_OKO_PRICES.mount = JSON.parse(JSON.stringify(typeof MOUNT_PRICES !== 'undefined' ? MOUNT_PRICES : {}));
     DEFAULT_OKO_PRICES.presetServices = JSON.parse(JSON.stringify(typeof PRESET_SERVICES_DB !== 'undefined' ? PRESET_SERVICES_DB : []));
+    DEFAULT_OKO_PRICES.raw_glasses = JSON.parse(JSON.stringify(typeof RAW_GLASS_TYPES !== 'undefined' ? RAW_GLASS_TYPES : []));
+    DEFAULT_OKO_PRICES.sandwiches = JSON.parse(JSON.stringify(typeof SANDWICH_TYPES !== 'undefined' ? SANDWICH_TYPES : []));
+    DEFAULT_OKO_PRICES.hardware = JSON.parse(JSON.stringify(typeof HARDWARE_TYPES !== 'undefined' ? HARDWARE_TYPES : []));
+    DEFAULT_OKO_PRICES.blinds = JSON.parse(JSON.stringify(typeof BLINDS_TYPES !== 'undefined' ? BLINDS_TYPES : []));
 
-    let saved = localStorage.getItem('oko_user_prices');
+    let username = localStorage.getItem('oko_username') || 'admin';
+    let saved = localStorage.getItem('oko_user_prices_' + username);
     let hasSaved = false;
     if (saved) {
         try { 
@@ -3532,12 +4000,25 @@ function initUserPrices() {
     }
     
     if (!hasSaved) {
-        Oko_User_Prices = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES));
+        if (username === 'admin') {
+            Oko_User_Prices = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES));
+        } else {
+            Oko_User_Prices = {
+                glasses: [], shapes: [], layouts: [], nets: [], salinox: [], options: [],
+                sills: [], slopes: [], slopesProf: {}, partition: [], mount: {}, presetServices: [],
+                raw_glasses: [], sandwiches: [], hardware: [], blinds: []
+            };
+        }
     } else {
         // Ensure all keys exist in case of old localStorage saves
-        for (let key in DEFAULT_OKO_PRICES) {
+        let fallback = username === 'admin' ? DEFAULT_OKO_PRICES : {
+            glasses: [], shapes: [], layouts: [], nets: [], salinox: [], options: [],
+            sills: [], slopes: [], slopesProf: {}, partition: [], mount: {}, presetServices: [],
+            raw_glasses: [], sandwiches: [], hardware: [], blinds: []
+        };
+        for (let key in fallback) {
             if (Oko_User_Prices[key] === undefined) {
-                Oko_User_Prices[key] = JSON.parse(JSON.stringify(DEFAULT_OKO_PRICES[key]));
+                Oko_User_Prices[key] = JSON.parse(JSON.stringify(fallback[key]));
             }
         }
     }
@@ -3557,6 +4038,9 @@ function initUserPrices() {
     
     if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
     if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
+    if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = Oko_User_Prices.raw_glasses || [];
+    if (typeof BLINDS_TYPES !== 'undefined') BLINDS_TYPES = Oko_User_Prices.blinds || [];
+    if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = Oko_User_Prices.blinds || [];
 }
 
 initUserPrices();

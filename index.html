@@ -4,12 +4,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Око - Оконный Завод</title>
+    <title>Око - Профессиональный калькулятор окон</title>
     <link rel="icon" type="image/x-icon" href="./Oko.ico">
+    <script>
+    // === ЛОКАЛЬНАЯ ЗАГЛУШКА (ЭМУЛЯТОР СЕРВЕРА) ===
+    // Позволяет тестировать приложение локально (без PHP)
+    if (window.location.protocol === 'file:') {
+        console.log('Включена локальная эмуляция сервера');
+        const originalFetch = window.fetch;
+        window.fetch = async function() {
+            const url = arguments[0];
+            const opts = arguments[1] || {};
+            
+            if (typeof url === 'string' && url.includes('api.php')) {
+                const actionMatch = url.match(/action=([^&]+)/);
+                const action = actionMatch ? actionMatch[1] : '';
+                
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        let resData = { success: false, error: 'Неизвестный экшен' };
+                        const body = opts.body ? JSON.parse(opts.body) : {};
+                        
+                        let db = JSON.parse(localStorage.getItem('mock_db') || '[]');
+                        if (db.length === 0) {
+                            db.push({ id: 1, username: 'admin', password: '123', company_name: 'Главный Админ', token: 'token_admin', created_at: '2026-06-12' });
+                            db.push({ id: 2, username: 'admin', password: 'admin123', company_name: 'Главный Админ', token: 'token_admin2', created_at: '2026-06-12' });
+                            localStorage.setItem('mock_db', JSON.stringify(db));
+                        }
+
+                        if (action === 'login') {
+                            const u = db.find(x => x.username === body.username && x.password === body.password);
+                            if (u) {
+                                if (u.id !== 1 && u.username !== 'admin' && u.subscription_until) {
+                                    const untilDate = new Date(u.subscription_until);
+                                    const today = new Date(); today.setHours(0,0,0,0);
+                                    if (untilDate < today) {
+                                        resolve(new Response(JSON.stringify({ success: false, error: 'Подписка истекла (' + u.subscription_until + '). Обратитесь к администратору.' }), { status: 200, headers: {'Content-Type': 'application/json'} }));
+                                        return;
+                                    }
+                                }
+                                resData = { 
+                                    success: true, 
+                                    token: u.token, 
+                                    company_name: u.company_name, 
+                                    is_admin: u.id === 1 || u.username === 'admin', 
+                                    modules: JSON.parse(u.modules || '[]'),
+                                    subscription_until: u.subscription_until
+                                };
+                            } else {
+                                resData = { success: false, error: 'Неверный логин или пароль' };
+                            }
+                        } else if (action === 'admin_users') {
+                            if (opts.method === 'POST') {
+                                const subDays = parseInt(body.subscription_days) || 30;
+                                const subDate = new Date(Date.now() + subDays * 86400000);
+                                const subUntil = subDate.toISOString().slice(0,19).replace('T',' ');
+                                db.push({ id: Date.now(), username: body.username, password: body.password, company_name: body.company_name, token: 'tok_'+Date.now(), created_at: new Date().toLocaleDateString(), modules: JSON.stringify(body.modules || []), subscription_until: subUntil });
+                                localStorage.setItem('mock_db', JSON.stringify(db));
+                                resData = { success: true };
+                            } else if (opts.method === 'DELETE') {
+                                db = db.filter(x => x.id != body.id);
+                                localStorage.setItem('mock_db', JSON.stringify(db));
+                                resData = { success: true };
+                            } else {
+                                resData = db.map(x => ({ id: x.id, username: x.username, company_name: x.company_name, created_at: x.created_at, modules: x.modules || '[]', subscription_until: x.subscription_until }));
+                            }
+                        } else if (action === 'admin_update_modules') {
+                            const u = db.find(x => x.id == body.user_id);
+                            if (u) {
+                                u.modules = JSON.stringify(body.modules || []);
+                                localStorage.setItem('mock_db', JSON.stringify(db));
+                            }
+                            resData = { success: true };
+                        } else if (action === 'admin_subscription') {
+                            const u = db.find(x => x.id == body.user_id);
+                            if (u) {
+                                const actionType = body.action_type;
+                                if (actionType === 'expire') {
+                                    u.subscription_until = new Date(Date.now() - 1000).toISOString().slice(0,19).replace('T',' ');
+                                } else if (actionType === 'infinite') {
+                                    u.subscription_until = '2099-12-31 23:59:59';
+                                } else if (actionType === 'add' || actionType === 'subtract') {
+                                    const amount = parseInt(body.amount) || 0;
+                                    const unit = body.unit || 'days';
+                                    let ms = 0;
+                                    if (unit === 'days') ms = amount * 86400000;
+                                    else if (unit === 'minutes') ms = amount * 60000;
+                                    else if (unit === 'seconds') ms = amount * 1000;
+                                    const base = (u.subscription_until && new Date(u.subscription_until) > new Date()) ? new Date(u.subscription_until) : new Date();
+                                    const newDate = new Date(actionType === 'add' ? base.getTime() + ms : base.getTime() - ms);
+                                    u.subscription_until = newDate.toISOString().slice(0,19).replace('T',' ');
+                                }
+                                localStorage.setItem('mock_db', JSON.stringify(db));
+                                resData = { success: true, new_date: u.subscription_until };
+                            } else {
+                                resData = { success: false, error: 'User not found' };
+                            }
+                        } else if (action === 'list') {
+                            resData = []; // Пустой архив
+                        } else if (action === 'save' || action === 'delete' || action === 'rename') {
+                            resData = { success: true };
+                        }
+                        
+                        resolve(new Response(JSON.stringify(resData), { status: 200, headers: {'Content-Type': 'application/json'} }));
+                    }, 200);
+                });
+            }
+            return originalFetch.apply(this, arguments);
+        };
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.51.1/docxtemplater.js"></script>
     <link rel="stylesheet" href="style.css">
     <script>
@@ -21,6 +130,16 @@
             }
         }
     </script>
+    <style>
+        @media print {
+            /* Отключение тяжелых веб-шрифтов (Inter) при печати. 
+               Браузер перестанет вшивать мегабайты шрифтов в PDF файл,
+               и его вес упадет с ~800 КБ до ~100-150 КБ. */
+            * {
+                font-family: Arial, Helvetica, sans-serif !important;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-[#eaf8f3] min-h-screen text-slate-800 pb-10">
@@ -48,21 +167,38 @@
 
             <!-- Form -->
             <div class="space-y-6">
-                <div class="space-y-2">
-                    <label for="pwd-input" class="block text-sm font-bold text-slate-700">Код доступа</label>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                            <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="login-username" class="block text-sm font-bold text-slate-700">Логин</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="user" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="text" id="login-username" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium placeholder:text-slate-400 placeholder:font-normal transition-all"
+                                   placeholder="Введите ваш логин"
+                                   onkeypress="if(event.key === 'Enter') document.getElementById('login-password').focus()">
                         </div>
-                        <input type="password" id="pwd-input" 
-                               class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
-                               placeholder="Пароль администратора"
-                               onkeypress="if(event.key === 'Enter') checkPwd()">
                     </div>
-                    <p id="pwd-error" class="hidden text-red-500 text-sm font-medium pl-1 mt-1 animate-[shake_0.4s_ease-in-out]">Неверный код доступа</p>
+                    <div class="space-y-2">
+                        <label for="login-password" class="block text-sm font-bold text-slate-700">Пароль</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="password" id="login-password" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-12 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                                   placeholder="Введите пароль"
+                                   onkeypress="if(event.key === 'Enter') doLogin()">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('login-password', 'login-eye-icon')">
+                                <i id="login-eye-icon" data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-brand-primary transition-colors"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="login-error" class="hidden text-red-500 text-sm font-medium pl-1 mt-1 animate-[shake_0.4s_ease-in-out]">Неверный логин или пароль</p>
                 </div>
 
-                <button onclick="checkPwd()" 
+                <button onclick="doLogin()" 
                         class="w-full relative group overflow-hidden bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-slate-900/20 active:scale-[0.98]">
                     <span class="relative z-10 flex items-center justify-center gap-2">
                         Войти в калькулятор
@@ -93,7 +229,7 @@
         <div id="calculator-screen">
             <!-- Навигация и управление -->
             <div class="flex flex-wrap gap-3 mb-4 no-print items-center">
-                <a href="http://127.0.0.1:5000" class="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-all text-sm shadow-sm"><i data-lucide="package" class="w-4 h-4"></i> Перейти на склад</a>
+                <a href="http://склад.ооко.рф" id="warehouse-btn" class="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-all text-sm shadow-sm" target="_blank"><i data-lucide="package" class="w-4 h-4"></i> Перейти на склад</a>
             </div>
             <!-- Header Section -->
             <div
@@ -125,12 +261,10 @@
                     </div>
                     <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
                         <span class="text-slate-500 font-medium whitespace-nowrap">Компания:</span>
-                        <select id="select-company"
-                            class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                            onchange="handleSettingsChange()">
-                            <option value="daneliya">ИП Данелия Д.Т.</option>
-                            <option value="alex">ООО Алексстрой</option>
-                        </select>
+                        <span id="current-company-name" class="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold">Загрузка...</span>
+                        <span id="trial-counter" style="display: none;"></span>
+                        <button onclick="doLogout()" class="text-slate-400 hover:text-red-500 transition-colors ml-2" title="Выйти"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                        <input type="hidden" id="select-company" value="daneliya">
                     </div>
                     <div class="flex items-center justify-between md:justify-end gap-3 text-sm">
                         <span class="text-slate-500 font-medium whitespace-nowrap flex items-center gap-1">Наценка (глоб.):<span class="cursor-help text-slate-400 hover:text-brand-primary transition-colors" title="Глобальная наценка — множитель к дилерской цене. 100% = цена × 2. Применяется ко всем позициям. Это НЕ то же самое, что Доп. наценка в смете.">ⓘ</span></span>
@@ -159,44 +293,48 @@
                 <!-- LEFT COLUMN: TABS & INPUTS -->
                 <div class="md:col-span-8 flex flex-col gap-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div
-                            class="flex flex-nowrap overflow-x-auto custom-scrollbar bg-slate-50 border-b border-slate-100 pl-2">
-                            <button class="tab-btn active px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('glass')"><i data-lucide="layout-grid" class="w-5 h-5"></i>
-                                Стеклопакеты</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('sandwich')"><i data-lucide="columns" class="w-5 h-5"></i>
-                                Сендвич-панели</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('glasses')"><i data-lucide="rectangle-horizontal" class="w-5 h-5"></i>
-                                Стёкла</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('nets')"><i data-lucide="grid-3x3" class="w-5 h-5"></i> Москитные
-                                сетки</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('frameless')"><i data-lucide="blinds" class="w-5 h-5"></i> Безрамное
-                                остекление</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('sills')"><i data-lucide="align-horizontal-justify-end"
-                                    class="w-5 h-5"></i> Подоконники</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('slopes')"><i data-lucide="square-split-horizontal" class="w-5 h-5"></i>
-                                Откосы</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('shower')"><i data-lucide="droplets" class="w-5 h-5"></i>
-                                Душевые</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('rollers')"><i data-lucide="archive" class="w-5 h-5"></i>
-                                Ворота</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('blinds')"><i data-lucide="app-window" class="w-5 h-5"></i>
-                                Жалюзи</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('hardware')"><i data-lucide="wrench" class="w-5 h-5"></i>
-                                Фурнитура</button>
-                            <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
-                                onclick="switchTab('custom')"><i data-lucide="package-plus" class="w-5 h-5"></i>
-                                Прочее</button>
+                        <div class="relative w-full flex items-center bg-slate-50 border-b border-slate-100 pr-10 group">
+                            <div id="calc-tabs-container" class="flex flex-nowrap overflow-x-auto custom-scrollbar flex-1 pl-2">
+                                <button class="tab-btn active px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="glass" onclick="switchTab('glass')"><i data-lucide="layout-grid" class="w-5 h-5"></i>
+                                    Стеклопакеты</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="sandwich" onclick="switchTab('sandwich')"><i data-lucide="columns" class="w-5 h-5"></i>
+                                    Сендвич-панели</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="glasses" onclick="switchTab('glasses')"><i data-lucide="rectangle-horizontal" class="w-5 h-5"></i>
+                                    Стёкла</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="nets" onclick="switchTab('nets')"><i data-lucide="grid-3x3" class="w-5 h-5"></i> Москитные
+                                    сетки</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="frameless" onclick="switchTab('frameless')"><i data-lucide="blinds" class="w-5 h-5"></i> Безрамное
+                                    остекление</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="sills" onclick="switchTab('sills')"><i data-lucide="align-horizontal-justify-end"
+                                        class="w-5 h-5"></i> Подоконники</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="slopes" onclick="switchTab('slopes')"><i data-lucide="square-split-horizontal" class="w-5 h-5"></i>
+                                    Откосы</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="shower" onclick="switchTab('shower')"><i data-lucide="droplets" class="w-5 h-5"></i>
+                                    Душевые</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="rollers" onclick="switchTab('rollers')"><i data-lucide="archive" class="w-5 h-5"></i>
+                                    Ворота</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="blinds" onclick="switchTab('blinds')"><i data-lucide="app-window" class="w-5 h-5"></i>
+                                    Жалюзи</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="hardware" onclick="switchTab('hardware')"><i data-lucide="wrench" class="w-5 h-5"></i>
+                                    Фурнитура</button>
+                                <button class="tab-btn px-4 py-4 whitespace-nowrap flex items-center gap-2"
+                                    data-id="custom" onclick="switchTab('custom')"><i data-lucide="package-plus" class="w-5 h-5"></i>
+                                    Прочее</button>
+                            </div>
+                            <button id="edit-tabs-btn" onclick="toggleTabsEditMode()" class="absolute right-0 top-0 bottom-0 bg-slate-50 border-l border-slate-200 w-10 flex items-center justify-center text-slate-400 hover:text-brand-primary transition-colors shadow-[-5px_0_10px_rgba(0,0,0,0.03)] opacity-50 hover:opacity-100" title="Настроить порядок разделов">
+                                <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                            </button>
                         </div>
                         <div class="p-4 sm:p-6">
                             <!-- TAB: GLASS -->
@@ -267,11 +405,8 @@
                                     <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="sandwich-qty" value="1" min="1" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1"></div>
                                 </div>
                                 <div class="mb-5">
-                                    <label class="block text-sm font-medium text-slate-600 mb-1">Толщина панели</label>
-                                    <select id="sandwich-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
-                                        <option value="10">10 мм</option>
-                                        <option value="24">24 мм</option>
-                                        <option value="32">32 мм</option>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Тип панели <span class="text-red-400">*</span></label>
+                                    <select id="sandwich-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
@@ -310,27 +445,11 @@
                                     <div><label class="block text-sm font-medium text-slate-600 mb-1">Высота (мм)</label><input type="number" id="glasses-h" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1200"></div>
                                     <div><label class="block text-sm font-medium text-slate-600 mb-1">Кол-во (шт)</label><input type="number" id="glasses-qty" value="1" min="1" class="w-full relative p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all" placeholder="1"></div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                                    <div>
-                                        <label class="block text-sm font-medium text-slate-600 mb-1">Толщина</label>
-                                        <select id="glasses-thickness" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
-                                            <option value="4">4 мм</option>
-                                            <option value="6">6 мм</option>
-                                            <option value="8">8 мм</option>
-                                            <option value="10">10 мм</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-slate-600 mb-1">Тип стекла</label>
-                                        <select id="glasses-type" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
-                                            <option value="Сырое">Сырое (обычное)</option>
-                                            <option value="Закалка">Закалка</option>
-                                            <option value="Триплекс">Триплекс</option>
-                                            <option value="Рифлёное">Рифлёное</option>
-                                            <option value="Тонированное">Тонированное</option>
-                                            <option value="Матовое">Матовое</option>
-                                        </select>
-                                    </div>
+                                <div class="mb-5">
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Стекло <span class="text-red-400">*</span></label>
+                                    <select id="glasses-item" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all">
+                                        <!-- Populate dynamically -->
+                                    </select>
                                 </div>
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-slate-600 mb-1">Комментарий <span class="text-slate-400 font-normal">(необязательно)</span></label>
@@ -1056,6 +1175,9 @@
 
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-slate-600 mb-1">Наименование <span class="text-red-400">*</span></label>
+                                    <select id="hardware-select" onchange="handleHardwareSelectChange()" class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary mb-2">
+                                        <option value="custom">Свой вариант (ввести вручную)</option>
+                                    </select>
                                     <input type="text" id="hardware-name" placeholder="Напр.: Ручка с ключом, Петля дверная, Замок..." class="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary">
                                 </div>
 
@@ -1454,29 +1576,29 @@
                     </div>
                 </div>
                 <!-- БЛОК ОПЛАТЫ: QR-КОД + РЕКВИЗИТЫ -->
-                <div class="break-inside-avoid mt-6 mb-4" id="kp-payment-block">
-                    <div class="border-2 border-slate-200 rounded-xl p-5">
-                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-brand-primary pb-2">
+                <div class="break-inside-avoid mt-3 mb-2" id="kp-payment-block">
+                    <div class="border-2 border-slate-200 rounded-xl p-3">
+                        <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-2 border-b-2 border-brand-primary pb-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-brand-primary"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
                             Оплата по QR-коду
                         </h3>
-                        <div class="flex flex-col md:flex-row gap-5 items-center">
-                            <!-- QR Code -->
-                            <div class="flex flex-col items-center gap-2 flex-shrink-0">
-                                <img src="QR для оплаты .png" alt="QR-код для оплаты" class="w-40 h-40 rounded-lg border border-slate-200 shadow-sm">
-                                <p class="text-[9px] text-slate-400 text-center max-w-[170px]">Отсканируйте QR-код в мобильном приложении банка для оплаты</p>
-                            </div>
+                        <div class="flex flex-row justify-between items-center gap-5">
                             <!-- Реквизиты для оплаты -->
-                            <div class="flex-1 text-[10px] text-slate-600 space-y-1.5 w-full">
-                                <p class="font-bold text-xs text-slate-800 mb-2 uppercase tracking-wider">Реквизиты для оплаты</p>
+                            <div class="flex-1 text-[9px] sm:text-[10px] text-slate-600 space-y-1.5">
+                                <p class="font-bold text-xs text-slate-800 mb-1 uppercase tracking-wider">Реквизиты для оплаты</p>
                                 <div id="kp-bank-requisites" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                                     <!-- Заполняется из JS -->
                                 </div>
                             </div>
+                            <!-- QR Code -->
+                            <div class="flex flex-col items-center gap-1 flex-shrink-0">
+                                <img src="QR для оплаты .png" alt="QR-код для оплаты" class="w-24 h-24 max-w-[120px] rounded-lg border border-slate-200 shadow-sm">
+                                <p class="text-[8px] text-slate-400 text-center max-w-[120px] leading-tight">Отсканируйте в мобильном приложении банка</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="break-inside-avoid mt-16 pb-8">
+                <div class="break-inside-avoid mt-6 pb-2">
                     <div class="flex justify-between items-start text-sm gap-8">
                         <div class="w-1/2">
                             <div
@@ -1525,45 +1647,220 @@
 
             <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-2">
                 <button class="admin-tab-btn bg-brand-primary text-white shadow-md px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-glasses" onclick="switchAdminTab('tab-admin-glasses')">Стеклопакеты</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-raw-glasses" onclick="switchAdminTab('tab-admin-raw-glasses')">Стёкла</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-nets" onclick="switchAdminTab('tab-admin-nets')">Сетки</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-sills" onclick="switchAdminTab('tab-admin-sills')">Подоконники</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-slopes" onclick="switchAdminTab('tab-admin-slopes')">Откосы</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-hardware" onclick="switchAdminTab('tab-admin-hardware')">Фурнитура</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-sandwiches" onclick="switchAdminTab('tab-admin-sandwiches')">Сендвич-панели</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-blinds" onclick="switchAdminTab('tab-admin-blinds')">Жалюзи</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-mount" onclick="switchAdminTab('tab-admin-mount')">Монтаж</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-services" onclick="switchAdminTab('tab-admin-services')">Услуги</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-brand" onclick="switchAdminTab('tab-admin-brand')">Бренд и КП</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-users" onclick="switchAdminTab('tab-admin-users')"><i data-lucide="users" class="w-3 h-3 inline-block mr-1"></i>Пользователи</button>
             </div>
 
             <div id="tab-admin-glasses" class="admin-tab-content">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Стеклопакеты</h3><div id="admin-glasses-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Стеклопакеты</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('glasses')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-glasses').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-glasses" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'glasses')">
+                    </div>
+                </div>
+                <div id="admin-glasses-container"></div>
                 <h3 class="text-lg font-bold text-slate-800 mb-4 mt-8">Шпросы и Раскладка</h3><div id="admin-layouts-container"></div>
                 <h3 class="text-lg font-bold text-slate-800 mb-4 mt-8">Формы (Наценка)</h3><div id="admin-shapes-container"></div>
             </div>
+            <div id="tab-admin-raw-glasses" class="admin-tab-content hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Стёкла</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('raw_glasses')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-raw-glasses').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-raw-glasses" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'raw_glasses')">
+                    </div>
+                </div>
+                <div id="admin-raw-glasses-container"></div>
+            </div>
             <div id="tab-admin-nets" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Москитные сетки</h3><div id="admin-nets-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Москитные сетки</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('nets')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-nets').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-nets" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'nets')">
+                    </div>
+                </div>
+                <div id="admin-nets-container"></div>
             </div>
             <div id="tab-admin-sills" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Подоконники</h3><div id="admin-sills-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Подоконники</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('sills')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-sills').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-sills" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'sills')">
+                    </div>
+                </div>
+                <div id="admin-sills-container"></div>
             </div>
             <div id="tab-admin-slopes" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Откосы</h3><div id="admin-slopes-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Откосы</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('slopes')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-slopes').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-slopes" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'slopes')">
+                    </div>
+                </div>
+                <div id="admin-slopes-container"></div>
             </div>
             <div id="tab-admin-hardware" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Фурнитура</h3><div id="admin-hardware-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Фурнитура</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('hardware')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-hardware').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-hardware" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'hardware')">
+                    </div>
+                </div>
+                <div id="admin-hardware-container"></div>
             </div>
             <div id="tab-admin-sandwiches" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Сендвич-панели</h3><div id="admin-sandwiches-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Сендвич-панели</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('sandwiches')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-sandwiches').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-sandwiches" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'sandwiches')">
+                    </div>
+                </div>
+                <div id="admin-sandwiches-container"></div>
+            </div>
+            <div id="tab-admin-blinds" class="admin-tab-content hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Жалюзи</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('blinds')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-blinds').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-blinds" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'blinds')">
+                    </div>
+                </div>
+                <div id="admin-blinds-container"></div>
             </div>
             <div id="tab-admin-mount" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Базовые тарифы монтажа</h3><div id="admin-mount-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Базовые тарифы монтажа</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('mount')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-mount').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-mount" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'mount')">
+                    </div>
+                </div>
+                <div id="admin-mount-container"></div>
             </div>
             <div id="tab-admin-services" class="admin-tab-content hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Дополнительные услуги</h3><div id="admin-services-container"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Дополнительные услуги</h3>
+                    <div class="flex gap-2">
+                        <button onclick="downloadExcelTemplate('services')" class="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Шаблон Excel</button>
+                        <button onclick="document.getElementById('upload-excel-services').click()" class="text-xs bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-bold px-3 py-1.5 rounded flex items-center gap-1"><i data-lucide="upload" class="w-3 h-3"></i> Загрузить</button>
+                        <input type="file" id="upload-excel-services" accept=".xlsx,.xls" class="hidden" onchange="handleAdminExcelUpload(event, 'services')">
+                    </div>
+                </div>
+                <div id="admin-services-container"></div>
             </div>
             <div id="tab-admin-brand" class="admin-tab-content hidden">
                 <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-brand-primary"></i> Настройки бренда и структура КП</h3>
                 <div id="admin-brand-container"></div>
+            </div>
+            
+            <!-- TAB USERS -->
+            <div id="tab-admin-users" class="admin-tab-content hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Управление пользователями</h3>
+                    <button onclick="openCreateUserModal()" class="bg-brand-secondary hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i> Создать клиента</button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 font-bold">ID</th>
+                                <th class="p-3 font-bold">Логин</th>
+                                <th class="p-3 font-bold">Компания</th>
+                                <th class="p-3 font-bold">Подписка до</th>
+                                <th class="p-3 font-bold">Дата создания</th>
+                                <th class="p-3 font-bold text-right">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-list" class="divide-y divide-slate-100">
+                            <tr><td colspan="7" class="p-4 text-center">Загрузка...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Create User Modal -->
+            <div id="modal-create-user" class="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center hidden">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+                    <h3 class="text-xl font-bold mb-4">Новый клиент</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Название компании</label>
+                            <input type="text" id="new-user-company" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Логин</label>
+                            <input type="text" id="new-user-login" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Пароль</label>
+                            <input type="text" id="new-user-pass" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Пробный период</label>
+                            <select id="new-user-sub-days" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary">
+                                <option value="5">5 дней</option>
+                                <option value="7">7 дней</option>
+                                <option value="10">10 дней</option>
+                                <option value="14" selected>14 дней</option>
+                                <option value="20">20 дней</option>
+                                <option value="30">30 дней</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Доступные разделы (Модули)</label>
+                            <div id="new-user-modules-container" class="grid grid-cols-2 gap-2 text-sm">
+                                <!-- Инжектится через JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button onclick="closeCreateUserModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold transition-colors">Отмена</button>
+                        <button onclick="createUser()" class="bg-brand-primary hover:bg-brand-dark text-white px-5 py-2 rounded-lg font-bold transition-colors">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modules User Modal -->
+            <div id="modal-user-modules" class="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center hidden">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+                    <h3 class="text-xl font-bold mb-4">Доступ к разделам (Модули)</h3>
+                    <div class="text-sm text-slate-500 mb-4">Выберите разделы калькулятора, к которым будет иметь доступ данный пользователь. Раздел "Свой товар / Услуга" доступен всем по умолчанию.</div>
+                    
+                    <input type="hidden" id="edit-modules-user-id">
+                    
+                    <div id="modules-checkboxes-container" class="grid grid-cols-2 gap-3 mb-6">
+                        <!-- Checkboxes will be injected here via JS -->
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button onclick="closeModulesModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold transition-colors">Отмена</button>
+                        <button onclick="saveUserModules()" class="bg-brand-primary hover:bg-brand-dark text-white px-5 py-2 rounded-lg font-bold transition-colors">Сохранить</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1826,8 +2123,8 @@
     <script src="contract_template_base64.js" defer></script>
     <script src="contract.js" defer></script>
     <script src="brand.js" defer></script>
-    <script src="admin.js?v=6" defer></script>
-    <script src="script.js?v=10" defer></script>
+    <script src="admin.js?v=9" defer></script>
+    <script src="script.js?v=17" defer></script>
 
     <!-- ПЕРЕКЛЮЧЕНИЕ ПО ENTER В ДОГОВОРЕ -->
     <script>
@@ -1851,6 +2148,49 @@
                     e.target.blur();
                 }
             }
+        });
+    </script>
+
+    <script>
+        // Радикальное уменьшение веса PDF при печати/экспорте (конвертация Canvas -> JPEG)
+        window.addEventListener('beforeprint', () => {
+            const canvases = document.querySelectorAll('.proposal-view canvas');
+            canvases.forEach(canvas => {
+                try {
+                    const img = document.createElement('img');
+                    
+                    // Временный canvas для белого фона (иначе прозрачный фон в JPEG станет черным)
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    const tCtx = tempCanvas.getContext('2d');
+                    tCtx.fillStyle = '#ffffff';
+                    tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tCtx.drawImage(canvas, 0, 0);
+
+                    // Сжимаем до JPEG 95% (визуально не отличить, но вес падает с 800кб до ~100кб)
+                    img.src = tempCanvas.toDataURL('image/jpeg', 0.95);
+                    img.className = canvas.className;
+                    img.style.cssText = canvas.style.cssText;
+                    img.setAttribute('data-print-placeholder', 'true');
+                    
+                    canvas.parentNode.insertBefore(img, canvas);
+                    canvas.style.display = 'none';
+                } catch (e) {
+                    console.error('Ошибка сжатия canvas', e);
+                }
+            });
+        });
+
+        window.addEventListener('afterprint', () => {
+            const placeholders = document.querySelectorAll('img[data-print-placeholder="true"]');
+            placeholders.forEach(img => {
+                const canvas = img.nextElementSibling;
+                if(canvas && canvas.tagName === 'CANVAS') {
+                    canvas.style.display = '';
+                }
+                img.remove();
+            });
         });
     </script>
 </body>

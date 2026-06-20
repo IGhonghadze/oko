@@ -13,6 +13,11 @@ function requirePin(actionName, callback) {
     }
 }
 
+function getApiUrl() {
+    if (window.location.protocol === 'file:') return 'http://w98834km.beget.tech/api.php';
+    return 'api.php';
+}
+
 function openAdminPanel() {
     document.getElementById('app').style.display = 'none';
     const archiveScreen = document.getElementById('archive-screen');
@@ -27,9 +32,18 @@ function openAdminPanel() {
     if (!Oko_User_Prices.hardware) Oko_User_Prices.hardware = [{ name: 'Roto NX', price: 2500 }];
     if (!Oko_User_Prices.rollers) Oko_User_Prices.rollers = [{ name: 'Alutech 39', price: 3000 }];
     if (!Oko_User_Prices.salinox) Oko_User_Prices.salinox = [{ name: 'Salinox F3', price: 12000 }];
+    if (!Oko_User_Prices.raw_glasses) Oko_User_Prices.raw_glasses = [{ name: 'Стекло 4мм', price: 800 }];
+    if (!Oko_User_Prices.blinds) Oko_User_Prices.blinds = [{ name: 'Ткань Альфа (категория 1)', price: 1500 }];
     
     renderAllAdminTabs();
     switchAdminTab('tab-admin-glasses');
+    
+    // Скрыть вкладку «Пользователи» для не-админов
+    const isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_username') === 'admin';
+    const usersTabBtn = document.querySelector('.admin-tab-btn[data-target="tab-admin-users"]');
+    if (usersTabBtn) usersTabBtn.style.display = isAdmin ? '' : 'none';
+    const usersTabContent = document.getElementById('tab-admin-users');
+    if (usersTabContent && !isAdmin) usersTabContent.classList.add('hidden');
 }
 
 function closeAdminPanel() {
@@ -53,12 +67,279 @@ function switchAdminTab(tabId) {
         activeBtn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
         activeBtn.classList.add('bg-brand-primary', 'text-white', 'shadow-md');
     }
+
+    if (tabId === 'tab-admin-users') {
+        loadAdminUsers();
+    }
 }
+
+// === УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (MVP) ===
+
+const AVAILABLE_MODULES = [
+    { id: 'glass', name: 'Стеклопакеты' },
+    { id: 'sandwich', name: 'Сендвич-панели' },
+    { id: 'glasses', name: 'Стёкла / Резка' },
+    { id: 'nets', name: 'Москитные сетки' },
+    { id: 'frameless', name: 'Безрамное / Офисное' },
+    { id: 'sills', name: 'Подоконники' },
+    { id: 'slopes', name: 'Откосы' },
+    { id: 'shower', name: 'Душевые' },
+    { id: 'rollers', name: 'Рольставни / Ворота' },
+    { id: 'blinds', name: 'Жалюзи' },
+    { id: 'hardware', name: 'Фурнитура' }
+];
+
+async function loadAdminUsers() {
+    const list = document.getElementById('admin-users-list');
+    list.innerHTML = '<tr><td colspan="7" class="p-4 text-center">Загрузка...</td></tr>';
+    try {
+        const res = await fetch(getApiUrl() + '?action=admin_users', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
+        const data = await res.json();
+        if (data.error) {
+            list.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">${data.error}</td></tr>`;
+            return;
+        }
+        list.innerHTML = '';
+        data.forEach(u => {
+            let subText = '';
+            let subClass = '';
+            if (u.id == 1) {
+                subText = '∞ Бессрочно';
+                subClass = 'text-emerald-600 bg-emerald-50';
+            } else if (!u.subscription_until) {
+                subText = 'Не задана';
+                subClass = 'text-slate-400 bg-slate-50';
+            } else {
+                const until = new Date(u.subscription_until);
+                const today = new Date(); today.setHours(0,0,0,0);
+                const daysLeft = Math.ceil((until - today) / (1000*60*60*24));
+                if (daysLeft < 0) {
+                    subText = 'Истекла ' + u.subscription_until;
+                    subClass = 'text-red-600 bg-red-50';
+                } else if (daysLeft <= 3) {
+                    subText = u.subscription_until + ' (' + daysLeft + ' дн.)';
+                    subClass = 'text-amber-600 bg-amber-50';
+                } else {
+                    subText = u.subscription_until + ' (' + daysLeft + ' дн.)';
+                    subClass = 'text-emerald-600 bg-emerald-50';
+                }
+            }
+            
+            // Modules string safely encoded for onclick
+            const userModules = u.modules ? JSON.parse(u.modules) : [];
+            const userModulesStr = encodeURIComponent(JSON.stringify(userModules));
+            
+            list.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 border-b border-slate-100">${u.id}</td>
+                    <td class="p-3 border-b border-slate-100 font-bold">${u.username}</td>
+                    <td class="p-3 border-b border-slate-100">${u.company_name}</td>
+                    <td class="p-3 border-b border-slate-100"><span class="px-2 py-0.5 rounded text-xs font-bold ${subClass}">${subText}</span></td>
+                    <td class="p-3 border-b border-slate-100">${u.created_at}</td>
+                    <td class="p-3 border-b border-slate-100 text-right">
+                        ${u.id != 1 ? `
+                            <div class="flex flex-wrap items-center gap-1 justify-end">
+                                <button onclick="openModulesModal(${u.id}, '${userModulesStr}')" class="text-brand-primary hover:text-brand-dark bg-brand-primary/10 hover:bg-brand-primary/20 px-2 py-1 rounded transition-colors text-xs font-bold">Доступ</button>
+                                <input id="sub-amount-${u.id}" type="number" value="7" min="1" class="w-12 text-xs border border-slate-200 rounded px-1 py-0.5 bg-white text-center">
+                                <select id="sub-unit-${u.id}" class="text-xs border border-slate-200 rounded px-1 py-0.5 bg-white">
+                                    <option value="days" selected>Дн.</option>
+                                    <option value="minutes">Мин.</option>
+                                    <option value="seconds">Сек.</option>
+                                </select>
+                                <button onclick="manageSubscription(${u.id}, 'add')" class="text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition-colors text-xs font-bold" title="Добавить время">+</button>
+                                <button onclick="manageSubscription(${u.id}, 'subtract')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded transition-colors text-xs font-bold" title="Убавить время">−</button>
+                                <button onclick="manageSubscription(${u.id}, 'infinite')" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-1.5 py-1 rounded transition-colors text-xs font-bold" title="Бессрочный доступ">∞</button>
+                                <button onclick="manageSubscription(${u.id}, 'expire')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-1.5 py-1 rounded transition-colors text-xs font-bold" title="Сбросить (заблокировать)">⛔</button>
+                                <button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors text-xs font-bold">Удалить</button>
+                            </div>
+                        ` : '<span class="text-xs text-slate-400">Суперадмин</span>'}
+                    </td>
+                </tr>`;
+        });
+    } catch (e) {
+        list.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Ошибка сети</td></tr>';
+    }
+}
+
+// === МОДУЛИ ДОСТУПА ===
+function openModulesModal(userId, modulesEncodedStr) {
+    const modules = JSON.parse(decodeURIComponent(modulesEncodedStr));
+    document.getElementById('edit-modules-user-id').value = userId;
+    
+    const container = document.getElementById('modules-checkboxes-container');
+    container.innerHTML = '';
+    
+    AVAILABLE_MODULES.forEach(mod => {
+        const isChecked = modules.includes(mod.id);
+        container.innerHTML += `
+            <label class="flex items-center gap-2 cursor-pointer p-2 border border-slate-100 rounded hover:bg-slate-50 transition-colors">
+                <input type="checkbox" value="${mod.id}" class="edit-module-cb w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary" ${isChecked ? 'checked' : ''}>
+                <span class="text-slate-700 font-medium">${mod.name}</span>
+            </label>
+        `;
+    });
+    
+    document.getElementById('modal-user-modules').classList.remove('hidden');
+}
+
+function closeModulesModal() {
+    document.getElementById('modal-user-modules').classList.add('hidden');
+}
+
+async function saveUserModules() {
+    const userId = document.getElementById('edit-modules-user-id').value;
+    const checkboxes = document.querySelectorAll('.edit-module-cb');
+    const modules = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) modules.push(cb.value);
+    });
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=admin_update_modules', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, modules: modules }),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeModulesModal();
+            loadAdminUsers();
+        } else {
+            alert(data.error || 'Ошибка сохранения модулей');
+        }
+    } catch (e) {
+        alert('Ошибка сети при сохранении модулей');
+    }
+}
+
+function openCreateUserModal() {
+    document.getElementById('modal-create-user').classList.remove('hidden');
+    document.getElementById('new-user-company').value = '';
+    document.getElementById('new-user-login').value = '';
+    document.getElementById('new-user-pass').value = '';
+    
+    const container = document.getElementById('new-user-modules-container');
+    container.innerHTML = '';
+    AVAILABLE_MODULES.forEach(mod => {
+        container.innerHTML += `
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" value="${mod.id}" class="new-user-module-cb w-4 h-4 text-brand-primary rounded border-slate-300 focus:ring-brand-primary">
+                <span class="text-slate-700 font-medium">${mod.name}</span>
+            </label>
+        `;
+    });
+}
+
+function closeCreateUserModal() {
+    document.getElementById('modal-create-user').classList.add('hidden');
+}
+
+async function createUser() {
+    const company = document.getElementById('new-user-company').value;
+    const username = document.getElementById('new-user-login').value;
+    const password = document.getElementById('new-user-pass').value;
+
+    if (!company || !username || !password) return alert('Заполните все поля');
+
+    const checkboxes = document.querySelectorAll('.new-user-module-cb');
+    const modules = [];
+    checkboxes.forEach(cb => {
+        if (cb.checked) modules.push(cb.value);
+    });
+
+    try {
+        const subDays = parseInt(document.getElementById('new-user-sub-days').value) || 30;
+        const res = await fetch(getApiUrl() + '?action=admin_users', {
+            method: 'POST',
+            body: JSON.stringify({ company_name: company, username, password, subscription_days: subDays, modules: modules }),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeCreateUserModal();
+            loadAdminUsers();
+        } else {
+            alert(data.error || 'Ошибка создания');
+        }
+    } catch (e) {
+        alert('Ошибка сети');
+    }
+}
+
+async function deleteUser(id) {
+    if (!confirm('Точно удалить клиента? Все его данные останутся в базе (но он не сможет войти).')) return;
+    try {
+        const res = await fetch(getApiUrl() + '?action=admin_users', {
+            method: 'DELETE',
+            body: JSON.stringify({ id }),
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadAdminUsers();
+        } else {
+            alert(data.error || 'Ошибка удаления');
+        }
+    } catch (e) {
+        alert('Ошибка сети');
+    }
+}
+
+async function manageSubscription(userId, actionType) {
+    const unitNames = { days: 'дн.', minutes: 'мин.', seconds: 'сек.' };
+    let body = { user_id: userId, action_type: actionType };
+    
+    if (actionType === 'add' || actionType === 'subtract') {
+        const amountEl = document.getElementById('sub-amount-' + userId);
+        const unitEl = document.getElementById('sub-unit-' + userId);
+        if (!amountEl || !unitEl) return;
+        const amount = parseInt(amountEl.value);
+        const unit = unitEl.value;
+        if (!amount || amount <= 0) { alert('Введите число больше 0'); return; }
+        const label = (actionType === 'add' ? 'Добавить ' : 'Убавить ') + amount + ' ' + unitNames[unit] + '?';
+        if (!confirm(label)) return;
+        body.amount = amount;
+        body.unit = unit;
+    } else if (actionType === 'expire') {
+        if (!confirm('Заблокировать пользователя (обнулить подписку)?')) return;
+    } else if (actionType === 'infinite') {
+        if (!confirm('Сделать бессрочный доступ?')) return;
+    }
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=admin_subscription', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadAdminUsers();
+        } else {
+            alert(data.error || 'Ошибка');
+        }
+    } catch (e) {
+        alert('Ошибка сети');
+    }
+}
+
 
 // --- RENDERERS ---
 
 function renderAllAdminTabs() {
     renderAdminGlasses();
+    renderAdminRawGlasses();
     renderAdminLayouts();
     renderAdminShapes();
     renderAdminNets();
@@ -66,15 +347,42 @@ function renderAllAdminTabs() {
     renderAdminSlopes();
     renderAdminHardware();
     renderAdminSandwiches();
+    renderAdminBlinds();
     renderAdminMount();
     renderAdminServices();
     if (typeof renderAdminBrand === 'function') renderAdminBrand();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function initSortable(wrapperElement, targetArray, renderFunction) {
+    if (!wrapperElement || typeof Sortable === 'undefined') return;
+    new Sortable(wrapperElement, {
+        handle: '.drag-handle',
+        animation: 150,
+        ghostClass: 'bg-slate-100',
+        onEnd: function (evt) {
+            const oldIdx = evt.oldIndex;
+            const newIdx = evt.newIndex;
+            if (oldIdx === newIdx) return;
+            
+            saveAdminPrices(true);
+            
+            const item = targetArray.splice(oldIdx, 1)[0];
+            targetArray.splice(newIdx, 0, item);
+            
+            renderFunction();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    });
+}
+
 function createRowInput(idPrefix, idx, obj, nameKey = 'name', priceKey = 'price', priceLabel = '₽', deleteAction = '') {
     return `
     <div class="bg-white p-3 rounded-lg border border-slate-200 flex justify-between items-center gap-3">
+        <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 px-1 transition-colors flex items-center gap-2" title="Перетащить">
+            <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+            <span class="text-xs font-bold text-slate-400 w-4 text-center select-none">${idx + 1}</span>
+        </div>
         <input type="text" class="flex-1 bg-slate-50 border border-slate-200 focus:border-brand-primary focus:ring-0 text-sm font-medium px-3 py-2 rounded" id="${idPrefix}-name-${idx}" value="${obj[nameKey]}">
         <div class="flex items-center gap-2">
             <input type="number" class="w-24 p-2 border border-slate-200 rounded text-sm text-right bg-slate-50" id="${idPrefix}-price-${idx}" value="${obj[priceKey]}">
@@ -98,6 +406,7 @@ function renderAdminGlasses() {
         <i data-lucide="plus" class="w-4 h-4"></i> Добавить стекло
     </button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.glasses, renderAdminGlasses);
 }
 
 function deleteAdminGlass(idx) {
@@ -116,6 +425,38 @@ function addAdminGlass() {
     });
 }
 
+function renderAdminRawGlasses() {
+    const container = document.getElementById('admin-raw-glasses-container');
+    if (!container) return;
+    let html = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">`;
+    (Oko_User_Prices.raw_glasses || []).forEach((g, idx) => {
+        html += createRowInput('adm-raw_glass', idx, g, 'name', 'price', '₽/м²', `deleteAdminRawGlass(${idx})`);
+    });
+    html += `</div>
+    <button onclick="addAdminRawGlass()" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors border border-slate-200 shadow-sm">
+        <i data-lucide="plus" class="w-4 h-4"></i> Добавить стекло
+    </button>`;
+    container.innerHTML = html;
+    if (Oko_User_Prices.raw_glasses) initSortable(container.querySelector('.grid'), Oko_User_Prices.raw_glasses, renderAdminRawGlasses);
+}
+
+function deleteAdminRawGlass(idx) {
+    requirePin('Удалить стекло', () => {
+        Oko_User_Prices.raw_glasses.splice(idx, 1);
+        renderAdminRawGlasses();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+}
+
+function addAdminRawGlass() {
+    requirePin('Добавить стекло', () => {
+        if (!Oko_User_Prices.raw_glasses) Oko_User_Prices.raw_glasses = [];
+        Oko_User_Prices.raw_glasses.push({ name: 'Новое стекло', price: 0 });
+        renderAdminRawGlasses();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+}
+
 function renderAdminLayouts() {
     const container = document.getElementById('admin-layouts-container');
     if (!container) return;
@@ -128,6 +469,7 @@ function renderAdminLayouts() {
         <i data-lucide="plus" class="w-4 h-4"></i> Добавить раскладку
     </button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.layouts, renderAdminLayouts);
 }
 
 function deleteAdminLayout(idx) { requirePin('Удалить раскладку', () => { Oko_User_Prices.layouts.splice(idx, 1); renderAdminLayouts(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
@@ -145,6 +487,7 @@ function renderAdminShapes() {
         <i data-lucide="plus" class="w-4 h-4"></i> Добавить форму
     </button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.shapes, renderAdminShapes);
 }
 
 function deleteAdminShape(idx) { requirePin('Удалить форму', () => { Oko_User_Prices.shapes.splice(idx, 1); renderAdminShapes(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
@@ -157,8 +500,12 @@ function renderAdminNets() {
     Oko_User_Prices.nets.forEach((n, idx) => {
         html += `
         <div class="bg-white p-3 rounded-lg border border-slate-200 flex flex-col gap-2 relative">
+            <div class="drag-handle absolute top-2 left-2 p-1 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 flex items-center gap-1" title="Перетащить">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+                <span class="text-xs font-bold text-slate-400 select-none">${idx + 1}</span>
+            </div>
             <button onclick="deleteAdminNet(${idx})" class="absolute top-2 right-2 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            <input type="text" class="w-[85%] bg-slate-50 border border-slate-200 focus:border-brand-primary focus:ring-0 text-sm font-bold px-3 py-1.5 rounded" id="adm-net-name-${idx}" value="${n.name}">
+            <input type="text" class="w-[85%] bg-slate-50 border border-slate-200 focus:border-brand-primary focus:ring-0 text-sm font-bold px-3 py-1.5 ml-6 rounded" id="adm-net-name-${idx}" value="${n.name}">
             <div class="flex items-center justify-between gap-2 mt-1">
                 <span class="text-xs text-slate-500">Мин. цена:</span>
                 <input type="number" class="w-24 p-1.5 border border-slate-200 rounded text-sm text-right bg-slate-50" id="adm-net-min-${idx}" value="${n.price_min}">
@@ -174,6 +521,7 @@ function renderAdminNets() {
         <i data-lucide="plus" class="w-4 h-4"></i> Добавить москитную сетку
     </button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.nets, renderAdminNets);
 }
 
 function deleteAdminNet(idx) { requirePin('Удалить сетку', () => { Oko_User_Prices.nets.splice(idx, 1); renderAdminNets(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
@@ -182,20 +530,22 @@ function addAdminNet() { requirePin('Добавить сетку', () => { Oko_U
 function renderAdminSills() {
     const container = document.getElementById('admin-sills-container');
     if (!container) return;
-    let html = `<div class="space-y-6">`;
+    let html = `<div class="space-y-6 sills-brands-list">`;
     Oko_User_Prices.sills.forEach((brand, bIdx) => {
         html += `
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 relative">
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 relative sortable-brand">
+            <div class="drag-handle absolute top-4 left-4 p-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500" title="Перетащить"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
             <button onclick="deleteAdminSillBrand(${bIdx})" class="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded transition-colors" title="Удалить бренд"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-            <h4 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+            <h4 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2 pl-10">
                 <i data-lucide="box" class="w-5 h-5 text-brand-primary"></i> Бренд: <input type="text" class="bg-white border border-slate-300 rounded px-3 py-1.5 font-bold" id="adm-sill-bname-${bIdx}" value="${brand.brand}">
             </h4>
-            <div class="space-y-4">`;
+            <div class="space-y-4 sills-groups-list-${bIdx}">`;
         brand.groups.forEach((grp, gIdx) => {
             html += `
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative">
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative sortable-group">
+                    <div class="drag-handle absolute top-3 left-2 p-1 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500" title="Перетащить"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
                     <button onclick="deleteAdminSillGroup(${bIdx}, ${gIdx})" class="absolute top-3 right-3 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" title="Удалить группу"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    <input type="text" class="w-[85%] bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-bold mb-3" id="adm-sill-gname-${bIdx}-${gIdx}" value="${grp.name}">
+                    <input type="text" class="w-[85%] bg-slate-50 border border-slate-200 rounded px-3 py-2 text-sm font-bold mb-3 ml-6" id="adm-sill-gname-${bIdx}-${gIdx}" value="${grp.name}">
                     <div class="flex flex-wrap gap-4 mb-3">
                         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 font-bold">Заглушка:</span><input type="number" class="w-20 p-1 border border-slate-300 rounded text-sm bg-slate-50" id="adm-sill-cap-${bIdx}-${gIdx}" value="${grp.cap}"></div>
                         <div class="flex items-center gap-2"><span class="text-xs text-slate-500 font-bold">Соединитель 90°:</span><input type="number" class="w-20 p-1 border border-slate-300 rounded text-sm bg-slate-50" id="adm-sill-c90-${bIdx}-${gIdx}" value="${grp.conn90}"></div>
@@ -219,6 +569,10 @@ function renderAdminSills() {
         <i data-lucide="plus" class="w-4 h-4"></i> Добавить бренд
     </button></div>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.sills-brands-list'), Oko_User_Prices.sills, renderAdminSills);
+    Oko_User_Prices.sills.forEach((brand, bIdx) => {
+        initSortable(container.querySelector(`.sills-groups-list-${bIdx}`), brand.groups, renderAdminSills);
+    });
 }
 
 function deleteAdminSillBrand(bIdx) { requirePin('Удалить бренд подоконников', () => { Oko_User_Prices.sills.splice(bIdx, 1); renderAdminSills(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
@@ -245,6 +599,7 @@ function renderAdminHardware() {
     Oko_User_Prices.hardware.forEach((g, idx) => { html += createRowInput('adm-hardware', idx, g, 'name', 'price', '₽', `deleteAdminHardware(${idx})`); });
     html += `</div><button onclick="addAdminHardware()" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border border-slate-200 shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Добавить фурнитуру</button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.hardware, renderAdminHardware);
 }
 function deleteAdminHardware(idx) { requirePin('Удалить фурнитуру', () => { Oko_User_Prices.hardware.splice(idx, 1); renderAdminHardware(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
 function addAdminHardware() { requirePin('Добавить фурнитуру', () => { Oko_User_Prices.hardware.push({ name: 'Новая фурнитура', price: 0 }); renderAdminHardware(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
@@ -256,9 +611,22 @@ function renderAdminSandwiches() {
     Oko_User_Prices.sandwiches.forEach((g, idx) => { html += createRowInput('adm-sandwich', idx, g, 'name', 'price', '₽/м²', `deleteAdminSandwich(${idx})`); });
     html += `</div><button onclick="addAdminSandwich()" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border border-slate-200 shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Добавить сендвич-панель</button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.grid'), Oko_User_Prices.sandwiches, renderAdminSandwiches);
 }
 function deleteAdminSandwich(idx) { requirePin('Удалить сендвич', () => { Oko_User_Prices.sandwiches.splice(idx, 1); renderAdminSandwiches(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
 function addAdminSandwich() { requirePin('Добавить сендвич', () => { Oko_User_Prices.sandwiches.push({ name: 'Новый сендвич', price: 0 }); renderAdminSandwiches(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
+
+function renderAdminBlinds() {
+    const container = document.getElementById('admin-blinds-container');
+    if (!container) return;
+    let html = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">`;
+    (Oko_User_Prices.blinds || []).forEach((g, idx) => { html += createRowInput('adm-blind', idx, g, 'name', 'price', '₽', `deleteAdminBlind(${idx})`); });
+    html += `</div><button onclick="addAdminBlind()" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border border-slate-200 shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Добавить ткань</button>`;
+    container.innerHTML = html;
+    if (Oko_User_Prices.blinds) initSortable(container.querySelector('.grid'), Oko_User_Prices.blinds, renderAdminBlinds);
+}
+function deleteAdminBlind(idx) { requirePin('Удалить ткань', () => { Oko_User_Prices.blinds.splice(idx, 1); renderAdminBlinds(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
+function addAdminBlind() { requirePin('Добавить ткань', () => { if(!Oko_User_Prices.blinds) Oko_User_Prices.blinds = []; Oko_User_Prices.blinds.push({ name: 'Новая ткань', price: 0 }); renderAdminBlinds(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
 
 function renderAdminMount() {
     const container = document.getElementById('admin-mount-container');
@@ -285,7 +653,7 @@ function renderAdminMount() {
 function renderAdminServices() {
     const container = document.getElementById('admin-services-container');
     if (!container) return;
-    let html = `<div class="space-y-3">
+    let html = `<div class="space-y-3 services-list">
         <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-500 pb-2 border-b border-slate-200 px-2">
             <div class="col-span-4">Наименование услуги</div>
             <div class="col-span-1 text-center">Ед.изм.</div>
@@ -297,7 +665,13 @@ function renderAdminServices() {
     Oko_User_Prices.presetServices.forEach((srv, idx) => {
         html += `
         <div class="grid grid-cols-12 gap-2 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm hover:border-brand-primary transition-colors">
-            <div class="col-span-4"><input type="text" class="w-full p-2 bg-slate-50 border border-slate-200 focus:border-brand-primary focus:ring-0 text-xs font-bold rounded" id="adm-srv-name-${idx}" value="${srv.name}"></div>
+            <div class="col-span-4 flex items-center gap-2">
+                <div class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 flex items-center gap-1">
+                    <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+                    <span class="text-xs font-bold text-slate-400 select-none">${idx + 1}</span>
+                </div>
+                <input type="text" class="flex-1 p-2 bg-slate-50 border border-slate-200 focus:border-brand-primary focus:ring-0 text-xs font-bold rounded" id="adm-srv-name-${idx}" value="${srv.name}">
+            </div>
             <div class="col-span-1"><input type="text" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-center" id="adm-srv-unit-${idx}" value="${srv.unit}"></div>
             <div class="col-span-2"><input type="number" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-center" id="adm-srv-p0-${idx}" value="${srv.prices[0]}"></div>
             <div class="col-span-2"><input type="number" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs text-center" id="adm-srv-p1-${idx}" value="${srv.prices[1]}"></div>
@@ -307,117 +681,222 @@ function renderAdminServices() {
     });
     html += `</div><button onclick="addAdminService()" class="mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border border-slate-200 shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Добавить услугу</button>`;
     container.innerHTML = html;
+    initSortable(container.querySelector('.services-list'), Oko_User_Prices.presetServices, renderAdminServices);
 }
 
 function deleteAdminService(idx) { requirePin('Удалить услугу', () => { Oko_User_Prices.presetServices.splice(idx, 1); renderAdminServices(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
 function addAdminService() { requirePin('Добавить услугу', () => { Oko_User_Prices.presetServices.push({ name: 'Новая услуга', unit: 'шт', prices: [0,0,0] }); renderAdminServices(); if(typeof lucide!=='undefined') lucide.createIcons(); }); }
 
+function handleAdminExcelUpload(event, category) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+            
+            if (!rows || rows.length < 2) {
+                alert("Файл пуст или имеет неверный формат.");
+                return;
+            }
+
+            requirePin('Загрузить из Excel', () => {
+                const parseNum = v => parseFloat(String(v).replace(',', '.').replace(/[^0-9.-]+/g, "")) || 0;
+                
+                if (['glasses', 'raw_glasses', 'layouts', 'hardware', 'sandwiches', 'blinds'].includes(category)) {
+                    let newData = [];
+                    for(let i=1; i<rows.length; i++) {
+                        if(rows[i][0]) newData.push({ name: String(rows[i][0]).trim(), price: parseNum(rows[i][1]) });
+                    }
+                    if(newData.length > 0) Oko_User_Prices[category] = newData;
+                } else if (category === 'nets') {
+                    for(let i=1; i<rows.length; i++) {
+                        if(rows[i][0]) {
+                            let id = String(rows[i][0]).trim();
+                            let exist = (Oko_User_Prices.nets||[]).find(n => n.id === id);
+                            if(exist) {
+                                exist.name = String(rows[i][1]||"").trim();
+                                exist.price_min = parseNum(rows[i][2]);
+                                exist.price_sqm = parseNum(rows[i][3]);
+                            }
+                        }
+                    }
+                } else if (category === 'services') {
+                    let newData = [];
+                    for(let i=1; i<rows.length; i++) {
+                        if(rows[i][0]) newData.push({ name: String(rows[i][0]).trim(), unit: String(rows[i][1]||"шт").trim(), prices: [parseNum(rows[i][2]), parseNum(rows[i][3]), parseNum(rows[i][4])] });
+                    }
+                    if(newData.length > 0) Oko_User_Prices.presetServices = newData;
+                } else if (category === 'mount') {
+                    let m = Oko_User_Prices.mount || {};
+                    for(let i=1; i<rows.length; i++) {
+                        let name = String(rows[i][0]||"").toLowerCase();
+                        let p = parseNum(rows[i][1]);
+                        if(name.includes('монтаж окна')) m.window = p;
+                        else if(name.includes('монтаж балкона')) m.balcony = p;
+                        else if(name.includes('демонтаж окна')) m.demountWindow = p;
+                        else if(name.includes('демонтаж балкона')) m.demountBalcony = p;
+                    }
+                    Oko_User_Prices.mount = m;
+                } else if (category === 'sills') {
+                    let newData = [];
+                    let currentBrand = null;
+                    let currentGroup = null;
+                    for(let i=1; i<rows.length; i++) {
+                        if(rows[i][0]) { // new brand
+                            currentBrand = { brand: String(rows[i][0]).trim(), groups: [] };
+                            newData.push(currentBrand);
+                        }
+                        if(rows[i][1] && currentBrand) { // new group
+                            currentGroup = { name: String(rows[i][1]).trim(), cap: parseNum(rows[i][2]), conn90: parseNum(rows[i][3]), conn150: parseNum(rows[i][4]), widths: {} };
+                            currentBrand.groups.push(currentGroup);
+                        }
+                        if(rows[i][5] && currentGroup) { // new width
+                            currentGroup.widths[String(rows[i][5]).trim()] = parseNum(rows[i][6]);
+                        }
+                    }
+                    if(newData.length > 0) Oko_User_Prices.sills = newData;
+                } else if (category === 'slopes') {
+                    let newData = [];
+                    for(let i=1; i<rows.length; i++) {
+                        if(rows[i][1]) newData.push({ name: String(rows[i][1]).trim(), width: rows[i][2] ? String(rows[i][2]).trim() : "", price: parseNum(rows[i][3]) });
+                    }
+                    if(newData.length > 0) Oko_User_Prices.slopes = newData;
+                }
+
+                saveAdminPrices();
+                renderAllAdminTabs();
+                alert(`Данные успешно загружены из файла ${file.name}`);
+            });
+        } catch(err) {
+            console.error(err);
+            alert("Ошибка при чтении файла.");
+        }
+        event.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+}
 
 // --- SAVE & RESET ---
 
-function saveAdminPrices() {
-    ['glasses', 'layouts', 'hardware', 'sandwiches'].forEach(cat => {
-        (Oko_User_Prices[cat] || []).forEach((g, idx) => {
-            const elName = document.getElementById(`adm-${cat.replace(/es$|s$/, '')}-name-${idx}`);
-            const elPrice = document.getElementById(`adm-${cat.replace(/es$|s$/, '')}-price-${idx}`);
-            if(elName) g.name = elName.value;
-            if(elPrice) g.price = parseFloat(elPrice.value) || 0;
-        });
-    });
-
-    (Oko_User_Prices.shapes || []).forEach((s, idx) => {
-        const elName = document.getElementById(`adm-shape-name-${idx}`);
-        const elPrice = document.getElementById(`adm-shape-price-${idx}`);
-        if(elName) s.name = elName.value;
-        if(elPrice) s.markup = parseFloat(elPrice.value) || 0;
-    });
-
-    (Oko_User_Prices.nets || []).forEach((n, idx) => {
-        const elName = document.getElementById(`adm-net-name-${idx}`);
-        const elMin = document.getElementById(`adm-net-min-${idx}`);
-        const elSqm = document.getElementById(`adm-net-sqm-${idx}`);
-        if(elName) n.name = elName.value;
-        if(elMin) n.price_min = parseFloat(elMin.value) || 0;
-        if(elSqm) n.price_sqm = parseFloat(elSqm.value) || 0;
-    });
-
-    (Oko_User_Prices.sills || []).forEach((brand, bIdx) => {
-        const elB = document.getElementById(`adm-sill-bname-${bIdx}`);
-        if(elB) brand.brand = elB.value;
-        (brand.groups || []).forEach((grp, gIdx) => {
-            const elG = document.getElementById(`adm-sill-gname-${bIdx}-${gIdx}`);
-            if(elG) grp.name = elG.value;
-            const elCap = document.getElementById(`adm-sill-cap-${bIdx}-${gIdx}`);
-            const elC90 = document.getElementById(`adm-sill-c90-${bIdx}-${gIdx}`);
-            const elC150 = document.getElementById(`adm-sill-c150-${bIdx}-${gIdx}`);
-            if(elCap) grp.cap = parseFloat(elCap.value)||0;
-            if(elC90) grp.conn90 = parseFloat(elC90.value)||0;
-            if(elC150) grp.conn150 = parseFloat(elC150.value)||0;
-            Object.keys(grp.widths || {}).forEach(w => {
-                const elW = document.getElementById(`adm-sill-w-${bIdx}-${gIdx}-${w}`);
-                if(elW) grp.widths[w] = parseFloat(elW.value)||0;
+function saveAdminPrices(silent = false) {
+    try {
+        ['glasses', 'raw_glasses', 'layouts', 'hardware', 'sandwiches', 'blinds'].forEach(cat => {
+            (Oko_User_Prices[cat] || []).forEach((g, idx) => {
+                let prefix = cat.replace(/es$|s$/, '');
+                if(cat === 'glasses') prefix = 'glass';
+                if(cat === 'raw_glasses') prefix = 'raw_glass';
+                const elName = document.getElementById(`adm-${prefix}-name-${idx}`);
+                const elPrice = document.getElementById(`adm-${prefix}-price-${idx}`);
+                if(elName) g.name = elName.value;
+                if(elPrice) g.price = parseFloat(elPrice.value) || 0;
             });
         });
-    });
 
-    ['start', 'h', 'f28', 'f50'].forEach(k => {
-        const el = document.getElementById(`adm-slope-prof-${k}`);
-        if(el && Oko_User_Prices.slopesProf) Oko_User_Prices.slopesProf[k] = parseFloat(el.value)||0;
-    });
+        (Oko_User_Prices.shapes || []).forEach((s, idx) => {
+            const elName = document.getElementById(`adm-shape-name-${idx}`);
+            const elPrice = document.getElementById(`adm-shape-price-${idx}`);
+            if(elName) s.name = elName.value;
+            if(elPrice) s.multiplier = parseFloat(elPrice.value) || 0;
+        });
 
-    Object.keys(Oko_User_Prices.mount || {}).forEach(k => {
-        for(let i=0; i<3; i++) {
-            const el = document.getElementById(`adm-mount-${k}-${i}`);
-            if(el) Oko_User_Prices.mount[k][i] = parseFloat(el.value)||0;
+        (Oko_User_Prices.nets || []).forEach((n, idx) => {
+            const elName = document.getElementById(`adm-net-name-${idx}`);
+            const elMin = document.getElementById(`adm-net-min-${idx}`);
+            const elSqm = document.getElementById(`adm-net-sqm-${idx}`);
+            if(elName) n.name = elName.value;
+            if(elMin) n.price_min = parseFloat(elMin.value) || 0;
+            if(elSqm) n.price_sqm = parseFloat(elSqm.value) || 0;
+        });
+
+        (Oko_User_Prices.sills || []).forEach((brand, bIdx) => {
+            const elB = document.getElementById(`adm-sill-bname-${bIdx}`);
+            if(elB) brand.brand = elB.value;
+            (brand.groups || []).forEach((grp, gIdx) => {
+                const elG = document.getElementById(`adm-sill-gname-${bIdx}-${gIdx}`);
+                if(elG) grp.name = elG.value;
+                const elCap = document.getElementById(`adm-sill-cap-${bIdx}-${gIdx}`);
+                const elC90 = document.getElementById(`adm-sill-c90-${bIdx}-${gIdx}`);
+                const elC150 = document.getElementById(`adm-sill-c150-${bIdx}-${gIdx}`);
+                if(elCap) grp.cap = parseFloat(elCap.value)||0;
+                if(elC90) grp.conn90 = parseFloat(elC90.value)||0;
+                if(elC150) grp.conn150 = parseFloat(elC150.value)||0;
+                Object.keys(grp.widths || {}).forEach(w => {
+                    const elW = document.getElementById(`adm-sill-w-${bIdx}-${gIdx}-${w}`);
+                    if(elW) grp.widths[w] = parseFloat(elW.value)||0;
+                });
+            });
+        });
+
+        ['start', 'h', 'f28', 'f50'].forEach(k => {
+            const el = document.getElementById(`adm-slope-prof-${k}`);
+            if(el && Oko_User_Prices.slopesProf) Oko_User_Prices.slopesProf[k] = parseFloat(el.value)||0;
+        });
+
+        Object.keys(Oko_User_Prices.mount || {}).forEach(k => {
+            for(let i=0; i<3; i++) {
+                const el = document.getElementById(`adm-mount-${k}-${i}`);
+                if(el) Oko_User_Prices.mount[k][i] = parseFloat(el.value)||0;
+            }
+        });
+
+        (Oko_User_Prices.presetServices || []).forEach((srv, idx) => {
+            const elName = document.getElementById(`adm-srv-name-${idx}`);
+            const elUnit = document.getElementById(`adm-srv-unit-${idx}`);
+            if(elName) srv.name = elName.value;
+            if(elUnit) srv.unit = elUnit.value;
+            for(let i=0; i<3; i++) {
+                const elP = document.getElementById(`adm-srv-p${i}-${idx}`);
+                if(elP) srv.prices[i] = parseFloat(elP.value)||0;
+            }
+        });
+
+        let username = localStorage.getItem('oko_username') || 'admin';
+        localStorage.setItem('oko_user_prices_' + username, JSON.stringify(Oko_User_Prices));
+        
+        // Save brand settings too
+        if (typeof saveBrandFromAdmin === 'function') saveBrandFromAdmin();
+        
+        // Sync global arrays from Oko_User_Prices so dropdowns reflect new items
+        if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
+        if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = Oko_User_Prices.raw_glasses || [];
+        if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
+        if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
+        if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
+        if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
+        if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
+        if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
+        if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
+        if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
+        if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
+        if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
+        if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
+        if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
+        if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
+        if (typeof BLINDS_TYPES !== 'undefined') BLINDS_TYPES = Oko_User_Prices.blinds || [];
+        if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = Oko_User_Prices.blinds || [];
+
+        if (!silent) alert('Настройки успешно сохранены!');
+        
+        if (typeof initPresetServices === 'function') initPresetServices();
+        if (typeof updateDropdownPrices === 'function') updateDropdownPrices();
+        if (typeof initSillsTab === 'function') initSillsTab();
+        if (typeof initSlopesTab === 'function') initSlopesTab();
+        
+        let shapeSelect = document.getElementById('glass-shape');
+        if (shapeSelect && typeof SHAPES !== 'undefined') {
+            shapeSelect.innerHTML = '';
+            SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
         }
-    });
-
-    (Oko_User_Prices.presetServices || []).forEach((srv, idx) => {
-        const elName = document.getElementById(`adm-srv-name-${idx}`);
-        const elUnit = document.getElementById(`adm-srv-unit-${idx}`);
-        if(elName) srv.name = elName.value;
-        if(elUnit) srv.unit = elUnit.value;
-        for(let i=0; i<3; i++) {
-            const elP = document.getElementById(`adm-srv-p${i}-${idx}`);
-            if(elP) srv.prices[i] = parseFloat(elP.value)||0;
-        }
-    });
-
-    localStorage.setItem('oko_user_prices', JSON.stringify(Oko_User_Prices));
-    
-    // Save brand settings too
-    if (typeof saveBrandFromAdmin === 'function') saveBrandFromAdmin();
-    
-    // Sync global arrays from Oko_User_Prices so dropdowns reflect new items
-    if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
-    if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
-    if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
-    if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
-    if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
-    if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
-    if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
-    if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
-    if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
-    if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
-    if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
-    if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
-    if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
-    if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
-    
-    alert('Настройки успешно сохранены!');
-    
-    if (typeof initPresetServices === 'function') initPresetServices();
-    if (typeof updateDropdownPrices === 'function') updateDropdownPrices();
-    if (typeof initSillsTab === 'function') initSillsTab();
-    if (typeof initSlopesTab === 'function') initSlopesTab();
-    
-    let shapeSelect = document.getElementById('glass-shape');
-    if (shapeSelect && typeof SHAPES !== 'undefined') {
-        shapeSelect.innerHTML = '';
-        SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+        
+        if (typeof renderCart === 'function') renderCart();
+    } catch (err) {
+        alert("Ошибка при сохранении: " + err.message);
+        console.error("Ошибка при сохранении:", err);
     }
-    
-    if (typeof renderCart === 'function') renderCart();
 }
 
 function resetAdminPrices() {
@@ -438,4 +917,78 @@ function resetAdminPrices() {
         }
         if (typeof renderCart === 'function') renderCart();
     });
+}
+
+// --- EXCEL TEMPLATES ---
+function downloadExcelTemplate(category) {
+    saveAdminPrices(); // Ensure current UI state is saved before export
+    let data = [];
+    if (category === 'glasses') {
+        data.push(["Название стеклопакета", "Цена (₽)"]);
+        (Oko_User_Prices.glasses || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'raw_glasses') {
+        data.push(["Название стекла", "Цена (₽)"]);
+        (Oko_User_Prices.raw_glasses || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'layouts') {
+        data.push(["Название раскладки", "Цена (₽)"]);
+        (Oko_User_Prices.layouts || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'hardware') {
+        data.push(["Название фурнитуры", "Цена (₽)"]);
+        (Oko_User_Prices.hardware || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'sandwiches') {
+        data.push(["Тип сендвич-панели", "Цена (₽)"]);
+        (Oko_User_Prices.sandwiches || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'blinds') {
+        data.push(["Название ткани/жалюзи", "Цена (₽)"]);
+        (Oko_User_Prices.blinds || []).forEach(item => data.push([item.name, item.price]));
+    } else if (category === 'nets') {
+        data.push(["ID (не менять)", "Название", "Цена (до 1 м2)", "Цена (за 1 м2)"]);
+        (Oko_User_Prices.nets || []).forEach(item => {
+            data.push([item.id, item.name, item.price_min, item.price_sqm]);
+        });
+    } else if (category === 'services') {
+        data.push(["Название", "Ед. изм.", "Офис (₽)", "Монтажник (₽)", "Бригада (₽)"]);
+        (Oko_User_Prices.presetServices || []).forEach(item => {
+            data.push([item.name, item.unit, item.prices[0], item.prices[1], item.prices[2]]);
+        });
+    } else if (category === 'sills') {
+        data.push(["Бренд", "Группа/Цвет", "Заглушка", "Соединитель 90", "Соединитель 150", "Ширина", "Цена"]);
+        (Oko_User_Prices.sills || []).forEach(brand => {
+            (brand.groups || []).forEach(group => {
+                let first = true;
+                Object.keys(group.widths || {}).forEach(w => {
+                    if(first) {
+                        data.push([brand.brand, group.name, group.cap, group.conn90, group.conn150, w, group.widths[w]]);
+                        first = false;
+                    } else {
+                        data.push(["", "", "", "", "", w, group.widths[w]]);
+                    }
+                });
+            });
+        });
+    } else if (category === 'slopes') {
+        data.push(["Тип (панель/уголок/профиль)", "Название", "Ширина (если есть)", "Цена"]);
+        (Oko_User_Prices.slopes || []).forEach(item => {
+            data.push(["панель/уголок", item.name, item.width || "", item.price]);
+        });
+    } else if (category === 'mount') {
+        data.push(["Тип", "Цена"]);
+        let m = Oko_User_Prices.mount || {};
+        data.push(["Монтаж Окна", m.window || 0]);
+        data.push(["Монтаж Балкона", m.balcony || 0]);
+        data.push(["Демонтаж Окна", m.demountWindow || 0]);
+        data.push(["Демонтаж Балкона", m.demountBalcony || 0]);
+    } else {
+        alert("Экспорт для этого раздела пока не поддерживается.");
+        return;
+    }
+
+    if (data.length === 1) { // Only headers
+        data.push(["Пример", 100]); // Add dummy row so template isnt empty
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Прайс");
+    XLSX.writeFile(wb, `Шаблон_${category}.xlsx`);
 }
