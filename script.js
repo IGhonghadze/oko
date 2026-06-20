@@ -3455,6 +3455,7 @@ async function checkAndSyncLocalArchive(localArchive, begetArchive, token) {
         return;
     }
     window.IS_SYNCING_ARCHIVE = false;
+}
 
 function collectState() {
     let getVal = (id) => { let el = document.getElementById(id); return el ? el.value : ''; };
