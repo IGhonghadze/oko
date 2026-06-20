@@ -3414,7 +3414,47 @@ async function fetchArchive() {
     
     GLOBAL_ARCHIVE_CACHE = Array.from(merged.values());
     GLOBAL_ARCHIVE_CACHE.sort((a, b) => b.id - a.id);
+
+    // Если мы запущены локально (через file://) и есть авторизационный токен, проверим необходимость переноса локальных расчетов в облако Beget
+    if (window.location.protocol === 'file:') {
+        let token = localStorage.getItem('oko_token');
+        if (token && localArchive.length > 0) {
+            setTimeout(() => checkAndSyncLocalArchive(localArchive, begetArchive, token), 500);
+        }
+    }
 }
+
+async function checkAndSyncLocalArchive(localArchive, begetArchive, token) {
+    if (window.IS_SYNCING_ARCHIVE) return;
+    
+    let begetIds = new Set(begetArchive.map(item => item.id));
+    let toUpload = localArchive.filter(item => !begetIds.has(item.id));
+    
+    if (toUpload.length === 0) return;
+    
+    window.IS_SYNCING_ARCHIVE = true;
+    let message = `Найдено ${toUpload.length} сохраненных расчетов на вашем компьютере, которых еще нет в облаке Beget.\n\nПеренести их на сервер Beget, чтобы они стали доступны на всех устройствах (включая мобильные и основной сайт)?`;
+    if (confirm(message)) {
+        let successCount = 0;
+        for (let entry of toUpload) {
+            try {
+                let res = await fetch(API_URL + '?action=save', {
+                    method: 'POST',
+                    body: JSON.stringify(entry),
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) successCount++;
+            } catch(e) {
+                console.error('Ошибка синхронизации расчета:', e);
+            }
+        }
+        alert(`Перенос завершен!\nУспешно сохранено в облако Beget: ${successCount} из ${toUpload.length} расчетов.`);
+        window.IS_SYNCING_ARCHIVE = false;
+        await fetchArchive();
+        if (typeof renderArchiveList === 'function') renderArchiveList();
+        return;
+    }
+    window.IS_SYNCING_ARCHIVE = false;
 
 function collectState() {
     let getVal = (id) => { let el = document.getElementById(id); return el ? el.value : ''; };
