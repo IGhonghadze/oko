@@ -1,0 +1,2752 @@
+﻿// ==========================================
+// Oko Calculator тАФ ╨Ю╤Б╨╜╨╛╨▓╨╜╨╛╨╣ ╤Б╨║╤А╨╕╨┐╤В
+// ==========================================
+
+// === ╨Р╨Т╨в╨Ю╨а╨Ш╨Ч╨Р╨ж╨Ш╨п ===
+const APP_PASSWORD = 'oko'; // ╨Я╨░╤А╨╛╨╗╤М ╨║╨░╨╗╤М╨║╤Г╨╗╤П╤В╨╛╤А╨░ ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О
+
+function checkPwd() {
+    const input = document.getElementById('pwd-input');
+    if (input.value === APP_PASSWORD || input.value === '47474') {
+        document.getElementById('pwd-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        sessionStorage.setItem('oko_auth', '1');
+    } else {
+        const errorEl = document.getElementById('pwd-error');
+        errorEl.classList.remove('hidden');
+        input.classList.add('border-red-500');
+        input.classList.remove('border-slate-200');
+        input.value = '';
+        setTimeout(() => { 
+            input.classList.remove('border-red-500'); 
+            input.classList.add('border-slate-200');
+            errorEl.classList.add('hidden');
+        }, 1500);
+    }
+}
+
+// ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╤Б╤В╨░╤В╤Г╤Б ╨┐╤А╨╕ ╨╖╨░╨│╤А╤Г╨╖╨║╨╡ ╤Б╨║╤А╨╕╨┐╤В╨░
+if (sessionStorage.getItem('oko_auth') === '1') {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pwd-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+    });
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pwd-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        setTimeout(() => document.getElementById('pwd-input').focus(), 100);
+    });
+}
+
+// ==========================================
+// GLOBALS & STATE тАФ ╨Т╤Б╨╡ ╤Ж╨╡╨╜╤Л ╨Ф╨Ш╨Ы╨Х╨а╨б╨Ъ╨Ш╨Х
+// ==========================================
+let GLASS_TYPES = [
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ (4/16/4)', price: 2000 },
+    { name: '╨б╤В/╨┐ 32╨╝╨╝ (4/24/4)', price: 2100 },
+    { name: '╨б╤В/╨┐ 24-26╨╝╨╝ (6/14/4)', price: 2500 },
+    { name: '╨б╤В/╨┐ 24-26╨╝╨╝ (6/12/6)', price: 3000 },
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ (4/16/4 ╨н╨╜╨╡╤А╨│╨╛)', price: 2300 },
+    { name: '╨б╤В/╨┐ 32╨╝╨╝ (4/10/4/10/4) ╨┤╨▓╤Г╤Е╨║╨░╨╝╨╡╤А╨╜╤Л╨╣', price: 2500 },
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ (4/16/4 ╨С╤А╨╛╨╜╨╖╨░ ╨Х╨▓╤А╨╛)', price: 2900 },
+    { name: '╨б╤В/╨┐ 32╨╝╨╝ (4/10/4/10/4 Solar)', price: 3000 },
+    { name: '╨б╤В/╨┐ 32╨╝╨╝ (6 Solar/22/4)', price: 3000 },
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ (4/16/4) SOLAR', price: 2400 },
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ ╨б╨░╤В╨╕╨╜╨░╤В/╨Ъ╤А╨╕╨╖╨╡╤В/╨Ф╨╕╨░╨╝╨░╨╜╤В ╨▒/╤Ж╨▓', price: 2800 },
+    { name: '╨б╤В/╨┐ 24╨╝╨╝ SOLAR Light Bronze/Silver/Blue/Sky Grey', price: 3000 }
+];
+let SHAPES = [
+    { name: '╨Я╤А╤П╨╝╨╛╤Г╨│╨╛╨╗╤М╨╜╨╕╨║', multiplier: 0 },
+    { name: '╨в╤А╨╡╤Г╨│╨╛╨╗╤М╨╜╨╕╨║ / ╨в╤А╨░╨┐╨╡╤Ж╨╕╤П', multiplier: 0.25 },
+    { name: '╨Р╤А╨║╨░ / ╨Ъ╤А╤Г╨│', multiplier: 0.50 },
+    { name: '╨Я╨╛ ╤И╨░╨▒╨╗╨╛╨╜╤Г', multiplier: 0.50 }
+];
+let LAYOUTS = [
+    { name: '╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░ 8╨╝╨╝ ╨▒╨╡╨╗╨░╤П', price: 450 },
+    { name: '╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░ 10╨╝╨╝ ╨╖╨╛╨╗╨╛╤В╨░╤П', price: 450 },
+    { name: '╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░ 18╨╝╨╝ ╨▒╨╡╨╗╨░╤П', price: 450 },
+    { name: '╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░ 18╨╝╨╝ ╨║╨╛╤А╨╕╤З╨╜╨╡╨▓╨░╤П', price: 450 }
+];
+let NET_TYPES = [
+    { id: 'window_white', name: '╨Ю╨║╨╛╨╜╨╜╨░╤П ╨╝╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ (╨С╨╡╨╗╨░╤П)', price_min: 650, price_sqm: 800 },
+    { id: 'window_brown', name: '╨Ю╨║╨╛╨╜╨╜╨░╤П ╨╝╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ (╨Ъ╨╛╤А╨╕╤З╨╜╨╡╨▓╨░╤П)', price_min: 650, price_sqm: 800 },
+    { id: 'window_ant', name: '╨Ю╨║╨╛╨╜╨╜╨░╤П ╨╝╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ (╨Р╨╜╤В╤А╨░╤Ж╨╕╤В)', price_min: 650, price_sqm: 1100 },
+    { id: 'door_32', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╨┤╨▓╨╡╤А╤М (╨Я╤А╨╛╤Д╨╕╨╗╤М 32╨╝╨╝)', price_min: 0, price_sqm: 2000 },
+    { id: 'door_42', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╨┤╨▓╨╡╤А╤М (42╨╝╨╝ ╨Р╨╜╤В╤А╨░╤Ж╨╕╤В/╨С╨╡╨╗╤Л╨╣)', price_min: 0, price_sqm: 2200 },
+    { id: 'door_52', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╨┤╨▓╨╡╤А╤М (╨Я╤А╨╛╤Д╨╕╨╗╤М 52╨╝╨╝)', price_min: 4500, price_sqm: 5000 },
+    { id: 'vsn', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ VSN (╨▓╤Б╤В╨░╨▓╨╜╨░╤П)', price_min: 1600, price_sqm: 2000 },
+    { id: 'rollet', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ ╨┐╨╛╨┤ ╤А╨╛╨╗╨╗╨╡╤В', price_min: 0, price_sqm: 1200 },
+    { id: 'pleated', name: '╨Ь╨╛╤Б╨║╨╕╤В╨╜╨░╤П ╤Б╨╡╤В╨║╨░ ╨Я╨╗╨╕╤Б╤Б╨╡', price_min: 0, price_sqm: 5200 }
+];
+let SALINOX_PRICES = {
+    'F1_F2': [{ max: 34, p: 34104 }, { max: 40, p: 35280 }, { max: 45, p: 35520 }, { max: 50, p: 35880 }, { max: 55, p: 36360 }, { max: 60, p: 37080 }, { max: 65, p: 37680 }, { max: 70, p: 38280 }, { max: 75, p: 38800 }, { max: 80, p: 39480 }, { max: 85, p: 40080 }, { max: 90, p: 40560 }, { max: 95, p: 41160 }, { max: 100, p: 41760 }, { max: 105, p: 42360 }, { max: 110, p: 42960 }],
+    'F4': [{ max: 34, p: 0 }, { max: 40, p: 40020 }, { max: 45, p: 41880 }, { max: 50, p: 42504 }, { max: 55, p: 42996 }, { max: 60, p: 43332 }, { max: 65, p: 44280 }, { max: 70, p: 45300 }, { max: 75, p: 46250 }, { max: 80, p: 47210 }, { max: 85, p: 48170 }, { max: 90, p: 49150 }, { max: 95, p: 50100 }, { max: 100, p: 51050 }, { max: 105, p: 52010 }, { max: 110, p: 52970 }, { max: 115, p: 53930 }],
+    'F5': [{ max: 34, p: 0 }, { max: 40, p: 0 }, { max: 45, p: 30000 }, { max: 50, p: 30360 }, { max: 55, p: 30720 }, { max: 60, p: 31100 }, { max: 65, p: 31440 }, { max: 70, p: 31800 }, { max: 75, p: 32160 }, { max: 80, p: 32520 }, { max: 85, p: 33880 }, { max: 90, p: 33240 }, { max: 95, p: 33600 }, { max: 100, p: 33960 }],
+    'F6': [{ max: 34, p: 0 }, { max: 40, p: 32160 }, { max: 45, p: 32760 }, { max: 50, p: 33360 }, { max: 55, p: 34000 }, { max: 60, p: 34560 }, { max: 65, p: 35160 }, { max: 70, p: 35760 }, { max: 75, p: 37440 }, { max: 80, p: 38050 }, { max: 85, p: 38760 }, { max: 90, p: 39360 }, { max: 95, p: 39840 }, { max: 100, p: 40440 }, { max: 105, p: 41010 }, { max: 110, p: 41640 }, { max: 115, p: 42240 }, { max: 120, p: 42840 }],
+    'FB_cr': [{ max: 34, p: 0 }, { max: 40, p: 23160 }, { max: 45, p: 23520 }, { max: 50, p: 23880 }, { max: 55, p: 24240 }, { max: 60, p: 24600 }, { max: 65, p: 24840 }, { max: 70, p: 25200 }, { max: 75, p: 25560 }]
+};
+let OPTIONS = {
+    fl_mech: 36800,
+    fl_handle: 3500,
+    fl_closer: 12500,
+    fl_park: 15000,
+    net_pet_sqm: 800,
+    net_corners: 150,
+    glass_cross: 400,
+    glass_end: 70,
+    glass_oversize_pct: 25,
+    glass_min_area: 0.35
+};
+const SALINOX_DISCOUNT = 0.28;
+
+// --- SILLS (╨Я╨╛╨┤╨╛╨║╨╛╨╜╨╜╨╕╨║╨╕) DATA ---
+let SILLS_DATA = [
+    {
+        brand: 'Crystallit',
+        groups: [
+            {
+                name: '╨С╨╡╨╗╤Л╨╣ (╨│╨╗╤П╨╜╤Ж./╨╝╨░╤В./╤Б╨░╤В╨╕╨╜)',
+                widths: { 100: 810, 150: 1215, 200: 1620, 250: 2025, 300: 2430, 350: 2835, 400: 3240, 450: 3645, 500: 4050, 550: 4860, 600: 4860 },
+                cap: 210, conn90: 286, conn150: 286
+            },
+            {
+                name: '╨ж╨▓╨╡╤В╨╜╨╛╨╣ (╨░╨╜╤В╤А╨░╤Ж╨╕╤В, ╨▒╨╡╤В╨╛╨╜, ╨┤╤Г╨▒ ╨╕ ╨┤╤А.)',
+                widths: { 100: 850, 150: 1275, 200: 1700, 250: 2125, 300: 2550, 350: 2975, 400: 3400, 450: 3825, 500: 4250, 550: 5100, 600: 5100 },
+                cap: 210, conn90: 286, conn150: 286
+            },
+            {
+                name: '╨Я╤А╨╡╨╝╨╕╤Г╨╝ (╨▓╨╡╨╜╨│╨╡, ╨╛╤А╨╡╤Е, ╨╖╨╛╨╗╨╛╤В╨╛╨╣ ╨┤╤Г╨▒ ╨╕ ╨┤╤А.)',
+                widths: { 100: 1730, 150: 1730, 200: 1730, 250: 2163, 300: 2595, 350: 3028, 400: 3460, 450: 3893, 500: 4325, 550: 5190, 600: 5190 },
+                cap: 210, conn90: 286, conn150: 286
+            }
+        ]
+    },
+    {
+        brand: '╨Т╨╕╤В╤А╨░╨╢ ╨Ф╨╕╨╖╨░╨╣╨╜',
+        groups: [
+            {
+                name: '╨С╨╡╨╗╤Л╨╣',
+                widths: { 100: 1240, 150: 1240, 200: 1240, 250: 1550, 300: 1860, 350: 2170, 400: 2790, 450: 2790 },
+                cap: 300, conn90: 475, conn150: 475
+            },
+            {
+                name: '╨ж╨▓╨╡╤В╨╜╨╛╨╣ (╤Б╨╡╤А╤Л╨╣, ╤З╤С╤А╨╜╤Л╨╣, ╤Б╨╕╨╜╨╕╨╣, ╨╝╨╛╨║╨║╨╛)',
+                widths: { 100: 1380, 150: 1380, 200: 1380, 250: 1725, 300: 2070, 350: 2415, 400: 3105, 450: 3105 },
+                cap: 330, conn90: 500, conn150: 500
+            }
+        ]
+    },
+    {
+        brand: '╨Т╨╕╤В╤А╨░╨╢+',
+        groups: [
+            {
+                name: '╨С╨╡╨╗╤Л╨╣ ╤Б╨░╤В╨╕╨╜',
+                widths: { 100: 620, 150: 620, 200: 620, 250: 775, 300: 930, 350: 1085, 400: 1395, 450: 1395, 500: 1550, 550: 1860, 600: 1860 },
+                cap: 133, conn90: 245, conn150: 245
+            }
+        ]
+    },
+    {
+        brand: '╨Я╤А╨╛╤Б╤В╤Л╨╡',
+        groups: [
+            {
+                name: '╨С╨╡╨╗╤Л╨╣',
+                widths: { 100: 139, 150: 205, 200: 255, 250: 319, 300: 383, 350: 447, 400: 554, 450: 624, 500: 693, 600: 832 },
+                cap: 100, conn90: 200, conn150: 200
+            },
+            {
+                name: '╨Р╨╜╤В╤А╨░╤Ж╨╕╤В (3000 тВ╜/╨╝┬▓)',
+                widths: { 100: 300, 150: 450, 200: 600, 250: 750, 300: 900, 350: 1050, 400: 1200, 450: 1350, 500: 1500, 600: 1800 },
+                cap: 120, conn90: 220, conn150: 220
+            },
+            {
+                name: '╨Ъ╨╛╤А╨╕╤З╨╜╨╡╨▓╤Л╨╣ (3000 тВ╜/╨╝┬▓)',
+                widths: { 100: 300, 150: 450, 200: 600, 250: 750, 300: 900, 350: 1050, 400: 1200, 450: 1350, 500: 1500, 600: 1800 },
+                cap: 120, conn90: 220, conn150: 220
+            },
+            {
+                name: '╨Ф╤А╤Г╨│╨╛╨╣ ╤Ж╨▓╨╡╤В (3000 тВ╜/╨╝┬▓)',
+                widths: { 100: 300, 150: 450, 200: 600, 250: 750, 300: 900, 350: 1050, 400: 1200, 450: 1350, 500: 1500, 600: 1800 },
+                cap: 120, conn90: 220, conn150: 220
+            }
+        ]
+    }
+];
+
+// --- SLOPES (╨Ю╤В╨║╨╛╤Б╤Л) DATA ---
+let SLOPES_DATA = [
+    {
+        brand: '╨Ъ╤А╨╕╤Б╤В╨░╨╗╨╗╨╕╤В/╨н╤Б╤В╨╡╤А╨░',
+        groups: ['╨С╨╡╨╗╤Л╨╣ ╨│╨╗╤П╨╜╤Ж╨╡╨▓╤Л╨╣', '╨С╨╡╨╗╤Л╨╣ ╨╝╨░╤В╨╛╨▓╤Л╨╣', '╨Ф╤Г╨▒ ╨╜╨░╤В╤Г╤А╨░╨╗╤М╨╜╤Л╨╣ ╨╝╨░╤В╨╛╨▓╤Л╨╣', '╨Ч╨╛╨╗╨╛╤В╨╛╨╣ ╨┤╤Г╨▒ ╨╝╨░╤В╨╛╨▓╤Л╨╣', '╨Ю╤А╨╡╤Е ╨╝╨░╤В╨╛╨▓╤Л╨╣', '╨Т╨╡╨╜╨│╨╡ ╨╝╨░╤В╨╛╨▓╤Л╨╣', '╨Р╨╜╤В╤А╨░╤Ж╨╕╤В ╨╝╨░╤В╨╛╨▓╤Л╨╣'],
+        table: [
+            // [╤И╨╕╤А╨╕╨╜╨░, 1.0, 1.3, 1.5, 1.7, 2.0, 2.5(╨╝)]
+            [100, 632, 822, 948, 1074, 1264, 1580],
+            [150, 948, 1232, 1422, 1612, 1896, 2370],
+            [200, 1264, 1643, 1896, 2149, 2528, 3160],
+            [250, 1580, 2054, 2370, 2686, 3160, 3950],
+            [300, 1896, 2465, 2844, 3223, 3792, 4740],
+            [350, 2212, 2876, 3318, 3760, 4424, 5530],
+            [400, 2528, 3286, 3792, 4298, 5056, 6320],
+            [450, 2844, 3697, 4266, 4835, 5688, 7110],
+            [500, 3160, 4108, 4740, 5372, 6320, 7900],
+            [550, 3476, 4519, 5214, 5909, 6952, 8690],
+            [600, 3792, 4930, 5688, 6446, 7584, 9480],
+            [650, 4108, 5340, 6162, 6984, 8216, 10270],
+            [700, 4424, 5751, 6636, 7521, 8848, 11060]
+        ]
+    },
+    {
+        brand: '╨Т╨╕╤В╤А╨░╨╢ ╨Ф╨╕╨╖╨░╨╣╨╜',
+        groups: ['╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╨▒╨╡╨╗╤Л╨╣ ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╨░╨╜╤В╤А╨░╤Ж╨╕╤В ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╤Б╨▓╨╡╤В╨╗╨╛ ╤Б╨╡╤А╤Л╨╣ ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╤Б╨╡╤А╤Л╨╣ ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╤Б╨║╨░╨╜╨┤╨╕╨╜╨░╨▓╤Б╨║╨╕╨╣ ╤Б╨╕╨╜╨╕╨╣ ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╤З╨╡╤А╨╜╤Л╨╣ ╨Ф╨╕╨╖╨░╨╣╨╜)', '╨б╤Н╨╜╨┤╨▓╨╕╤З-╨┐╨░╨╜╨╡╨╗╤М (╨б╨╕╤П╤О╤Й╨╕╨╣ ╨▒╨╡╨╗╤Л╨╣)'],
+        table: [
+            [100, 600, 780, 900, 1020, 1200, 1500],
+            [150, 900, 1170, 1350, 1530, 1800, 2250],
+            [200, 1200, 1560, 1800, 2040, 2400, 3000],
+            [250, 1500, 1950, 2250, 2550, 3000, 3750],
+            [300, 1800, 2340, 2700, 3060, 3600, 4500],
+            [350, 2100, 2730, 3150, 3570, 4200, 5250],
+            [400, 2400, 3120, 3600, 4080, 4800, 6000],
+            [450, 2700, 3510, 4050, 4590, 5400, 6750],
+            [500, 3000, 3900, 4500, 5100, 6000, 7500],
+            [550, 3300, 4290, 4950, 5610, 6600, 8250],
+            [600, 3600, 4680, 5400, 6120, 7200, 9000],
+            [650, 3900, 5070, 5850, 6630, 7800, 9750],
+            [700, 4200, 5460, 6300, 7140, 8400, 10500]
+        ]
+    }
+];
+const SLOPES_LENGTHS = [1.0, 1.3, 1.5, 1.7, 2.0, 2.5]; // ╨Ь╨╡╤В╤А╤Л
+const SLOPES_PROF_PRICES = {
+    start: 1380, // ╨Я ╨Я╤А╨╛╤Д╨╕╨╗╤М
+    h: 2160,     // ╨Э ╨Я╤А╨╛╤Д╨╕╨╗╤М
+    f28: 2040,   // ╨д 28x32
+    f50: 2640    // ╨д 50x30
+};
+
+const PARTITION_PRICES = {
+    '8_clear': 3050,
+    '8_tinted': 4400,
+    '10_clear': 3550,
+    '10_tinted': 5350,
+    profile_lm: 1200,
+    door_fittings: 1500,
+    install_sqm: 2000
+};
+
+function toggleFlOptions() {
+    const sys = document.getElementById('fl-system').value;
+    const isPartition = sys === 'partition';
+    const partSet = document.getElementById('fl-partition-settings');
+    const salSet = document.getElementById('fl-salinox-settings');
+    if (partSet) partSet.classList.toggle('hidden', !isPartition);
+    if (salSet) salSet.classList.toggle('hidden', isPartition);
+    if (isPartition && typeof updatePartitionDoorsConfig === 'function') {
+        updatePartitionDoorsConfig();
+    }
+}
+
+// --- ROLLERS (╨а╨╛╨╗╨╗╨╡╤В╤Л) DATA ---
+const ROLLERS_DATA = {
+    'Alutech': ['38 (PD/39)', '45 (PD/45)', '55 (PD/55)', '60 (AER/60)', '70 (AER/70)'],
+    'DoorHan': ['45 (RH45)', '58 (RH58)', '60 (RHE60)', '70 (RHE70)']
+};
+
+// --- BLINDS (╨Ц╨░╨╗╤О╨╖╨╕) DATA ---
+const BLINDS_UNI1_WIDTHS = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]; // ╤Б╨╝
+const BLINDS_UNI1_HEIGHTS = [40, 60, 80, 100, 120, 140, 160, 180]; // ╤Б╨╝
+const BLINDS_UNI1_GRID = [
+    // ╨Т╤Л╤Б╨╛╤В╨░ 40
+    [660, 760, 840, 920, 1010, 1080, 1200, 1270, 1330, 1430, 1530, 1620, 1660],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 60
+    [740, 830, 920, 980, 1100, 1170, 1250, 1330, 1430, 1500, 1580, 1660, 1750],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 80
+    [830, 880, 980, 1080, 1110, 1230, 1330, 1430, 1500, 1540, 1660, 1750, 1820],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 100
+    [910, 950, 1080, 1130, 1230, 1290, 1400, 1500, 1540, 1620, 1750, 1820, 1890],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 120
+    [950, 1050, 1130, 1230, 1290, 1360, 1460, 1540, 1620, 1670, 1820, 1890, 1950],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 140
+    [1050, 1130, 1200, 1290, 1360, 1430, 1540, 1620, 1670, 1760, 1890, 1950, 2050],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 160
+    [1130, 1200, 1230, 1360, 1430, 1530, 1620, 1670, 1760, 1890, 1950, 2050, 2130],
+    // ╨Т╤Л╤Б╨╛╤В╨░ 180
+    [1200, 1230, 1360, 1430, 1530, 1600, 1670, 1760, 1890, 1950, 2050, 2130, 2210]
+];
+
+const BLINDS_FABRICS = [
+    { id: 1,  name: '╨а╨╡╤Б╨┐╨╡╨║╤В',                        width: 210, price: 1440, isZebra: false },
+    { id: 1.1,name: '╨а╨╡╤Б╨┐╨╡╨║╤В ╨░╨╗╤О',                     width: 250, price: 1500, isZebra: false },
+    { id: 2,  name: '╨Ц╨╡╨╝╤З╤Г╨│',                          width: 210, price: 1900, isZebra: false },
+    { id: 3,  name: '╨Ы╨╡╨╜',                             width: 210, price: 1900, isZebra: false },
+    { id: 4,  name: '╨и╨╡╨╗╨║',                            width: 210, price: 1590, isZebra: false },
+    { id: 5,  name: '╨б╨╕╤А╨╕╤Г╤Б',                          width: 210, price: 1590, isZebra: false },
+    { id: 6,  name: '╨а╨╡╤Б╨┐╨╡╨║╤В ╨▓/╨╛',                     width: 200, price: 2530, isZebra: false },
+    { id: 7,  name: '╨б╨╛╤Д╨╕╤В ╨▓/╨╛',                       width: 240, price: 3170, isZebra: false },
+    { id: 8,  name: '╨Т╨╡╨╜╨╡╤Ж╨╕╤П ╨▓/╨╛',                     width: 190, price: 3340, isZebra: false },
+    { id: 9,  name: '╨Ы╨░╨╣╤В (1000,171)',                 width: 205, price: 1130, isZebra: false },
+    { id: 10, name: '╨Ы╨░╨╣╤В (1130,1150,1080,1020)',      width: 180, price: 1130, isZebra: false },
+    { id: 11, name: '╨Ч╨╡╨▒╤А╨░',                           width: 320, price: 2860, isZebra: true },
+    { id: 12, name: '╨Ч╨╡╨▒╤А╨░ ╨▓/╨╛',                       width: 320, price: 3170, isZebra: true },
+    { id: 13, name: '╨Ч╨╡╨▒╤А╨░ ╨╗╨╡╨╜ V1 (╤В╨╛╨╗╤М╨║╨╛ ╨┤╨╗╤П ╤А╤Г╨╗╨╛╨╜╨╜╤Л╤Е)', width: 320, price: 2860, isZebra: true },
+    { id: 14, name: '╨Ч╨╡╨▒╤А╨░ 603 V1',                    width: 320, price: 2860, isZebra: true },
+    { id: 15, name: '╨Ъ╨╛╤Д╨╡',                            width: 320, price: 3800, isZebra: true },
+    { id: 16, name: '╨Ъ╨╗╨░╤Б╤Б╨╕╨║',                         width: 320, price: 3050, isZebra: true },
+    { id: 17, name: '╨б╤В╨╕╨╗╤М',                           width: 320, price: 3170, isZebra: true },
+    { id: 18, name: '╨а╨╛╨╝╨▒ 3D',                         width: 320, price: 3970, isZebra: true },
+    { id: 19, name: '╨Р╤А╨╕╤П 3D',                         width: 320, price: 3970, isZebra: true }
+];
+
+let ITEMS = [];
+
+const COMPANIES = {
+    daneliya: {
+        name_short: "╨Ш╨Я ╨Ф╨░╨╜╨╡╨╗╨╕╤П ╨Ф.╨в.",
+        name_full: "╨Ш╨Э╨Ф╨Ш╨Т╨Ш╨Ф╨г╨Р╨Ы╨м╨Э╨л╨Щ ╨Я╨а╨Х╨Ф╨Я╨а╨Ш╨Э╨Ш╨Ь╨Р╨в╨Х╨Ы╨м ╨Ф╨Р╨Э╨Х╨Ы╨Ш╨п ╨Ф╨Ь╨Ш╨в╨а╨Ш╨Щ ╨в╨Х╨Ч╨Ш╨Ъ╨Ю╨Т╨Ш╨з",
+        inn: "230410343285",
+        ogrnip: "317237500425682",
+        account: "40802810430000046903",
+        bank_name: "╨Ъ╨а╨Р╨б╨Э╨Ю╨Ф╨Р╨а╨б╨Ъ╨Ю╨Х ╨Ю╨в╨Ф╨Х╨Ы╨Х╨Э╨Ш╨Х N8619 ╨Я╨Р╨Ю ╨б╨С╨Х╨а╨С╨Р╨Э╨Ъ",
+        bik: "040349602",
+        corr_account: "30101810100000000602",
+        inn_bank: "7707083893",
+        kpp_bank: "231043001",
+        req: "╨Ш╨Э╨Э: 230410343285<br>╨Ю╨У╨а╨Э╨Ш╨Я: 317237500425682<br>╨а╨░╤Б╤З╤С╤В╨╜╤Л╨╣ ╤Б╤З╤С╤В: 40802810430000046903<br>╨С╨░╨╜╨║: ╨Ъ╨а╨Р╨б╨Э╨Ю╨Ф╨Р╨а╨б╨Ъ╨Ю╨Х ╨Ю╨в╨Ф╨Х╨Ы╨Х╨Э╨Ш╨Х N8619 ╨Я╨Р╨Ю ╨б╨С╨Х╨а╨С╨Р╨Э╨Ъ<br>╨С╨Ш╨Ъ: 040349602<br>╨Ъ╨╛╤А╤А. ╤Б╤З╤С╤В: 30101810100000000602<br>╨Ш╨Э╨Э ╨▒╨░╨╜╨║╨░: 7707083893<br>╨Ъ╨Я╨Я ╨▒╨░╨╜╨║╨░: 231043001",
+        sign_name: "╨Ш╨Я ╨Ф╨░╨╜╨╡╨╗╨╕╤П ╨Ф.╨в.",
+        contacts: "<p>ЁЯУЮ +7 (918) 370-47-47</p><p>тЬЙя╕П oknazavod-gel@yandex.ru</p>"
+    },
+    alex: {
+        name_short: "╨Ю╨Ю╨Ю ╨Р╨╗╨╡╨║╤Б╤Б╤В╤А╨╛╨╣",
+        name_full: "╨Ю╨Ю╨Ю \"╨Р╨Ы╨Х╨Ъ╨б╨б╨в╨а╨Ю╨Щ\"",
+        inn: "2312328954",
+        kpp: "231201001",
+        ogrn: "1242300041785",
+        account: "40702810947900000107",
+        bank_name: "╨д╨Ш╨Ы╨Ш╨Р╨Ы \"╨о╨Ц╨Э╨л╨Щ\" ╨Я╨Р╨Ю \"╨С╨Р╨Э╨Ъ ╨г╨а╨Р╨Ы╨б╨Ш╨С\"",
+        bik: "040349700",
+        corr_account: "30101810400000000700",
+        req: "╨Ш╨Э╨Э: 2312328954 | ╨Ъ╨Я╨Я: 231201001<br>╨Ю╨У╨а╨Э: 1242300041785<br>╨а╨░╤Б╤З╤С╤В╨╜╤Л╨╣ ╤Б╤З╤С╤В: 40702810947900000107<br>╨С╨░╨╜╨║: ╨д╨Ш╨Ы╨Ш╨Р╨Ы \"╨о╨Ц╨Э╨л╨Щ\" ╨Я╨Р╨Ю \"╨С╨Р╨Э╨Ъ ╨г╨а╨Р╨Ы╨б╨Ш╨С\"<br>╨С╨Ш╨Ъ: 040349700<br>╨Ъ╨╛╤А╤А. ╤Б╤З╤С╤В: 30101810400000000700<br>╨о╤А. ╨░╨┤╤А╨╡╤Б: 350065, ╨Ъ╤А╨░╤Б╨╜╨╛╨┤╨░╤А╤Б╨║╨╕╨╣ ╨║╤А╨░╨╣, ╨│. ╨Ъ╤А╨░╤Б╨╜╨╛╨┤╨░╤А, ╤Г╨╗ ╨╕╨╝. ╨Т╨░╨╗╨╡╤А╨╕╤П ╨У╨░╤Б╤Б╨╕╤П, ╨┤. 26, ╨║╨▓. 19",
+        sign_name: "╨У╨╡╨╜. ╨┤╨╕╤А╨╡╨║╤В╨╛╤А ╨Ъ╤А╤О╨║╨╛╨▓ ╨Р.╨Р.",
+        contacts: "<p>ЁЯУЮ +7 (918) 370-47-47</p><p>тЬЙя╕П oknazavod-gel@yandex.ru</p>"
+    }
+};
+
+const DEFAULT_GLASS_TYPES = JSON.parse(JSON.stringify(GLASS_TYPES));
+const DEFAULT_SHAPES = JSON.parse(JSON.stringify(SHAPES));
+const DEFAULT_LAYOUTS = JSON.parse(JSON.stringify(LAYOUTS));
+const DEFAULT_NET_TYPES = JSON.parse(JSON.stringify(NET_TYPES));
+const DEFAULT_SALINOX_PRICES = JSON.parse(JSON.stringify(SALINOX_PRICES));
+const DEFAULT_OPTIONS = JSON.parse(JSON.stringify(OPTIONS));
+
+// Settings State
+let currentPricesSource = 'built-in';
+let currentPricesDate = null;
+let googleSheetsUrl = localStorage.getItem('oko_gsheets_url') || '';
+
+// --- INIT ---
+window.onload = function () {
+    lucide.createIcons();
+    document.getElementById('kp-date').innerText = new Date().toLocaleDateString('ru-RU');
+    initPresetServices();
+
+    document.getElementById('g-sheets-url').value = googleSheetsUrl;
+    loadPricesFromStorage();
+
+    let shapeSelect = document.getElementById('glass-shape');
+    shapeSelect.innerHTML = '';
+    SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+
+    updateDropdownPrices();
+    initSillsTab();
+    initSlopesTab();
+    updateRollerProfiles();
+    initBlindsTab();
+    toggleFlOptions(); // Initialize Partition/Salinox visibility
+    handleSettingsChange();
+    setupEnterKeys();
+};
+
+function setupEnterKeys() {
+    document.getElementById('glass-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('glass-h').focus();
+    });
+    document.getElementById('glass-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('glass-qty').focus();
+    });
+    document.getElementById('glass-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addGlassItem();
+    });
+    document.getElementById('net-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('net-h').focus();
+    });
+    document.getElementById('net-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('net-w').focus();
+            addNetItem();
+        }
+    });
+    document.getElementById('fl-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('fl-h').focus();
+    });
+    document.getElementById('fl-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('fl-panels').focus();
+    });
+    document.getElementById('fl-panels').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('fl-w').focus();
+            addFramelessItem();
+        }
+    });
+    document.getElementById('sill-length').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sill-qty').focus();
+    });
+    document.getElementById('sill-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sill-cap').focus();
+    });
+    document.getElementById('sill-cap').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sill-conn90').focus();
+    });
+    document.getElementById('sill-conn90').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sill-conn150').focus();
+    });
+    document.getElementById('sill-conn150').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('sill-length').focus();
+            addSillItem();
+        }
+    });
+    // Slopes
+    document.getElementById('slope-width').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('slope-length').focus();
+    });
+    document.getElementById('slope-length').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('slope-qty').focus();
+    });
+    document.getElementById('slope-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addSlopeItem();
+    });
+    // Rollers
+    document.getElementById('roller-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('roller-h').focus();
+    });
+    document.getElementById('roller-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('roller-qty').focus();
+    });
+    document.getElementById('roller-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('roller-price').focus();
+    });
+    document.getElementById('roller-price').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('roller-w').focus();
+            addRollerItem();
+        }
+    });
+    // Blinds
+    document.getElementById('blinds-w').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('blinds-h').focus();
+    });
+    document.getElementById('blinds-h').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('blinds-qty').focus();
+    });
+    document.getElementById('blinds-qty').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('blinds-w').focus();
+            addBlindsItem();
+        }
+    });
+}
+
+// --- UI & TAB LOGIC ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.category-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function handleSettingsChange() {
+    updateDropdownPrices();
+    updateSillWidths();
+    renderCart();
+    
+    const companySelect = document.getElementById('select-company');
+    if (companySelect) {
+        const comp = COMPANIES[companySelect.value];
+        if (comp) {
+            const reqEl = document.getElementById('company-requisites');
+            if (reqEl) reqEl.innerHTML = `<p class="font-bold text-slate-800 text-xs">${comp.name_full}</p><p>${comp.req}</p>`;
+            
+            const signEl = document.getElementById('company-sign-name');
+            if (signEl) signEl.innerText = comp.sign_name + " (╨┐╨╛╨┤╨┐╨╕╤Б╤М)";
+            
+            const contEl = document.getElementById('company-contacts');
+            if (contEl) contEl.innerHTML = comp.contacts;
+        }
+    }
+}
+
+function getGlobalMarkup() { return parseFloat(document.getElementById('select-global-markup').value); }
+
+function updateDropdownPrices() {
+    if (GLASS_TYPES.length === 0) return;
+    const markup = getGlobalMarkup();
+    let gSel = document.getElementById('glass-type'); let prevG = gSel.value; gSel.innerHTML = '';
+    let sortedIndices = GLASS_TYPES.map((g, i) => ({ g, i }));
+    sortedIndices.sort((a, b) => {
+        let aMatch = a.g.name.match(/╨б╤В\/╨┐\s+(\d+)/);
+        let bMatch = b.g.name.match(/╨б╤В\/╨┐\s+(\d+)/);
+        let aThick = aMatch ? parseInt(aMatch[1]) : 999;
+        let bThick = bMatch ? parseInt(bMatch[1]) : 999;
+        return aThick - bThick;
+    });
+    sortedIndices.forEach(({ g, i }) => gSel.innerHTML += `<option value="${i}">${g.name} тАФ ${Math.ceil(g.price * markup)} тВ╜/╨╝┬▓</option>`);
+    if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+
+    let lSel = document.getElementById('glass-layout'); let prevL = lSel.value; lSel.innerHTML = '<option value="none">╨С╨╡╨╖ ╤А╨░╤Б╨║╨╗╨░╨┤╨║╨╕</option>';
+    LAYOUTS.forEach((l, i) => lSel.innerHTML += `<option value="${i}">${l.name} ${l.price > 0 ? `(+${Math.ceil(l.price * markup)} тВ╜/╨╝)` : ''}</option>`);
+    if (prevL) lSel.value = prevL;
+
+    let nSel = document.getElementById('net-type'); let prevN = nSel.value; nSel.innerHTML = '';
+    NET_TYPES.forEach((n, i) => {
+        let priceText = '';
+        let minP = Math.ceil(n.price_min * markup);
+        let sqmP = Math.ceil(n.price_sqm * markup);
+        if (n.price_min > 0 && n.price_sqm > 0) priceText = `╨╝╨╕╨╜. ${minP}тВ╜, ╨┤╨░╨╗╨╡╨╡ ${sqmP}тВ╜/╨╝┬▓`;
+        else if (n.price_min > 0) priceText = `${minP}тВ╜ ╨╖╨░ ╤И╤В.`;
+        else priceText = `${sqmP}тВ╜/╨╝┬▓`;
+        nSel.innerHTML += `<option value="${i}">${n.name} тАФ ${priceText}</option>`;
+    });
+    if (prevN && prevN !== 'loading') nSel.value = prevN;
+}
+
+function toggleGlassLayoutInputs() {
+    const inputs = document.getElementById('glass-layout-inputs');
+    if (document.getElementById('glass-layout').value === 'none') inputs.classList.add('hidden');
+    else inputs.classList.remove('hidden');
+}
+
+// --- GLASS LOGIC ---
+function addGlassItem() {
+    let w = parseFloat(document.getElementById('glass-w').value);
+    let h = parseFloat(document.getElementById('glass-h').value);
+    if (!w || !h) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤И╨╕╤А╨╕╨╜╤Г ╨╕ ╨▓╤Л╤Б╨╛╤В╤Г!'); return; }
+
+    let glass = GLASS_TYPES[document.getElementById('glass-type').value];
+    let shape = SHAPES[document.getElementById('glass-shape').value];
+    let qty = parseInt(document.getElementById('glass-qty').value) || 1;
+    let hasArgon = document.getElementById('glass-argon').checked;
+    let comment = document.getElementById('glass-comment').value.trim();
+
+    let area = (w * h) / 1000000;
+    let calcArea = area < OPTIONS.glass_min_area ? OPTIONS.glass_min_area : area;
+
+    let baseCost = (glass.price + (hasArgon ? 52 : 0)) * calcArea;
+    let markupAdd = 0;
+    if (shape.multiplier > 0) markupAdd += baseCost * shape.multiplier;
+
+    let isLarge = false;
+    if (area > 3) { markupAdd += baseCost * (OPTIONS.glass_oversize_pct / 100); isLarge = true; }
+
+    let lVal = document.getElementById('glass-layout').value;
+    let layoutCost = 0; let layoutDesc = null;
+    if (lVal !== 'none') {
+        let layout = LAYOUTS[lVal];
+        let lenMm = parseFloat(document.getElementById('glass-layout-len').value) || 0;
+        let lenM = lenMm / 1000;
+        let cr = parseFloat(document.getElementById('glass-layout-cross').value) || 0;
+        let en = parseFloat(document.getElementById('glass-layout-end').value) || 0;
+        layoutCost = (lenM * layout.price) + (cr * OPTIONS.glass_cross) + (en * OPTIONS.glass_end);
+        layoutDesc = `${layout.name} (${lenMm}╨╝╨╝)`;
+    }
+
+    let unitCost = baseCost + markupAdd + layoutCost;
+    let optDesc = [
+        shape.name !== '╨Я╤А╤П╨╝╨╛╤Г╨│╨╛╨╗╤М╨╜╨╕╨║' ? `╨б╨╗╨╛╨╢╨╜╨░╤П ╤Д╨╛╤А╨╝╨░: ${shape.name}` : null,
+        isLarge ? `╨Э╨╡╨│╨░╨▒╨░╤А╨╕╤В (>3╨╝┬▓)` : null,
+        hasArgon ? '╨Ч╨░╨┐╨╛╨╗╨╜╨╡╨╜╨╕╨╡ ╨░╤А╨│╨╛╨╜╨╛╨╝' : null,
+        layoutDesc ? `╨и╨┐╤А╨╛╤Б╤Л: ${layoutDesc}` : null,
+        comment ? `ЁЯУЭ ${comment}` : null
+    ].filter(Boolean);
+
+    ITEMS.push({
+        id: Date.now(),
+        category: 'glass',
+        type: hasArgon ? glass.name + ' + ╨Р╤А╨│╨╛╨╜' : glass.name,
+        qty: qty,
+        w: w, h: h, area: area, calcArea: calcArea,
+        shape: shape.name,
+        isLarge: isLarge,
+        layoutCross: lVal !== 'none' ? (parseFloat(document.getElementById('glass-layout-cross').value) || 0) : 0,
+        layoutEnd: lVal !== 'none' ? (parseFloat(document.getElementById('glass-layout-end').value) || 0) : 0,
+        layoutName: lVal !== 'none' ? LAYOUTS[lVal].name : null,
+        unitCost: unitCost,
+        optionsDesc: optDesc,
+        baseTotal: unitCost * qty
+    });
+
+    document.getElementById('glass-w').value = '';
+    document.getElementById('glass-h').value = '';
+    document.getElementById('glass-qty').value = '1';
+    // glass-argon: ╨Э╨Х ╤Б╨▒╤А╨░╤Б╤Л╨▓╨░╨╡╨╝ тАФ ╤Г╨┤╨╛╨▒╨╜╨╡╨╡ ╨║╨╛╨│╨┤╨░ ╨╝╨╜╨╛╨│╨╛ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╣ ╤Б ╨░╤А╨│╨╛╨╜╨╛╨╝
+    document.getElementById('glass-comment').value = '';
+    document.getElementById('glass-w').focus();
+    renderCart();
+}
+
+// --- NETS LOGIC ---
+function toggleNetOptions() {
+    let typeIdx = document.getElementById('net-type').value;
+    let netType = NET_TYPES[typeIdx];
+    if (!netType) return;
+    let isWindow = netType.id.startsWith('window_');
+    let isPleated = netType.id === 'pleated';
+    let corners = document.getElementById('net-opt-corners-wrapper');
+    corners.style.opacity = isWindow ? '1' : '0.4';
+    document.getElementById('net-opt-corners').disabled = !isWindow;
+    if (!isWindow) document.getElementById('net-opt-corners').checked = false;
+    document.getElementById('pleated-config').classList.toggle('hidden', !isPleated);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+function togglePleatedRal() {
+    let color = document.getElementById('pleated-color').value;
+    document.getElementById('pleated-ral-wrap').classList.toggle('hidden', color !== 'RAL (╤Б╨▓╨╛╨╣ ╤Ж╨▓╨╡╤В)');
+}
+
+function calcNetPreview() {
+    let isLumen = document.getElementById('net-is-lumen').checked;
+    document.getElementById('net-lumen-hint').style.display = isLumen ? 'block' : 'none';
+}
+
+function addNetItem() {
+    let wIn = parseFloat(document.getElementById('net-w').value);
+    let hIn = parseFloat(document.getElementById('net-h').value);
+    if (!wIn || !hIn) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤А╨░╨╖╨╝╨╡╤А╤Л ╤Б╨╡╤В╨║╨╕!'); return; }
+
+    let isLumen = document.getElementById('net-is-lumen').checked;
+    let typeIdx = document.getElementById('net-type').value;
+    let netDef = NET_TYPES[typeIdx];
+    if (!netDef) return;
+    let type = netDef.id;
+    let comment = document.getElementById('net-comment').value.trim();
+
+    let isPet = document.getElementById('net-opt-pet').checked;
+    let isCorners = document.getElementById('net-opt-corners').checked;
+
+    let w = wIn, h = hIn;
+    if (isLumen) {
+        if (type.startsWith('window_') || type === 'vsn') { w += 50; h += 50; }
+        else if (type === 'door_32') { w += 64; h += 64; }
+        else if (type === 'door_42') { w += 84; h += 84; }
+        else if (type === 'door_52') { w += 84; h += 84; }
+    }
+
+    let area = (w * h) / 1000000;
+    let itemName = netDef.name;
+    let baseRetailCost = 0;
+
+    if (type === 'door_52') {
+        baseRetailCost = netDef.price_min;
+        if (area > 1.68 && netDef.price_sqm > netDef.price_min) baseRetailCost = netDef.price_sqm;
+    } else if (netDef.price_min > 0 && netDef.price_sqm > 0) {
+        let calcByArea = area * netDef.price_sqm;
+        baseRetailCost = calcByArea > netDef.price_min ? calcByArea : netDef.price_min;
+    } else if (netDef.price_min > 0) {
+        baseRetailCost = netDef.price_min;
+    } else {
+        baseRetailCost = area * netDef.price_sqm;
+    }
+
+    let optionsDesc = [];
+    if (isLumen) optionsDesc.push(`╨б╨▓╨╡╤В╨╛╨▓╨╛╨╣ ╨┐╤А╨╛╨╡╨╝ (${wIn}x${hIn}╨╝╨╝)`);
+    if (isPet) { baseRetailCost += (OPTIONS.net_pet_sqm * area); optionsDesc.push('╨Р╨╜╤В╨╕╨║╨╛╤И╨║╨░/╨Р╨╜╤В╨╕╨┐╤Л╨╗╤М'); }
+    if (isCorners) { baseRetailCost += OPTIONS.net_corners; optionsDesc.push('╨Ь╨╡╤В╨░╨╗╨╗╨╕╤З╨╡╤Б╨║╨╕╨╡ ╤Г╨│╨╗╤Л'); }
+
+    // ╨Я╨╗╨╕╤Б╤Б╨╡ ╨╛╨┐╤Ж╨╕╨╕
+    if (type === 'pleated') {
+        let series = document.getElementById('pleated-series').value;
+        let color = document.getElementById('pleated-color').value;
+        if (color === 'RAL (╤Б╨▓╨╛╨╣ ╤Ж╨▓╨╡╤В)') {
+            let ral = document.getElementById('pleated-ral-input').value.trim();
+            color = ral ? `RAL: ${ral}` : 'RAL (╨╜╨╡ ╤Г╨║╨░╨╖╨░╨╜)';
+        }
+        let dir = document.getElementById('pleated-dir').value;
+        let mesh = document.getElementById('pleated-mesh').value;
+        let threshold = document.getElementById('pleated-threshold').value;
+        let seal = document.getElementById('pleated-seal').value;
+        optionsDesc.push(`╨б╨╡╤А╨╕╤П: ${series}`);
+        optionsDesc.push(`╨ж╨▓╨╡╤В: ${color}`);
+        optionsDesc.push(`╨б╤В╨▓╨╛╤А╨║╨░: ${dir}`);
+        optionsDesc.push(`╨Я╨╛╨╗╨╛╤В╨╜╨╛: ${mesh}`);
+        optionsDesc.push(`╨Я╨╛╤А╨╛╨│: ${threshold}`);
+        optionsDesc.push(`╨г╨┐╨╗╨╛╤В╨╜╨╕╤В╨╡╨╗╤М: ${seal}`);
+    }
+    if (comment) optionsDesc.push(`ЁЯУЭ ${comment}`);
+
+    ITEMS.push({
+        id: Date.now(),
+        category: 'net',
+        type: itemName,
+        qty: 1,
+        w: w, h: h, area: area, calcArea: area,
+        shape: '╨Я╤А╤П╨╝╨╛╤Г╨│╨╛╨╗╤М╨╜╨╕╨║',
+        isLarge: false,
+        unitCost: baseRetailCost,
+        optionsDesc: optionsDesc,
+        baseTotal: baseRetailCost
+    });
+
+    document.getElementById('net-w').value = '';
+    document.getElementById('net-h').value = '';
+    document.getElementById('net-comment').value = '';
+    document.getElementById('net-w').focus();
+    renderCart();
+}
+
+// --- FRAMELESS LOGIC ---
+function updateDoorSelectionOptions() {
+    let panelsInput = document.getElementById('fl-panels');
+    let doorSelect = document.getElementById('fl-door-panel');
+    let panels = parseInt(panelsInput.value) || 0;
+    let currentVal = doorSelect.value;
+    doorSelect.innerHTML = '<option value="none">╨С╨╡╨╖ ╨┤╨▓╨╡╤А╨╕</option>';
+    for (let i = 1; i <= panels; i++) {
+        doorSelect.innerHTML += `<option value="${i}">╨Я╨░╨╜╨╡╨╗╤М ${i} (╨┤╨▓╨╡╤А╤М)</option>`;
+    }
+    if (currentVal !== 'none' && parseInt(currentVal) <= panels) doorSelect.value = currentVal;
+}
+
+function updatePartitionDoorsConfig() {
+    let doors = parseInt(document.getElementById('fl-partition-doors').value) || 0;
+    let panels = parseInt(document.getElementById('fl-panels').value) || 1;
+    let container = document.getElementById('fl-partition-doors-config');
+    if (!container) return;
+    if (doors === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+    container.classList.remove('hidden');
+    let html = '<label class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">╨Э╨░╤Б╤В╤А╨╛╨╣╨║╨░ ╨┤╨▓╨╡╤А╨╡╨╣</label><div class="grid grid-cols-1 gap-2">';
+    for(let i=1; i<=doors; i++) {
+        let panelOptions = '';
+        for(let p=1; p<=panels; p++) panelOptions += `<option value="${p}">╨Я╨░╨╜╨╡╨╗╤М ${p}</option>`;
+        html += `<div class="p-2 bg-white border border-slate-200 rounded-lg flex gap-2 items-center">
+            <span class="text-xs font-bold text-slate-700 whitespace-nowrap">╨Ф╨▓╨╡╤А╤М ${i}:</span>
+            <select id="part-door-panel-${i}" class="p-1.5 bg-slate-50 border border-slate-200 rounded text-xs flex-1 outline-none focus:ring-1 focus:ring-brand-primary">
+                ${panelOptions}
+            </select>
+            <select id="part-door-dir-${i}" class="p-1.5 bg-slate-50 border border-slate-200 rounded text-xs flex-1 outline-none focus:ring-1 focus:ring-brand-primary">
+                <option value="right">╨Ю╤В╨║╤А. ╨▓╨┐╤А╨░╨▓╨╛</option>
+                <option value="left">╨Ю╤В╨║╤А. ╨▓╨╗╨╡╨▓╨╛</option>
+            </select>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function addFramelessItem() {
+    let totalW = parseFloat(document.getElementById('fl-w').value);
+    let h = parseFloat(document.getElementById('fl-h').value);
+    let panels = parseInt(document.getElementById('fl-panels').value) || 1;
+    if (!totalW || !h) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨║╨╛╤А╤А╨╡╨║╤В╨╜╤Л╨╡ ╤А╨░╨╖╨╝╨╡╤А╤Л!'); return; }
+
+    let system = document.getElementById('fl-system').value;
+    let comment = document.getElementById('fl-comment').value.trim();
+    let area = (totalW * h) / 1000000;
+    
+    let flTotal = 0;
+    let optionsDesc = [];
+    let customSvg = null;
+    let typeName = "";
+    let itemShape = `╨Я╨░╨╜╨╡╨╗╨╡╨╣: ${panels} ╤И╤В.`;
+
+    if (system === 'partition') {
+        let glassKey = document.getElementById('fl-partition-glass').value;
+        let doors = parseInt(document.getElementById('fl-partition-doors').value) || 0;
+        
+        let glassPrice = PARTITION_PRICES[glassKey];
+        let glassCost = glassPrice * area;
+        
+        let perimeterM = ((totalW + h) * 2) / 1000;
+        let profileCost = perimeterM * PARTITION_PRICES.profile_lm;
+        
+        let fittingsCost = doors * PARTITION_PRICES.door_fittings;
+        
+        flTotal = glassCost + profileCost + fittingsCost;
+        
+        let glassNames = {
+            '8_clear': '8╨╝╨╝ ╨┐╤А╨╛╨╖╤А.', '8_tinted': '8╨╝╨╝ ╤В╨╛╨╜╨╕╤А.',
+            '10_clear': '10╨╝╨╝ ╨┐╤А╨╛╨╖╤А.', '10_tinted': '10╨╝╨╝ ╤В╨╛╨╜╨╕╤А.'
+        };
+        typeName = `╨С╨╡╨╖╤А╨░╨╝╨╜╨░╤П ╨┐╨╡╤А╨╡╨│╨╛╤А╨╛╨┤╨║╨░ (${glassNames[glassKey]})`;
+        optionsDesc.push(`╨б╤В╨╡╨║╨╗╨╛: ${glassNames[glassKey]}`);
+        let doorsConfig = [];
+        for(let i=1; i<=doors; i++) {
+            let panelEl = document.getElementById(`part-door-panel-${i}`);
+            let dirEl = document.getElementById(`part-door-dir-${i}`);
+            if(panelEl && dirEl) {
+                doorsConfig.push({ panel: parseInt(panelEl.value) || 1, dir: dirEl.value });
+                optionsDesc.push(`╨Ф╨▓╨╡╤А╤М ${i}: ╨Я╨░╨╜╨╡╨╗╤М ${panelEl.value}, ╨Ю╤В╨║╤А. ${dirEl.value === 'left' ? '╨▓╨╗╨╡╨▓╨╛' : '╨▓╨┐╤А╨░╨▓╨╛'}`);
+            }
+        }
+        
+        if (doors > 0) optionsDesc.push(`╨д╤Г╤А╨╜╨╕╤В╤Г╤А╨░: ${doors} ╨┤╨▓.`);
+        if (comment) optionsDesc.push(`ЁЯУЭ ${comment}`);
+
+        // SVG sketch
+        let panelLines = '';
+        let panelW = 100 / panels;
+        for (let i = 1; i < panels; i++) {
+            panelLines += `<line x1="${i * panelW}" y1="0" x2="${i * panelW}" y2="100" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" />`;
+        }
+        
+        let doorsSvg = '';
+        doorsConfig.forEach(d => {
+            let pIdx = d.panel - 1;
+            let x = pIdx * panelW;
+            let handleX = d.dir === 'left' ? x + panelW - (panelW * 0.15) : x + (panelW * 0.15);
+            doorsSvg += `
+                <rect x="${x + 2}" y="20" width="${panelW - 4}" height="78" fill="none" stroke="#475569" stroke-width="1" />
+                <circle cx="${handleX}" cy="60" r="1.5" fill="#475569" />
+            `;
+        });
+
+        customSvg = `
+            <svg viewBox="0 0 100 100" class="w-16 h-16 mx-auto mb-1">
+                <rect x="2" y="2" width="96" height="96" fill="#f1f5f9" stroke="#475569" stroke-width="2" />
+                ${panelLines}
+                ${doorsSvg}
+            </svg>
+        `;
+    } else {
+        let isPainting = document.getElementById('fl-painting').checked;
+        let panelWidthCm = (totalW / panels) / 10;
+        let priceTable = SALINOX_PRICES[system] || [];
+        let basePricePerPanel = 0;
+
+        if (system === 'Elroz') { basePricePerPanel = 0; }
+        else {
+            for (let i = 0; i < priceTable.length; i++) {
+                if (panelWidthCm <= priceTable[i].max) { basePricePerPanel = priceTable[i].p; break; }
+            }
+            if (basePricePerPanel === 0) { alert(`╨и╨╕╤А╨╕╨╜╨░ ╨┐╨░╨╜╨╡╨╗╨╕ (${panelWidthCm.toFixed(1)} ╤Б╨╝) ╨┐╤А╨╡╨▓╤Л╤И╨░╨╡╤В ╨╝╨░╨║╤Б. ╨┤╨╗╤П ╤Б╨╕╤Б╤В╨╡╨╝╤Л ${system}!`); return; }
+        }
+
+        let discountedPricePerPanel = system === 'Elroz' ? basePricePerPanel : basePricePerPanel * (1 - SALINOX_DISCOUNT);
+        let paintingPricePerPanel = (isPainting && system !== 'F4') ? discountedPricePerPanel * 0.15 : 0;
+        let totalSystemPrice = (discountedPricePerPanel + paintingPricePerPanel) * panels;
+
+        let optMech = document.getElementById('fl-opt-mech').checked;
+        let optHandle = document.getElementById('fl-opt-handle').checked;
+        let optCloser = document.getElementById('fl-opt-closer').checked;
+        let optPark = document.getElementById('fl-opt-park').checked;
+        let doorPanel = document.getElementById('fl-door-panel').value;
+        let doorDir = document.getElementById('fl-door-dir').value;
+        let ralColor = document.getElementById('fl-ral').value;
+        if (ralColor === 'custom') ralColor = document.getElementById('fl-ral-custom').value || '╨б╨▓╨╛╨╣ ╤Ж╨▓╨╡╤В (╨╜╨╡ ╤Г╨║╨░╨╖╨░╨╜)';
+
+        let optionsCost = 0;
+        optionsDesc.push(`╨ж╨▓╨╡╤В ╨┐╤А╨╛╤Д╨╕╨╗╤П: ${ralColor}`);
+        if (doorPanel !== 'none') optionsDesc.push(`╨Ф╨▓╨╡╤А╤М: ╨Я╨░╨╜╨╡╨╗╤М ${doorPanel} (╨╛╤В╨║╤А. ${doorDir === 'right' ? '╨Т╨┐╤А╨░╨▓╨╛' : '╨Т╨╗╨╡╨▓╨╛'})`);
+        if (isPainting && system !== 'F4') optionsDesc.push('╨Я╨╛╨║╤А╨░╤Б╨║╨░ ╨┐╤А╨╛╤Д╨╕╨╗╤П (+15%)');
+        if (optMech) { optionsCost += OPTIONS.fl_mech * (1 - SALINOX_DISCOUNT); optionsDesc.push('╨Ь╨╡╤Е╨░╨╜╨╕╨╖╨╝ ╨╛╤В╨║╤А. ╨┤╨▓╨╡╤А╨╕ F2'); }
+        if (optHandle) { optionsCost += OPTIONS.fl_handle * (1 - SALINOX_DISCOUNT); optionsDesc.push('╨и╨╡╤Б╤В╨╕╨│╤А╨░╨╜╨╜╨░╤П ╤А╤Г╤З╨║╨░'); }
+        if (optCloser) { optionsCost += OPTIONS.fl_closer * (1 - SALINOX_DISCOUNT); optionsDesc.push('╨Ф╨╛╨▓╨╛╨┤╤З╨╕╨║ Usaf 600A'); }
+        if (optPark) { optionsCost += OPTIONS.fl_park * (1 - SALINOX_DISCOUNT); optionsDesc.push('╨Ф╨╛╨┐. ╨┐╨░╤А╨║╨╛╨▓╨║╨░'); }
+
+        let glassType = document.getElementById('fl-glass-type').value;
+        let glassCost = 0;
+        if (glassType !== 'none') {
+            let glassPricePerM2 = glassType === 'clear10' ? 4500 : 6000;
+            glassCost = glassPricePerM2 * area;
+            optionsDesc.push(`╨б╤В╨╡╨║╨╗╨╛: ${glassType === 'clear10' ? '10╨╝╨╝ ╨┐╤А╨╛╨╖╤А.' : '10╨╝╨╝ ╤В╨╛╨╜╨╕╤А.'} (${glassPricePerM2} тВ╜/╨╝┬▓)`);
+        }
+
+        let systemDisplayNames = { 'F1_F2': 'Salinox F1-F2', 'F4': 'Salinox F4', 'F5': 'Salinox F5', 'F6': 'Salinox F6', 'FB_cr': 'Salinox FB-cr', 'Elroz': 'Elroz' };
+        typeName = `╨С╨╡╨╖╤А╨░╨╝╨╜╨╛╨╡ ╨╛╤Б╤В╨╡╨║╨╗╨╡╨╜╨╕╨╡ (${systemDisplayNames[system]})`;
+        flTotal = totalSystemPrice + optionsCost + glassCost;
+        itemShape = `╨Я╨░╨╜╨╡╨╗╨╡╨╣: ${panels} ╤И╤В. ╨┐╨╛ ${panelWidthCm.toFixed(1)} ╤Б╨╝`;
+        if (comment) optionsDesc.push(`ЁЯУЭ ${comment}`);
+    }
+
+    ITEMS.push({
+        id: Date.now(), category: 'frameless',
+        type: typeName,
+        qty: 1,
+        w: totalW, h: h, area: area, calcArea: area,
+        shape: itemShape,
+        isLarge: false,
+        unitCost: flTotal,
+        optionsDesc: optionsDesc, baseTotal: flTotal,
+        customSvg: customSvg,
+        isPartition: system === 'partition'
+    });
+
+    // Reset common fields
+    document.getElementById('fl-w').value = ''; 
+    document.getElementById('fl-h').value = '';
+    document.getElementById('fl-panels').value = ''; 
+    document.getElementById('fl-comment').value = '';
+    document.getElementById('fl-w').focus();
+    renderCart();
+}
+
+// --- SLOPES (╨Ю╨в╨Ъ╨Ю╨б╨л) LOGIC ---
+function initSlopesTab() {
+    let sel = document.getElementById('slope-brand');
+    sel.innerHTML = '';
+    SLOPES_DATA.forEach((b, i) => sel.innerHTML += `<option value="${i}">${b.brand}</option>`);
+    updateSlopeColors();
+}
+
+function updateSlopeColors() {
+    let brandIdx = parseInt(document.getElementById('slope-brand').value) || 0;
+    let brand = SLOPES_DATA[brandIdx];
+    if (!brand) return;
+    let sel = document.getElementById('slope-color');
+    sel.innerHTML = '';
+    brand.groups.forEach((g, i) => sel.innerHTML += `<option value="${i}">${g}</option>`);
+}
+
+function autoFillSlopeProfiles() {
+    let lenIn = parseFloat(document.getElementById('slope-length').value) || 0;
+    if (lenIn <= 0) {
+        alert('╨Ф╨╗╤П ╨░╨▓╤В╨╛╤А╨░╤Б╤З╨╡╤В╨░ ╤Б╨╜╨░╤З╨░╨╗╨░ ╤Г╨║╨░╨╢╨╕╤В╨╡ ╨┤╨╗╨╕╨╜╤Г ╨╛╤В╨║╨╛╤Б╨░!');
+        return;
+    }
+    // ╨Р╨▓╤В╨╛╨╝╨░╤В╨╕╤З╨╡╤Б╨║╨╕╨╡ ╤А╨╡╨║╨╛╨╝╨╡╨╜╨┤╨░╤Ж╨╕╨╕: ╨Я-╨┐╤А╨╛╤Д╨╕╨╗╤М ╨╕ ╨д-╨┐╤А╨╛╤Д╨╕╨╗╤М = ╨┤╨╗╨╕╨╜╨╡ ╨╛╤В╨║╨╛╤Б╨░ (╨▓ ╨╝╨╡╤В╤А╨░╤Е) ╨Э╨Р ╨Ю╨Ф╨Э╨г ╨Я╨Р╨Э╨Х╨Ы╨м
+    let totalM = lenIn / 1000;
+    document.getElementById('slope-prof-start').value = totalM;
+    document.getElementById('slope-prof-f50').value = totalM;
+    document.getElementById('slope-prof-h').value = ''; // ╨Э-╨┐╤А╨╛╤Д╨╕╨╗╤М ╨╛╨▒╤Л╤З╨╜╨╛ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П ╨┤╨╗╤П ╤Б╤В╤Л╨║╨╛╨▓╨║╨╕
+    document.getElementById('slope-prof-f28').value = ''; // ╨д28 ╤А╨╡╨╢╨╡ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П ╨▒╨░╨╖╨╛╨▓╨╛
+}
+
+function addSlopeItem() {
+    let wIn = parseFloat(document.getElementById('slope-width').value);
+    let lenIn = parseFloat(document.getElementById('slope-length').value);
+    let qty = parseInt(document.getElementById('slope-qty').value) || 1;
+    
+    if (!wIn || !lenIn || wIn <= 0 || lenIn <= 0) {
+        alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨║╨╛╤А╤А╨╡╨║╤В╨╜╤Л╨╡ ╨│╨╗╤Г╨▒╨╕╨╜╤Г (╤И╨╕╤А╨╕╨╜╤Г) ╨╕ ╨┤╨╗╨╕╨╜╤Г ╨╛╤В╨║╨╛╤Б╨░ ╨▓ ╨╝╨╝!');
+        return;
+    }
+
+    let brandIdx = parseInt(document.getElementById('slope-brand').value) || 0;
+    let colorIdx = parseInt(document.getElementById('slope-color').value) || 0;
+    let brand = SLOPES_DATA[brandIdx];
+    let colorName = brand.groups[colorIdx];
+
+    // ╨Ю╨║╤А╤Г╨│╨╗╨╡╨╜╨╕╨╡ ╤И╨╕╤А╨╕╨╜╤Л ╨┤╨╛ ╤И╨░╨│╨░ 50╨╝╨╝ (╨╛╤В 100 ╨┤╨╛ 700)
+    let calcW = Math.ceil(wIn / 50) * 50;
+    if (calcW < 100) calcW = 100;
+    if (calcW > 700) {
+        alert('╨Ь╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╨░╤П ╤И╨╕╤А╨╕╨╜╨░ ╨┐╨░╨╜╨╡╨╗╨╕ ╨┐╨╛ ╨┐╤А╨░╨╣╤Б╤Г - 700 ╨╝╨╝!');
+        return;
+    }
+
+    // ╨Ю╨║╤А╤Г╨│╨╗╨╡╨╜╨╕╨╡ ╨┤╨╗╨╕╨╜╤Л ╨┤╨╛ ╨▒╨╗╨╕╨╢╨░╨╣╤И╨╡╨│╨╛ ╨▒╨╛╨╗╤М╤И╨╡╨│╨╛ ╨╕╨╖ (1.0, 1.3, 1.5, 1.7, 2.0, 2.5)
+    let lenM = lenIn / 1000;
+    let calcLenM = 2.5;
+    for (let i = 0; i < SLOPES_LENGTHS.length; i++) {
+        if (lenM <= SLOPES_LENGTHS[i]) {
+            calcLenM = SLOPES_LENGTHS[i];
+            break;
+        }
+    }
+    if (lenM > 2.5) {
+        alert('╨Ь╨░╨║╤Б╨╕╨╝╨░╨╗╤М╨╜╨░╤П ╨┤╨╗╨╕╨╜╨░ ╤Ж╨╡╨╗╤М╨╜╨╛╨╣ ╨┐╨░╨╜╨╡╨╗╨╕ ╨┐╨╛ ╨┐╤А╨░╨╣╤Б╤Г - 2500 ╨╝╨╝ (2.5 ╨╝)! ╨а╨░╨╖╨▒╨╡╨╣╤В╨╡ ╨╜╨░ ╤З╨░╤Б╤В╨╕.');
+        return;
+    }
+
+    // ╨Ш╤Й╨╡╨╝ ╤Ж╨╡╨╜╤Г ╨▓ ╤В╨░╨▒╨╗╨╕╤Ж╨╡
+    let widthRowIdx = (calcW - 100) / 50; 
+    let lenColIdx = SLOPES_LENGTHS.indexOf(calcLenM) + 1;
+    let basePricePerPiece = brand.table[widthRowIdx][lenColIdx];
+
+    let isProfStart = false, isProfF28 = false, isProfF50 = false;
+    let valProfStart = parseFloat(document.getElementById('slope-prof-start').value) || 0;
+    let valProfH = parseFloat(document.getElementById('slope-prof-h').value) || 0;
+    let valProfF28 = parseFloat(document.getElementById('slope-prof-f28').value) || 0;
+    let valProfF50 = parseFloat(document.getElementById('slope-prof-f50').value) || 0;
+    isProfStart = valProfStart > 0;
+    isProfF28 = valProfF28 > 0;
+    isProfF50 = valProfF50 > 0;
+
+    let slopeComment = document.getElementById('slope-comment').value.trim();
+
+    // SVG ╤Н╤Б╨║╨╕╨╖ ╨┤╨╗╤П ╨┐╨░╨╜╨╡╨╗╨╕
+    let svgWidth = 100;
+    let svgHeight = Math.max(30, (wIn / lenIn) * 100);
+    if (svgHeight > 60) { svgHeight = 60; svgWidth = (lenIn / wIn) * 60; }
+    let vbPad = 25;
+    let slopeSvg = `
+        <svg viewBox="-${vbPad} -${vbPad/2} ${svgWidth + vbPad*2} ${svgHeight + vbPad}" class="w-32 h-32 mx-auto mb-1">
+            <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5" />
+            ${isProfStart ? `<line x1="0" y1="0" x2="${svgWidth}" y2="0" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>` : ''}
+            ${(isProfF28 || isProfF50) ? `<line x1="0" y1="${svgHeight}" x2="${svgWidth}" y2="${svgHeight}" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>` : ''}
+            <text x="${svgWidth/2}" y="-6" font-size="11" fill="#64748b" text-anchor="middle" font-family="sans-serif" font-weight="bold">${lenIn}</text>
+            <text x="-6" y="${svgHeight/2 + 4}" font-size="11" fill="#64748b" text-anchor="end" font-family="sans-serif" font-weight="bold">${wIn}</text>
+        </svg>
+    `;
+
+    // === 1. ╨Я╨░╨╜╨╡╨╗╤М ╨╛╤В╨║╨╛╤Б╨░ (╨╛╤Б╨╜╨╛╨▓╨╜╨░╤П ╨┐╨╛╨╖╨╕╤Ж╨╕╤П) ===
+    let panelOptDesc = [`╨а╨░╨╖╨╝╨╡╤А: ${wIn}├Ч${lenIn} ╨╝╨╝ (╤А╨░╤Б╤З╤С╤В ${calcW}├Ч${calcLenM * 1000} ╨╝╨╝)`];
+    if (slopeComment) panelOptDesc.push(`ЁЯУЭ ${slopeComment}`);
+
+    ITEMS.push({
+        id: Date.now(), 
+        category: 'slope', 
+        type: `╨Ю╤В╨║╨╛╤Б╤Л ${brand.brand} ${colorName} ${calcW}*${calcLenM * 1000} ╨╝╨╝`, 
+        qty: qty,
+        w: wIn, h: lenIn, area: 0, calcArea: 0,
+        shape: colorName, isLarge: false, 
+        unitCost: basePricePerPiece,
+        optionsDesc: panelOptDesc, 
+        baseTotal: basePricePerPiece * qty,
+        customSvg: slopeSvg
+    });
+
+    // === 2. ╨Я╤А╨╛╤Д╨╕╨╗╨╕ тАФ ╨║╨░╨╢╨┤╤Л╨╣ ╨║╨░╨║ ╨╛╤В╨┤╨╡╨╗╤М╨╜╨░╤П ╨┐╨╛╨╖╨╕╤Ж╨╕╤П ===
+    let timestamp = Date.now();
+    if (valProfF50 > 0) {
+        let f50PricePerM = SLOPES_PROF_PRICES.f50 / 6; // ╨┤╨╕╨╗╨╡╤А╤Б╨║╨░╤П ╤Ж╨╡╨╜╨░ ╨╖╨░ ╨┐╨╛╨│.╨╝
+        ITEMS.push({
+            id: timestamp + 1,
+            category: 'slope_profile',
+            type: `╨д-╨┐╤А╨╛╤Д╨╕╨╗╤М 50├Ч30 (${colorName})`,
+            qty: valProfF50,
+            w: 0, h: 0, area: 0, calcArea: 0,
+            shape: '', isLarge: false,
+            unit: '╨┐╨╛╨│.╨╝',
+            unitCost: f50PricePerM,
+            optionsDesc: [],
+            baseTotal: f50PricePerM * valProfF50
+        });
+    }
+    if (valProfF28 > 0) {
+        let f28PricePerM = SLOPES_PROF_PRICES.f28 / 6;
+        ITEMS.push({
+            id: timestamp + 2,
+            category: 'slope_profile',
+            type: `╨д-╨┐╤А╨╛╤Д╨╕╨╗╤М 28├Ч32 (${colorName})`,
+            qty: valProfF28,
+            w: 0, h: 0, area: 0, calcArea: 0,
+            shape: '', isLarge: false,
+            unit: '╨┐╨╛╨│.╨╝',
+            unitCost: f28PricePerM,
+            optionsDesc: [],
+            baseTotal: f28PricePerM * valProfF28
+        });
+    }
+    if (valProfStart > 0) {
+        let startPricePerM = SLOPES_PROF_PRICES.start / 6;
+        ITEMS.push({
+            id: timestamp + 3,
+            category: 'slope_profile',
+            type: `╨Я-╨┐╤А╨╛╤Д╨╕╨╗╤М (${colorName})`,
+            qty: valProfStart,
+            w: 0, h: 0, area: 0, calcArea: 0,
+            shape: '', isLarge: false,
+            unit: '╨┐╨╛╨│.╨╝',
+            unitCost: startPricePerM,
+            optionsDesc: [],
+            baseTotal: startPricePerM * valProfStart
+        });
+    }
+    if (valProfH > 0) {
+        let hPricePerM = SLOPES_PROF_PRICES.h / 6;
+        ITEMS.push({
+            id: timestamp + 4,
+            category: 'slope_profile',
+            type: `╨Э-╨┐╤А╨╛╤Д╨╕╨╗╤М (${colorName})`,
+            qty: valProfH,
+            w: 0, h: 0, area: 0, calcArea: 0,
+            shape: '', isLarge: false,
+            unit: '╨┐╨╛╨│.╨╝',
+            unitCost: hPricePerM,
+            optionsDesc: [],
+            baseTotal: hPricePerM * valProfH
+        });
+    }
+
+    document.getElementById('slope-width').value = ''; 
+    document.getElementById('slope-length').value = ''; 
+    document.getElementById('slope-qty').value = '1';
+    document.getElementById('slope-comment').value = '';
+    document.getElementById('slope-prof-start').value = '';
+    document.getElementById('slope-prof-h').value = '';
+    document.getElementById('slope-prof-f28').value = '';
+    document.getElementById('slope-prof-f50').value = '';
+    
+    document.getElementById('slope-width').focus();
+    renderCart();
+}
+
+// --- SILLS LOGIC ---
+function initSillsTab() {
+    let bSel = document.getElementById('sill-brand');
+    if (!bSel) return;
+    bSel.innerHTML = '';
+    SILLS_DATA.forEach((b, i) => {
+        bSel.innerHTML += `<option value="${i}">${b.brand}</option>`;
+    });
+    updateSillColors();
+}
+
+function updateSillColors() {
+    let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+    let brand = SILLS_DATA[brandIdx];
+    if (!brand) return;
+    let cSel = document.getElementById('sill-color');
+    cSel.innerHTML = '';
+    brand.groups.forEach((g, i) => {
+        cSel.innerHTML += `<option value="${i}">${g.name}</option>`;
+    });
+    updateSillWidths();
+}
+
+function updateSillWidths() {
+    let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+    let colorIdx = parseInt(document.getElementById('sill-color').value) || 0;
+    let brand = SILLS_DATA[brandIdx];
+    if (!brand) return;
+    let group = brand.groups[colorIdx];
+    if (!group) return;
+    
+    let wSel = document.getElementById('sill-width');
+    wSel.innerHTML = '';
+    let markup = getGlobalMarkup();
+    
+    // ╨б╨╛╤А╤В╨╕╤А╨╛╨▓╨║╨░ ╨┐╨╛ ╤И╨╕╤А╨╕╨╜╨╡ ╨┐╨╛╨┤╨╛╨║╨╛╨╜╨╜╨╕╨║╨░
+    let widths = Object.keys(group.widths).map(Number).sort((a,b) => a - b);
+    widths.forEach(w => {
+        let p = Math.ceil(group.widths[w] * markup);
+        wSel.innerHTML += `<option value="${w}">${w} ╨╝╨╝ тАФ ${p} тВ╜/╨┐.╨╝.</option>`;
+    });
+}
+
+function addSillItem() {
+    let lenIn = parseFloat(document.getElementById('sill-length').value);
+    let qty = parseInt(document.getElementById('sill-qty').value) || 1;
+    if (!lenIn || lenIn <= 0) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨┤╨╗╨╕╨╜╤Г ╨┐╨╛╨┤╨╛╨║╨╛╨╜╨╜╨╕╨║╨░!'); return; }
+
+    let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
+    let colorIdx = parseInt(document.getElementById('sill-color').value) || 0;
+    let w = parseInt(document.getElementById('sill-width').value) || 0;
+    
+    let brand = SILLS_DATA[brandIdx];
+    if (!brand) return;
+    let group = brand.groups[colorIdx];
+    if (!group) return;
+
+    let markup = getGlobalMarkup();
+    let basePricePerM_dealer = group.widths[w] || 0;
+    
+    let lenM = lenIn / 1000;
+    let panelCost_dealer = basePricePerM_dealer * lenM * qty;
+    
+    let optCap = parseInt(document.getElementById('sill-cap').value) || 0;
+    let optConn90 = parseInt(document.getElementById('sill-conn90').value) || 0;
+    let optConn150 = parseInt(document.getElementById('sill-conn150').value) || 0;
+    
+    let compCost_dealer = 0;
+    let optionsDesc = [];
+    optionsDesc.push(`╨а╨░╨╖╨╝╨╡╤А: ${w} ├Ч ${lenIn} ╨╝╨╝ (╨а╨░╤Б╤З╨╡╤В ╨║╨░╨║ ${w} ╨╝╨╝ ╤И╨╕╤А╨╕╨╜╨╛╨╣)`);
+    
+    if (optCap > 0) {
+        let p_dealer = group.cap;
+        let p_markup = Math.ceil(p_dealer * markup);
+        compCost_dealer += p_dealer * optCap;
+        optionsDesc.push(`╨Ч╨░╨│╨╗╤Г╤И╨║╨░: ${optCap} ╤И╤В. (${p_markup} тВ╜/╤И╤В)`);
+    }
+    if (optConn90 > 0) {
+        let p_dealer = group.conn90;
+        let p_markup = Math.ceil(p_dealer * markup);
+        compCost_dealer += p_dealer * optConn90;
+        optionsDesc.push(`╨б╨╛╨╡╨┤╨╕╨╜╨╕╤В╨╡╨╗╤М 90┬░: ${optConn90} ╤И╤В. (${p_markup} тВ╜/╤И╤В)`);
+    }
+    if (optConn150 > 0) {
+        let p_dealer = group.conn150;
+        let p_markup = Math.ceil(p_dealer * markup);
+        compCost_dealer += p_dealer * optConn150;
+        optionsDesc.push(`╨б╨╛╨╡╨┤╨╕╨╜╨╕╤В╨╡╨╗╤М 150┬░/180┬░: ${optConn150} ╤И╤В. (${p_markup} тВ╜/╤И╤В)`);
+    }
+    
+    let comment = document.getElementById('sill-comment').value.trim();
+    if (comment) optionsDesc.push(`ЁЯУЭ ${comment}`);
+    
+    let totalCost_dealer = panelCost_dealer + compCost_dealer;
+    let unitCost_dealer = totalCost_dealer / qty;
+    
+    ITEMS.push({
+        id: Date.now(),
+        category: 'sill',
+        type: `╨Я╨╛╨┤╨╛╨║╨╛╨╜╨╜╨╕╨║ ${brand.brand} (${group.name})`,
+        qty: qty,
+        w: w, h: lenIn, area: 0, calcArea: 0,
+        shape: '',
+        isLarge: false,
+        unitCost: unitCost_dealer,
+        optionsDesc: optionsDesc,
+        baseTotal: totalCost_dealer
+    });
+    
+    document.getElementById('sill-length').value = '';
+    document.getElementById('sill-qty').value = '1';
+    document.getElementById('sill-cap').value = '';
+    document.getElementById('sill-conn90').value = '';
+    document.getElementById('sill-conn150').value = '';
+    document.getElementById('sill-comment').value = '';
+    document.getElementById('sill-length').focus();
+    renderCart();
+}
+let SHOWER_GLASS_TYPES = {
+    '8_clear': { name: '╨Я╤А╨╛╨╖╤А╨░╤З╨╜╨╛╨╡ (8╨╝╨╝)', price_sqm: 4500 },
+    '8_graphite': { name: '╨в╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╨╜╨╛╨╡ ╨У╤А╨░╤Д╨╕╤В (8╨╝╨╝)', price_sqm: 6000 },
+    '8_bronze': { name: '╨в╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╨╜╨╛╨╡ ╨С╤А╨╛╨╜╨╖╨░ (8╨╝╨╝)', price_sqm: 6000 },
+    '8_extra_clear': { name: '╨Ю╤Б╨▓╨╡╤В╨╗╨╡╨╜╨╜╨╛╨╡ (8╨╝╨╝)', price_sqm: 5500 },
+    '8_frosted': { name: '╨Ь╨░╤В╨╛╨▓╨╛╨╡ (8╨╝╨╝)', price_sqm: 6500 },
+    '8_sandblast': { name: '╨Я╨╡╤Б╨║╨╛╤Б╤В╤А╤Г╨╣ (8╨╝╨╝)', price_sqm: 7000 },
+    '10_clear': { name: '╨Я╤А╨╛╨╖╤А╨░╤З╨╜╨╛╨╡ (10╨╝╨╝)', price_sqm: 6000 },
+    '10_graphite': { name: '╨в╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╨╜╨╛╨╡ ╨У╤А╨░╤Д╨╕╤В (10╨╝╨╝)', price_sqm: 7500 },
+    '10_bronze': { name: '╨в╨╛╨╜╨╕╤А╨╛╨▓╨░╨╜╨╜╨╛╨╡ ╨С╤А╨╛╨╜╨╖╨░ (10╨╝╨╝)', price_sqm: 7500 },
+    '10_extra_clear': { name: '╨Ю╤Б╨▓╨╡╤В╨╗╨╡╨╜╨╜╨╛╨╡ (10╨╝╨╝)', price_sqm: 7000 },
+    '10_frosted': { name: '╨Ь╨░╤В╨╛╨▓╨╛╨╡ (10╨╝╨╝)', price_sqm: 8000 },
+    '10_sandblast': { name: '╨Я╨╡╤Б╨║╨╛╤Б╤В╤А╤Г╨╣ (10╨╝╨╝)', price_sqm: 8500 }
+};
+let SHOWER_CONFIGS = {
+    partition: { name: '╨Я╨╡╤А╨╡╨│╨╛╤А╨╛╨┤╨║╨░', panels: [{ id: 'w1', label: '╨и╨╕╤А╨╕╨╜╨░ ╤Б╤В╨╡╨╜╨║╨╕', type: 'fixed' }] },
+    partition_door: { name: '╨Я╨╡╤А╨╡╨│╨╛╤А╨╛╨┤╨║╨░ + ╨┤╨▓╨╡╤А╤М', panels: [{ id: 'w1', label: '╨и╨╕╤А╨╕╨╜╨░ ╤Б╤В╨╡╨╜╨║╨╕', type: 'fixed' }, { id: 'w2', label: '╨и╨╕╤А╨╕╨╜╨░ ╨┤╨▓╨╡╤А╨╕', type: 'door' }] },
+    corner: { name: '╨г╨│╨╗╨╛╨▓╨░╤П (90┬░)', panels: [{ id: 'w1', label: '╨д╤А╨╛╨╜╤В╨░╨╗╤М╨╜╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w2', label: '╨С╨╛╨║╨╛╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }] },
+    corner_door: { name: '╨г╨│╨╗╨╛╨▓╨░╤П + ╨┤╨▓╨╡╤А╤М', panels: [{ id: 'w1', label: '╨б╤В╨╡╨╜╨║╨░ (╤Д╤А╨╛╨╜╤В)', type: 'fixed' }, { id: 'w2', label: '╨Ф╨▓╨╡╤А╤М', type: 'door' }, { id: 'w3', label: '╨С╨╛╨║╨╛╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }] },
+    u_shape: { name: '╨Я-╨╛╨▒╤А╨░╨╖╨╜╨░╤П', panels: [{ id: 'w1', label: '╨Ы╨╡╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w2', label: '╨Ч╨░╨┤╨╜╤П╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w3', label: '╨Я╤А╨░╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }] },
+    u_shape_door: { name: '╨Я-╨╛╨▒╤А╨░╨╖╨╜╨░╤П + ╨┤╨▓╨╡╤А╤М', panels: [{ id: 'w1', label: '╨Ы╨╡╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w2', label: '╨Ч╨░╨┤╨╜╤П╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w3', label: '╨Я╤А╨░╨▓╨░╤П ╤Б╤В╨╡╨╜╨║╨░', type: 'fixed' }, { id: 'w4', label: '╨Ф╨▓╨╡╤А╤М', type: 'door' }] },
+    sliding_door: { name: '╨а╨░╨╖╨┤╨▓╨╕╨╢╨╜╨░╤П ╨┤╨▓╨╡╤А╤М', panels: [{ id: 'w1', label: '╨Э╨╡╨┐╨╛╨┤╨▓╨╕╨╢╨╜╨░╤П ╨┐╨░╨╜╨╡╨╗╤М', type: 'fixed' }, { id: 'w2', label: '╨а╨░╨╖╨┤╨▓╨╕╨╢╨╜╨░╤П ╨┤╨▓╨╡╤А╤М', type: 'sliding' }] }
+};
+
+// --- ROLLERS LOGIC ---
+function updateRollerProfiles() {
+    let brand = document.getElementById('roller-brand').value;
+    let profiles = ROLLERS_DATA[brand] || [];
+    let pSel = document.getElementById('roller-profile');
+    if (!pSel) return;
+    pSel.innerHTML = '';
+    profiles.forEach(p => {
+        pSel.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+}
+
+function addRollerItem() {
+    let w = parseFloat(document.getElementById('roller-w').value);
+    let h = parseFloat(document.getElementById('roller-h').value);
+    let qty = parseInt(document.getElementById('roller-qty').value) || 1;
+    let priceMan = parseFloat(document.getElementById('roller-price').value);
+
+    if (!w || !h) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤И╨╕╤А╨╕╨╜╤Г ╨╕ ╨▓╤Л╤Б╨╛╤В╤Г!'); return; }
+    if (isNaN(priceMan) || priceMan < 0) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤Ж╨╡╨╜╤Г ╨╖╨░ ╨╡╨┤╨╕╨╜╨╕╤Ж╤Г!'); return; }
+
+    let brand = document.getElementById('roller-brand').value;
+    let profile = document.getElementById('roller-profile').value;
+    let control = document.getElementById('roller-control').value;
+    let color = document.getElementById('roller-color').value;
+    let comment = document.getElementById('roller-comment').value.trim();
+
+    let controlText = control === 'auto' ? '╨Р╨▓╤В╨╛╨╝╨░╤В╨╕╨║╨░ (╤Н╨╗╨╡╨║╤В╤А╨╛╨┐╤А╨╕╨▓╨╛╨┤)' : '╨а╤Г╤З╨╜╨╛╨╡ (╨┐╤А╤Г╨╢╨╕╨╜╨░/╨╕╨╜╨╡╤А╤Ж╨╕╤П)';
+    
+    let optionsDesc = [
+        `╨Я╤А╨╛╤Д╨╕╨╗╤М: ${profile}`,
+        `╨г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡: ${controlText}`,
+        `╨ж╨▓╨╡╤В: ${color}`,
+        comment ? `ЁЯУЭ ${comment}` : null
+    ].filter(Boolean);
+
+    // SVG ╤Н╤Б╨║╨╕╨╖ ╨┤╨╗╤П ╤А╨╛╨╗╨╗╨╡╤В╤Л
+    ITEMS.push({
+        id: Date.now(),
+        category: 'roller',
+        type: `╨а╨╛╨╗╨╗╨╡╤В╨░ ${brand} (${w}├Ч${h}╨╝╨╝)`,
+        qty: qty,
+        w: w, h: h, area: (w * h) / 1000000, calcArea: (w * h) / 1000000,
+        shape: profile,
+        isLarge: false,
+        unitCost: priceMan,
+        optionsDesc: optionsDesc,
+        baseTotal: priceMan * qty, customSvg: null
+    });
+
+    // ╨Ю╤З╨╕╤Б╤В╨║╨░ ╨┐╨╛╨╗╨╡╨╣
+    document.getElementById('roller-w').value = '';
+    document.getElementById('roller-h').value = '';
+    document.getElementById('roller-qty').value = '1';
+    document.getElementById('roller-price').value = '';
+    document.getElementById('roller-comment').value = '';
+    document.getElementById('roller-w').focus();
+    
+    renderCart();
+}
+let currentShowerConfig = 'partition';
+
+function selectShowerConfig(el) {
+    document.querySelectorAll('.shower-config-card').forEach(c => { c.classList.remove('selected', 'border-brand-primary', 'bg-brand-light'); c.classList.add('border-slate-200', 'bg-white'); });
+    el.classList.add('selected', 'border-brand-primary', 'bg-brand-light'); el.classList.remove('border-slate-200', 'bg-white');
+    currentShowerConfig = el.getAttribute('data-config');
+    updateShowerDimensions();
+}
+function updateShowerDimensions() {
+    let config = SHOWER_CONFIGS[currentShowerConfig];
+    let container = document.getElementById('shower-dimensions'); 
+    
+    let html = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">';
+    config.panels.forEach((p) => {
+        html += `<div><label class="text-xs text-slate-500 block mb-1">${p.label}${p.type === 'door' ? ' ЁЯЪк' : ''}</label><input type="number" id="shower-${p.id}" placeholder="800" class="shower-input-field w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div>`;
+    });
+    html += `<div><label class="text-xs text-slate-500 block mb-1">╨Т╤Л╤Б╨╛╤В╨░</label><input type="number" id="shower-h" placeholder="2000" class="shower-input-field w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none"></div>`;
+    html += '</div>';
+    
+    container.innerHTML = html;
+    
+    // ╨Я╨╛╨┤╨┤╨╡╤А╨╢╨║╨░ ╨║╨╗╨░╨▓╨╕╤И╨╕ Enter ╨┤╨╗╤П ╤Г╨┤╨╛╨▒╨╜╨╛╨│╨╛ ╨▓╨▓╨╛╨┤╨░
+    let inputs = container.querySelectorAll('.shower-input-field');
+    inputs.forEach((input, i) => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (i < inputs.length - 1) inputs[i+1].focus();
+                else addShowerItem();
+            }
+        });
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+function parseShowerOpeningDirection(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return {
+        toRight: normalized ? normalized.includes('╨▓╨┐╤А╨░╨▓╨╛') : true,
+        outward: normalized ? normalized.includes('╨╛╤В ╤Б╨╡╨▒╤П') : true
+    };
+}
+function getShowerMetrics(configKey, panels) {
+    const panelW = index => panels[index] ? Number(panels[index].w) || 0 : 0;
+    const totalRawWidth = panels.reduce((sum, panel) => sum + (Number(panel.w) || 0), 0);
+    const metrics = {
+        totalRawWidth,
+        areaWidthSum: totalRawWidth,
+        displayW: totalRawWidth,
+        sideW: 0,
+        frontTotalW: 0,
+        fixedFrontW: 0,
+        doorW: 0,
+        sidePanelW: 0
+    };
+
+    switch (configKey) {
+        case 'partition':
+            metrics.displayW = panelW(0);
+            metrics.areaWidthSum = panelW(0);
+            break;
+        case 'partition_door':
+            metrics.frontTotalW = panelW(0);
+            metrics.doorW = panelW(1);
+            if (metrics.doorW < metrics.frontTotalW) {
+                metrics.fixedFrontW = metrics.frontTotalW - metrics.doorW;
+                metrics.displayW = metrics.frontTotalW;
+                metrics.areaWidthSum = metrics.frontTotalW;
+            } else {
+                metrics.fixedFrontW = metrics.frontTotalW;
+                metrics.displayW = metrics.frontTotalW + metrics.doorW;
+                metrics.areaWidthSum = metrics.frontTotalW + metrics.doorW;
+            }
+            break;
+        case 'corner':
+            metrics.frontTotalW = panelW(0);
+            metrics.sidePanelW = panelW(1);
+            metrics.displayW = metrics.frontTotalW;
+            metrics.sideW = metrics.sidePanelW;
+            metrics.areaWidthSum = metrics.frontTotalW + metrics.sidePanelW;
+            break;
+        case 'corner_door':
+            metrics.frontTotalW = panelW(0);
+            metrics.doorW = panelW(1);
+            if (metrics.doorW < metrics.frontTotalW) {
+                metrics.fixedFrontW = metrics.frontTotalW - metrics.doorW;
+                metrics.displayW = metrics.frontTotalW;
+            } else {
+                metrics.fixedFrontW = metrics.frontTotalW;
+                metrics.displayW = metrics.frontTotalW + metrics.doorW;
+            }
+            metrics.sidePanelW = panelW(2);
+            metrics.sideW = metrics.sidePanelW;
+            metrics.areaWidthSum = metrics.displayW + metrics.sidePanelW;
+            break;
+        case 'u_shape':
+            metrics.displayW = panelW(1) || totalRawWidth;
+            metrics.sideW = panelW(0);
+            break;
+        case 'u_shape_door':
+            metrics.displayW = panelW(1) || totalRawWidth;
+            metrics.sideW = panelW(0);
+            break;
+        default:
+            break;
+    }
+
+    return metrics;
+}
+function getShowerDimensionLine(item, includeArea = true) {
+    const panels = item.showerPanels || [];
+    const h = item.h || 0;
+    const area = (item.area || 0) * (item.qty || 1);
+    const areaText = includeArea ? ` | S ╤Б╤В╨╡╨║╨╗╨░: ${area.toFixed(2)} ╨╝┬▓` : '';
+    const panelW = index => panels[index] ? panels[index].w : 0;
+    const metrics = getShowerMetrics(item.showerConfig, panels);
+
+    switch (item.showerConfig) {
+        case 'partition':
+            return `╨и╨╕╤А╨╕╨╜╨░: ${panelW(0)} ╨╝╨╝ | H: ${h} ╨╝╨╝${areaText}`;
+        case 'partition_door':
+            return `╨б╤В╨╡╨╜╨║╨░: ${metrics.frontTotalW} ╨╝╨╝ (╨│╨╗╤Г╤Е╨░╤П ${metrics.fixedFrontW} + ╨┤╨▓╨╡╤А╤М ${metrics.doorW}) | H: ${h} ╨╝╨╝${areaText}`;
+        case 'corner':
+            return `╨д╤А╨╛╨╜╤В: ${panelW(0)} ╨╝╨╝ | ╨С╨╛╨║: ${panelW(1)} ╨╝╨╝ | H: ${h} ╨╝╨╝${areaText}`;
+        case 'corner_door':
+            return `╨д╤А╨╛╨╜╤В: ${metrics.frontTotalW} ╨╝╨╝ (╨│╨╗╤Г╤Е╨░╤П ${metrics.fixedFrontW} + ╨┤╨▓╨╡╤А╤М ${metrics.doorW}) | ╨С╨╛╨║: ${metrics.sidePanelW} ╨╝╨╝ | H: ${h} ╨╝╨╝${areaText}`;
+        case 'u_shape':
+            return `╨Ы╨╡╨▓╨░╤П: ${panelW(0)} ╨╝╨╝ | ╨Ч╨░╨┤╨╜╤П╤П: ${panelW(1)} ╨╝╨╝ | ╨Я╤А╨░╨▓╨░╤П: ${panelW(2)} ╨╝╨╝ | H: ${h} ╨╝╨╝${areaText}`;
+        case 'u_shape_door':
+            return `╨Ы╨╡╨▓╨░╤П: ${panelW(0)} ╨╝╨╝ | ╨Ч╨░╨┤╨╜╤П╤П: ${panelW(1)} ╨╝╨╝ | ╨Я╤А╨░╨▓╨░╤П: ${panelW(2)} ╨╝╨╝ | ╨Ф╨▓╨╡╤А╤М: ${panelW(3)} ╨╝╨╝ | H: ${h} ╨╝╨╝${areaText}`;
+        case 'sliding_door':
+            return `╨Я╤А╨╛╤С╨╝: ${panelW(0) + panelW(1)} ╨╝╨╝ (╤Б╤В╨╡╨║╨╗╨╛ ${panelW(0)} + ╤Б╤В╨▓╨╛╤А╨║╨░ ${panelW(1)}) | H: ${h} ╨╝╨╝${areaText}`;
+        default:
+            return `${item.w} ├Ч ${h} ╨╝╨╝${areaText}`;
+    }
+}
+function addShowerItem() {
+    let config = SHOWER_CONFIGS[currentShowerConfig];
+    let thickness = document.getElementById('shower-thickness') ? document.getElementById('shower-thickness').value : '8';
+    let type = document.getElementById('shower-glass-type') ? document.getElementById('shower-glass-type').value : 'clear';
+    let glassKey = `${thickness}_${type}`;
+    let glass = SHOWER_GLASS_TYPES[glassKey] || { name: '╨Э╨╡╨╕╨╖╨▓╨╡╤Б╤В╨╜╨╛╨╡ ╤Б╤В╨╡╨║╨╗╨╛', price_sqm: 0 };
+    
+    let h = parseFloat(document.getElementById('shower-h').value);
+    if (!h) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨▓╤Л╤Б╨╛╤В╤Г!'); return; }
+    let panelWidths = [], panelDescs = [];
+    for (let p of config.panels) {
+        let pw = parseFloat(document.getElementById('shower-' + p.id).value);
+        if (!pw) { alert(`╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤И╨╕╤А╨╕╨╜╤Г: ${p.label}!`); return; }
+        panelWidths.push({ id: p.id, w: pw, type: p.type, label: p.label });
+        let typeStr = p.type === 'door' ? ' (╨┤╨▓╨╡╤А╤М)' : (p.type === 'sliding' ? ' (╤А╨░╨╖╨┤╨▓╨╕╨╢╨╜╨░╤П)' : '');
+        panelDescs.push(`${p.label}: ${pw}╨╝╨╝${typeStr}`);
+    }
+    const metrics = getShowerMetrics(currentShowerConfig, panelWidths);
+    const totalArea = (metrics.areaWidthSum * h) / 1000000;
+    let showerComment = document.getElementById('shower-comment').value.trim();
+    let hardware = document.getElementById('shower-hardware') ? document.getElementById('shower-hardware').value : '╨Э╨╡╤А╨╢╨░╨▓╨╡╤О╤Й╨░╤П ╤Б╤В╨░╨╗╤М';
+    let openingDirection = document.getElementById('shower-opening') ? document.getElementById('shower-opening').value : '';
+    let hasSwingDoor = panelWidths.some(p => p.type === 'door');
+    
+    let optionsDesc = [`╨Ъ╨╛╨╜╤Д╨╕╨│╤Г╤А╨░╤Ж╨╕╤П: ${config.name}`, `╨б╤В╨╡╨║╨╗╨╛: ${glass.name}`, `╨д╤Г╤А╨╜╨╕╤В╤Г╤А╨░: ${hardware}`, ...panelDescs];
+    if (hasSwingDoor && openingDirection) optionsDesc.push(`╨Ю╤В╨║╤А╤Л╨▓╨░╨╜╨╕╨╡: ${openingDirection}`);
+    if (showerComment) optionsDesc.push(`ЁЯУЭ ${showerComment}`);
+    let showerTotal = totalArea * glass.price_sqm;
+    ITEMS.push({
+        id: Date.now(), category: 'shower', type: `╨Ф╤Г╤И╨╡╨▓╨░╤П: ${config.name}`,
+        qty: 1,
+        w: metrics.displayW, h: h, sideW: metrics.sideW, area: totalArea, calcArea: totalArea, shape: config.name,
+        isLarge: false, showerConfig: currentShowerConfig, showerPanels: panelWidths, showerGlass: glassKey,
+        openingDirection: openingDirection,
+        unitCost: showerTotal,
+        optionsDesc: optionsDesc, baseTotal: showerTotal
+    });
+    config.panels.forEach(p => { let el = document.getElementById('shower-' + p.id); if (el) el.value = ''; });
+    document.getElementById('shower-h').value = '';
+    document.getElementById('shower-comment').value = '';
+    renderCart();
+}
+
+// --- CUSTOM ITEMS LOGIC ---
+function addCustomItem() {
+    let name = document.getElementById('custom-name').value.trim();
+    let price = parseFloat(document.getElementById('custom-price').value) || 0;
+    let qty = parseInt(document.getElementById('custom-qty').value) || 1;
+    let unit = document.getElementById('custom-unit').value || '╤И╤В.';
+    let w = parseFloat(document.getElementById('custom-w').value) || 0;
+    let h = parseFloat(document.getElementById('custom-h').value) || 0;
+    let desc = document.getElementById('custom-desc').value.trim();
+    if (!name) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨╜╨░╨╕╨╝╨╡╨╜╨╛╨▓╨░╨╜╨╕╨╡!'); return; }
+
+    let area = (w > 0 && h > 0) ? (w * h / 1000000) : 0;
+    let optionsDesc = [];
+    let customSvg = null;
+
+    if (w > 0 && h > 0) {
+        optionsDesc.push(`╨а╨░╨╖╨╝╨╡╤А: ${w} ├Ч ${h} ╨╝╨╝ (${area.toFixed(3)} ╨╝┬▓)`);
+    }
+    
+    if (desc) optionsDesc.push(desc);
+
+    // ╨а╨░╤Б╤З╨╡╤В ╨╕╤В╨╛╨│╨╛╨▓╨╛╨╣ ╤Ж╨╡╨╜╤Л
+    let effectiveTotal = price * qty;
+    if (unit === '╨╝┬▓' && area > 0) {
+        effectiveTotal = price * area * qty;
+    } else if (unit === '╨╝.╨┐.' && w > 0) {
+        let lengthM = w / 1000;
+        if (lengthM > 0) effectiveTotal = price * lengthM * qty;
+    }
+
+    ITEMS.push({
+        id: Date.now(), category: 'custom', type: name,
+        qty: qty, w: w, h: h, l: 0, area: area, calcArea: area,
+        shape: '', isLarge: false,
+        unit: unit, unitCost: price,
+        optionsDesc: optionsDesc, baseTotal: effectiveTotal,
+        customSvg: customSvg
+    });
+    
+    document.getElementById('custom-name').value = '';
+    document.getElementById('custom-price').value = '';
+    document.getElementById('custom-qty').value = '1';
+    document.getElementById('custom-w').value = '';
+    document.getElementById('custom-h').value = '';
+    document.getElementById('custom-area-display').value = '';
+    document.getElementById('custom-desc').value = '';
+    renderCart();
+}
+
+
+// --- BLINDS (╨Ц╨Р╨Ы╨о╨Ч╨Ш) LOGIC ---
+function initBlindsTab() {
+    let fabricSel = document.getElementById('blinds-fabric');
+    if (!fabricSel) return;
+    fabricSel.innerHTML = '';
+    BLINDS_FABRICS.forEach((f, i) => {
+        let zebraTag = f.isZebra ? ' ЁЯФ▓ ╨Ч╨╡╨▒╤А╨░' : '';
+        fabricSel.innerHTML += `<option value="${i}">${f.name} тАФ ${f.price} тВ╜/╨╝.╨┐.${zebraTag}</option>`;
+    });
+}
+
+function toggleBlindsSystem() {
+    let sys = document.getElementById('blinds-system').value;
+    let fabricContainer = document.getElementById('blinds-fabric-container');
+    let priceContainer = document.getElementById('blinds-price-container');
+    if (!fabricContainer || !priceContainer) return;
+    
+    if (sys === 'HORIZ') {
+        fabricContainer.classList.add('hidden');
+        priceContainer.classList.remove('hidden');
+    } else {
+        fabricContainer.classList.remove('hidden');
+        priceContainer.classList.add('hidden');
+    }
+}
+
+function addBlindsItem() {
+    let widthMm = parseFloat(document.getElementById('blinds-w').value);
+    let heightMm = parseFloat(document.getElementById('blinds-h').value);
+    let qty = parseInt(document.getElementById('blinds-qty').value) || 1;
+    let system = document.getElementById('blinds-system').value;
+    let fabricIdx = parseInt(document.getElementById('blinds-fabric').value);
+    let controlSide = document.getElementById('blinds-control').value;
+    let comment = document.getElementById('blinds-comment').value.trim();
+
+    let isHoriz = system === 'HORIZ';
+
+    if (!widthMm || !heightMm || widthMm <= 0 || heightMm <= 0) {
+        alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤И╨╕╤А╨╕╨╜╤Г ╨╕ ╨▓╤Л╤Б╨╛╤В╤Г ╨╕╨╖╨┤╨╡╨╗╨╕╤П ╨▓ ╨╝╨╕╨╗╨╗╨╕╨╝╨╡╤В╤А╨░╤Е!');
+        return;
+    }
+    
+    // ╨Ф╨╗╤П ╤А╨░╤Б╤З╤С╤В╨╛╨▓ ╤Б╨╡╤В╨║╨╕ ╤Ж╨╡╨╜ ╨╕ ╨┐╨╗╨╛╤Й╨░╨┤╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╨╝ ╤Б╨░╨╜╤В╨╕╨╝╨╡╤В╤А╤Л
+    let widthCm = widthMm / 10;
+    let heightCm = heightMm / 10;
+    let area = (widthCm * heightCm) / 10000; // ╨╝┬▓
+
+    let fabric = null;
+    if (!isHoriz) {
+        fabric = BLINDS_FABRICS[fabricIdx];
+        if (!fabric) { alert('╨Т╤Л╨▒╨╡╤А╨╕╤В╨╡ ╤В╨║╨░╨╜╤М!'); return; }
+    }
+
+    let widthM = widthCm / 100;
+    let systemCost = 0;
+    let systemDesc = '';
+
+    // 1. ╨а╨░╤Б╤З╤С╤В ╤Б╤В╨╛╨╕╨╝╨╛╤Б╤В╨╕ ╤Б╨╕╤Б╤В╨╡╨╝╤Л
+    if (system === 'UNI1') {
+        // ╨Ю╨║╤А╤Г╨│╨╗╨╡╨╜╨╕╨╡ ╨Т╨Т╨Х╨а╨е ╨┤╨╛ ╨▒╨╗╨╕╨╢╨░╨╣╤И╨╡╨│╨╛ ╨╖╨╜╨░╤З╨╡╨╜╨╕╤П ╨▓ ╤Б╨╡╤В╨║╨╡
+        let gridW = BLINDS_UNI1_WIDTHS[BLINDS_UNI1_WIDTHS.length - 1]; // ╨╝╨░╨║╤Б ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О
+        for (let i = 0; i < BLINDS_UNI1_WIDTHS.length; i++) {
+            if (widthCm <= BLINDS_UNI1_WIDTHS[i]) { gridW = BLINDS_UNI1_WIDTHS[i]; break; }
+        }
+        let gridH = BLINDS_UNI1_HEIGHTS[BLINDS_UNI1_HEIGHTS.length - 1];
+        for (let i = 0; i < BLINDS_UNI1_HEIGHTS.length; i++) {
+            if (heightCm <= BLINDS_UNI1_HEIGHTS[i]) { gridH = BLINDS_UNI1_HEIGHTS[i]; break; }
+        }
+
+        let wIdx = BLINDS_UNI1_WIDTHS.indexOf(gridW);
+        let hIdx = BLINDS_UNI1_HEIGHTS.indexOf(gridH);
+
+        if (wIdx === -1 || hIdx === -1) {
+            alert(`╨а╨░╨╖╨╝╨╡╤А╤Л ╨▓╤Л╤Е╨╛╨┤╤П╤В ╨╖╨░ ╨┐╤А╨╡╨┤╨╡╨╗╤Л ╤Б╨╡╤В╨║╨╕ UNI 1!\n╨Ь╨░╨║╤Б. ╤И╨╕╤А╨╕╨╜╨░: ${BLINDS_UNI1_WIDTHS[BLINDS_UNI1_WIDTHS.length-1]} ╤Б╨╝, ╨╝╨░╨║╤Б. ╨▓╤Л╤Б╨╛╤В╨░: ${BLINDS_UNI1_HEIGHTS[BLINDS_UNI1_HEIGHTS.length-1]} ╤Б╨╝`);
+            return;
+        }
+
+        systemCost = BLINDS_UNI1_GRID[hIdx][wIdx];
+        systemDesc = `UNI 1 (╨┐╨╛ ╤Б╨╡╤В╨║╨╡ ${gridW}├Ч${gridH})`;
+
+    } else if (system === 'MINI_D19') {
+        systemCost = widthM * 500;
+        systemDesc = `MINI (D 19)`;
+
+    } else if (system === 'D25') {
+        systemCost = widthM * 800;
+        systemDesc = `D 25`;
+        
+    } else if (system === 'HORIZ') {
+        systemCost = area * 2100;
+        systemDesc = `╨У╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╡ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╡╨▓╤Л╨╡`;
+    }
+
+    // 2. ╨а╨░╤Б╤З╤С╤В ╤Б╤В╨╛╨╕╨╝╨╛╤Б╤В╨╕ ╤В╨║╨░╨╜╨╕
+    let fabricCost = 0;
+    let fabricDesc = '';
+    let zebraSurcharge = 0;
+    let zebraDesc = '';
+
+    if (!isHoriz) {
+        fabricCost = widthM * fabric.price;
+        fabricDesc = `${fabric.name}`;
+
+        // 3. ╨Э╨░╤Ж╨╡╨╜╨║╨░ ╨╖╨░ ╨Ч╨╡╨▒╤А╤Г ╨┐╤А╨╕ ╨▓╤Л╤Б╨╛╤В╨╡ > 150 ╤Б╨╝
+        if (fabric.isZebra && heightCm > 150) {
+            let excess = heightCm - 150;
+            let steps = Math.ceil(excess / 10);
+            zebraSurcharge = steps * 200;
+            zebraDesc = `╨Э╨░╤Ж╨╡╨╜╨║╨░ ╨╖╨░ ╨▓╤Л╤Б╨╛╤В╤Г "╨Ч╨╡╨▒╤А╤Л" (> 150 ╤Б╨╝)`;
+        }
+    } else {
+        fabricDesc = '╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╡╨▓╤Л╨╡ ╨╗╨░╨╝╨╡╨╗╨╕';
+    }
+
+    // ╨Ш╤В╨╛╨│╨╛ ╨╖╨░ 1 ╤И╤В
+    let unitTotal = systemCost + fabricCost + zebraSurcharge;
+
+    let optionsDesc = [
+        `╨б╨╕╤Б╤В╨╡╨╝╨░: ${systemDesc}`,
+        `╨в╨║╨░╨╜╤М/╨Ь╨░╤В╨╡╤А╨╕╨░╨╗: ${fabricDesc}`,
+        `╨г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡: ${controlSide === 'left' ? '╨б╨╗╨╡╨▓╨░' : '╨б╨┐╤А╨░╨▓╨░'}`
+    ];
+    if (zebraDesc) optionsDesc.push(zebraDesc);
+    if (comment) optionsDesc.push(`ЁЯУЭ ${comment}`);
+
+    // ╨б╨▒╨╛╤А╨║╨░ SVG ╤Н╤Б╨║╨╕╨╖╨░
+    let svgWidth = 60;
+    let svgHeight = Math.max(30, (heightCm / widthCm) * 60);
+    if (svgHeight > 80) { svgHeight = 80; svgWidth = (widthCm / heightCm) * 80; }
+    let vbPad = 25;
+    
+    let topHtml = '';
+    let stripesHtml = '';
+    
+    if (isHoriz) {
+        let numSlats = Math.floor(svgHeight / 4);
+        for (let i = 0; i < numSlats; i++) {
+            let y1 = i * 4;
+            stripesHtml += `<rect x="0" y="${y1}" width="${svgWidth}" height="2" fill="#cbd5e1" />`;
+        }
+        topHtml = `<rect x="-1" y="-5" width="${svgWidth+2}" height="6" fill="#94a3b8" rx="1" />`;
+    } else {
+        if (fabric && fabric.isZebra) {
+            let numStripes = Math.floor(svgHeight / 6);
+            for (let i = 0; i < numStripes; i += 2) {
+                let y1 = i * 6;
+                stripesHtml += `<rect x="0" y="${y1}" width="${svgWidth}" height="6" fill="#cbd5e1" opacity="0.4" />`;
+            }
+        }
+        topHtml = system === 'UNI1' 
+            ? `<rect x="-3" y="-6" width="${svgWidth+6}" height="8" fill="#94a3b8" rx="2" />` 
+            : `<circle cx="-2" cy="-2" r="3" fill="#94a3b8"/><circle cx="${svgWidth+2}" cy="-2" r="3" fill="#94a3b8"/><rect x="0" y="-4" width="${svgWidth}" height="4" fill="#cbd5e1"/>`;
+    }
+
+    // ╨ж╨╡╨┐╨╛╤З╨║╨░ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П
+    let chainHtml = '';
+    if (controlSide === 'left') {
+        chainHtml = `<path d="M -2 -2 L -2 ${svgHeight*0.6} L -5 ${svgHeight*0.6} L -5 -2" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="1.5,1.5"/>`;
+        if (isHoriz) chainHtml += `<path d="M -5 -2 L -5 ${svgHeight*0.4}" fill="none" stroke="#64748b" stroke-width="1.5"/>`;
+    } else {
+        chainHtml = `<path d="M ${svgWidth+2} -2 L ${svgWidth+2} ${svgHeight*0.6} L ${svgWidth+5} ${svgHeight*0.6} L ${svgWidth+5} -2" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="1.5,1.5"/>`;
+        if (isHoriz) chainHtml += `<path d="M ${svgWidth+5} -2 L ${svgWidth+5} ${svgHeight*0.4}" fill="none" stroke="#64748b" stroke-width="1.5"/>`;
+    }
+        
+    let typeDisplay = isHoriz ? '╨Ц╨░╨╗╤О╨╖╨╕ ╨У╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╨╡ ╨░╨╗╤О╨╝╨╕╨╜╨╕╨╡╨▓╤Л╨╡' : `╨Ц╨░╨╗╤О╨╖╨╕ ${system === 'UNI1' ? 'UNI 1' : system === 'MINI_D19' ? 'MINI (D 19)' : 'D 25'} + ${fabric.name}`;
+
+    let blindsSvg = `
+        <svg viewBox="-${vbPad} -${vbPad} ${svgWidth + vbPad*2} ${svgHeight + vbPad*1.5}" class="w-32 h-32 mx-auto mb-1">
+            <!-- ╨Я╨╛╨╗╨╛╤В╨╜╨╛ -->
+            <rect x="0" y="0" width="${svgWidth}" height="${svgHeight}" fill="${isHoriz ? 'none' : '#f8fafc'}" stroke="#64748b" stroke-width="1.5" />
+            ${stripesHtml}
+            <!-- ╨Э╨╕╨╢╨╜╨╕╨╣ ╨╛╤В╨▓╨╡╤Б -->
+            <rect x="-1" y="${svgHeight-2}" width="${svgWidth+2}" height="4" fill="#cbd5e1" stroke="#64748b" stroke-width="1" />
+            <!-- ╨Ъ╨╛╤А╨╛╨▒/╨▓╨░╨╗ -->
+            ${topHtml}
+            <!-- ╨ж╨╡╨┐╨╛╤З╨║╨░ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П -->
+            ${chainHtml}
+            <!-- ╨а╨░╨╖╨╝╨╡╤А╤Л -->
+            <text x="${svgWidth/2}" y="-12" font-size="10" fill="#64748b" text-anchor="middle" font-family="sans-serif" font-weight="bold">${widthMm}</text>
+            <text x="-6" y="${svgHeight/2 + 3}" font-size="10" fill="#64748b" text-anchor="end" font-family="sans-serif" font-weight="bold">${heightMm}</text>
+        </svg>
+    `;
+
+    ITEMS.push({
+        id: Date.now(),
+        category: 'blinds',
+        type: typeDisplay,
+        qty: qty,
+        w: widthMm, // ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ ╨▓ ╨╝╨╝
+        h: heightMm,
+        area: area,
+        calcArea: area,
+        shape: `${widthMm} ├Ч ${heightMm} ╨╝╨╝`,
+        isLarge: false,
+        unitCost: unitTotal,
+        optionsDesc: optionsDesc,
+        baseTotal: unitTotal * qty,
+        customSvg: blindsSvg
+    });
+
+    document.getElementById('blinds-w').value = '';
+    document.getElementById('blinds-h').value = '';
+    document.getElementById('blinds-qty').value = '1';
+    document.getElementById('blinds-comment').value = '';
+    document.getElementById('blinds-w').focus();
+    renderCart();
+}
+
+// --- SERVICES AUTO-FILL ---
+// ╨ж╨╡╨╜╤Л ╨╕╨╖ ╨Я╤А╨░╨╣╤Б╨░ ╨┐╨╛ ╨╝╨╛╨╜╤В╨░╨╢╤Г: [╨Ю╤Д╨╕╤Б, ╨Ь╨╛╨╜╤В╨░╨╢╨╜╨╕╨║, ╨С╤А╨╕╨│╨░╨┤╨░]
+const MOUNT_PRICES = {
+    montaz58:   [1300, 1200, 1000],
+    razdvizh:   [2000, 1600, 1400],
+    shower:     [8000, 6500, 5500],
+    sill:       [1000, 850, 700],
+    sillSimple: [700, 600, 500],
+    net:        [700, 600, 500],
+    netPleated: [1500, 1200, 1000],
+    lift:       [200, 170, 150],
+    demontazh:  [1200, 1050, 900],
+    util:       [200, 170, 150]
+};
+
+// --- SERVICES ARRAY (dynamic) ---
+let SERVICES = [];
+
+function addService(name, amount) {
+    name = name || '';
+    amount = parseFloat(amount) || 0;
+    if (!name && !amount) {
+        name = '';
+        amount = 0;
+    }
+    SERVICES.push({ name: name, amount: amount });
+    renderServicesList();
+    renderCart();
+}
+
+// --- PRESET SERVICES FROM CSV ---
+const PRESET_SERVICES_DB = [{"id":"srv_1","name":"╨Т╤Л╨▓╨╛╨╖","unit":"╨╝2","prices":[800,650,500]},{"id":"srv_2","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╨▓╨░╨│╨╛╨╜╤З╨╕╨║","unit":"╨╝2","prices":[1500,1350,1200]},{"id":"srv_3","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╨┤╨╡╤А╨╡╨▓╨╛","unit":"╨╝2","prices":[900,800,700]},{"id":"srv_4","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╨┐╨╡╤А╨╕╨╗ ╤А╨╛╨▓╨╜╤Л╨╡ ╨┤╨╛ 3 ╨╝╨╡╤В╤А╨╛╨▓","unit":"╤И╤В","prices":[4000,3500,3000]},{"id":"srv_5","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╨┐╨╡╤А╨╕╨╗ ╤А╨╛╨▓╨╜╤Л╨╡ ╤Б╨▓╤Л╤И╨╡ 3 ╨╝╨╡╤В╤А╨╛╨▓","unit":"╤И╤В","prices":[5000,4500,4000]},{"id":"srv_6","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╨╝2","prices":[1200,1050,900]},{"id":"srv_7","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╤А╨░╨╖╨▒╨╕╤В╨╛╨│╨╛ ╨б╨Я","unit":"╨╝2","prices":[800,700,600]},{"id":"srv_8","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╤Б╤В╨╡╨╜╤Л ╨┐╨╡╨╜╨╛╨▒╨╗╨╛╨║","unit":"╨╝2","prices":[3500,3000,2700]},{"id":"srv_9","name":"╨Ф╨╡╨╝╨╛╨╜╤В╨░╨╢ ╤Б╤В╨╡╨╜╤Л ╤И╨╗╨░╨║╨╛╨▒╨╗╨╛╨║","unit":"╨╝2","prices":[4000,3500,3000]},{"id":"srv_10","name":"╨Ф╨╛╤Б╤В╨░╨▓╨║╨░","unit":"","prices":[0,70,0]},{"id":"srv_11","name":"╨Ь╨╕╨╜╨╕╨╝╨░╨╗╤М╨╜╤Л╨╣ ╨▓╤Л╨╡╨╖╨┤","unit":"","prices":[2000,1700,1500]},{"id":"srv_12","name":"╨Ь╨╛╨╜╤В╨░╨╢ 58","unit":"╨╝2","prices":[1300,1200,1000]},{"id":"srv_13","name":"╨Ь╨╛╨╜╤В╨░╨╢ 70","unit":"╨╝2","prices":[1500,1400,1200]},{"id":"srv_14","name":"╨Ь╨╛╨╜╤В╨░╨╢ 80","unit":"╨╝2","prices":[1800,1600,1400]},{"id":"srv_15","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣ 60","unit":"╨╝2","prices":[2000,1700,1500]},{"id":"srv_16","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣ 70","unit":"╨╝2","prices":[2200,1900,1700]},{"id":"srv_17","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨▓╨╛╤А╨╛╤В ╨┐╨╛╨┤╤М╨╡╨╝╨╜╤Л╤Е","unit":"╤И╤В","prices":[25000,20000,15000]},{"id":"srv_18","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┤╨▓╨╡╤А╨╕ ╨┤╨╡╤А╨╡╨▓╨╛","unit":"╤И╤В","prices":[6500,6000,5500]},{"id":"srv_19","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┤╨▓╨╡╤А╨╕ ╨╝╨╡╤В╨░╨╗╨╗","unit":"╤И╤В","prices":[3500,3000,2500]},{"id":"srv_20","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┤╨▓╨╡╤А╨╕ ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╤И╤В","prices":[3500,3000,2500]},{"id":"srv_21","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┤╨╛╨▓╨╛╨┤╤З╨╕╨║╨░","unit":"╤И╤В","prices":[1500,1200,1000]},{"id":"srv_22","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┤╤Г╤И╨╡╨▓╨╛╨╣","unit":"╤И╤В","prices":[8000,6500,5500]},{"id":"srv_23","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨║╨╛╨╝╨┐╨╛╨╖╨╕╤В╨░","unit":"╨╝2","prices":[3500,3000,2500]},{"id":"srv_24","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨Ю╨▒╨╜╨░╨╗╨╕╤З╨║╨╕ ╨┐╨░╤П╨╜╨╜╨░╤П","unit":"╤И╤В","prices":[1000,700,500]},{"id":"srv_25","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨Ю╤В╨║╨╛╤Б╨╛╨▓ ╤Б ╨╝╨░╤В╨╡╤А╨╕╨░╨╗╨╛╨╝","unit":"╨╝╨╡╤В╤А","prices":[2000,1000,800]},{"id":"srv_26","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┐╨╕╤А╨╕╨╗","unit":"╨╝╨╡╤В╤А","prices":[2700,2300,2000]},{"id":"srv_27","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┐╨╛╨╗╨╕╨║╨╛╤А╨▒╨╛╨╜╨░╤В╨░","unit":"╨╝2","prices":[2000,1500,1200]},{"id":"srv_28","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨а╨░╨╖╨┤╨▓╨╕╨╢╨║╨░ ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣","unit":"╨╝2","prices":[3000,2700,2500]},{"id":"srv_29","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨а╨░╨╖╨┤╨▓╨╕╨╢╨║╨╕ ╨▒╨╡╨╖╤А╨░╨╝╨╜╨╛╨╡","unit":"╨╝2","prices":[2000,1600,1400]},{"id":"srv_30","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤А╨╛╨╗╨╗╨╡╤В 58,45","unit":"╨╝2","prices":[1500,1200,1000]},{"id":"srv_31","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤А╨╛╨╗╨╗╨╡╤В 70","unit":"╨╝2","prices":[2000,1700,1500]},{"id":"srv_32","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤А╤Г╤З╨║╨╕ ╨┤╨▓╨╡╤А╨╜╨╛╨╣","unit":"╤И╤В","prices":[500,400,300]},{"id":"srv_33","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤А╤Г╤З╨║╨╕ ╨┤╨▓╨╡╤А╨╜╨╛╨╣ ╨╛╤Д╨╕╤Б╨╜╨░╤П","unit":"╤И╤В","prices":[1500,1200,1000]},{"id":"srv_34","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤А╤Г╤З╨║╨╕ ╨╛╨║╨╛╨╜╨╜╨░╤П","unit":"╤И╤В","prices":[300,230,150]},{"id":"srv_35","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤Б╨╡╨╜╨┤╨▓╨╕╤З","unit":"╨╝2","prices":[700,600,500]},{"id":"srv_36","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨б╨╗╨░╨╣╨┤ ╨Я╨╗╨░╤Б╤В╨╕╨║","unit":"╨╝2","prices":[1300,1200,1000]},{"id":"srv_37","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨б╨┐ ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╨╝2","prices":[2000,1600,1300]},{"id":"srv_38","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨б╨┐ ╨д╨░╤Б╨░╨┤╨║╨░","unit":"╨╝2","prices":[3000,2500,2000]},{"id":"srv_39","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤Г╨│╨╛╨╗╨║╨░ ╤Б ╨╝╨░╤В╨╡╤А╨╕╨░╨╗╨╛╨╝ ╨▓╨╜╤Г╤В╤А╨╕","unit":"╨╝╨╡╤В╤А","prices":[350,150,100]},{"id":"srv_40","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤Г╨│╨╛╨╗╨║╨░ ╤Б ╨╝╨░╤В╨╡╤А╨╕╨░╨╗╨╛╨╝ ╤Г╨╗╨╕╤Ж╨░","unit":"╨╝╨╡╤В╤А","prices":[500,250,200]},{"id":"srv_41","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨д╨░╤Б╨░╨┤╨║╨░ ╤Б ╨┐╤А╨╕╨╝╤Л╨║╨░╨╜╨╕╨╡╨╝ (╨г╨│╨╛╨╗╨╛╨║) ╨╛╨▒╤К╨╡╨╝","unit":"╨╝2","prices":[2500,2250,2000]},{"id":"srv_42","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨д╨░╤Б╨░╨┤╨║╨░ ╤Б ╨┐╤А╨╕╨╝╤Л╨║╨░╨╜╨╕╨╡╨╝ (╨г╨│╨╛╨╗╨╛╨║)╨╡╨┤╨╡╨╜╨╕╤З╨╜╤Л╨╡","unit":"","prices":[3000,2500,2250]},{"id":"srv_43","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╤Д╤Г╤А╨╜╨╕╤В╤Г╤А╨░","unit":"╤И╤В","prices":[2000,1700,1500]},{"id":"srv_44","name":"╨Ь╨╛╨╜╤В╨░╨╢╨╕ ╨╜╨╡ ╤Б╤В╨░╨╜╨┤╨░╤А╤В╨╜╤Л╤Е ╨┐╨╛╨╖╨╕╤Ж╨╕╨╣ ╨┤╨╛╨│╨╛╨▓╨╛╤А╨╜╨░╤П","unit":"","prices":[0,0,0]},{"id":"srv_45","name":"╨Ю╤В╨╗╨╕╨▓","unit":"╨╝╨╡╤В╤А","prices":[700,600,500]},{"id":"srv_46","name":"╨Я╨╛╨│╤А╤Г╨╖╨║╨░ ╤А╨░╨╖╨│╤А╤Г╨╖╨║╨░","unit":"╤З╨░╤Б","prices":[1300,1150,1000]},{"id":"srv_47","name":"╨Я╨╛╨┤╨╛╨║╨╛╨╜╨╕╨║ ╨║╤А╨╕╤Б╤В╨░╨╗╨╕╤В","unit":"╨╝╨╡╤В╤А","prices":[1000,850,700]},{"id":"srv_48","name":"╨Я╨╛╨┤╨╛╨║╨╛╨╜╨╕╨║ ╨╛╨▒╤Л╤З╨╜╤Л╨╣","unit":"╨╝╨╡╤В╤А","prices":[700,600,500]},{"id":"srv_49","name":"╨Я╨╛╨┤╤К╨╡╨╝","unit":"╨╝2","prices":[200,170,150]},{"id":"srv_50","name":"╨а╨░╤Б╨┐╨░╨║╨╡╤З╨╕╨▓╨░╨╜╨╕╨╡ ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣","unit":"╤И╤В","prices":[1700,1500,1300]},{"id":"srv_51","name":"╨а╨░╤Б╨┐╨░╨║╨╡╤З╨╕╨▓╨░╨╜╨╕╨╡ ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╤И╤В","prices":[1500,1200,1000]},{"id":"srv_52","name":"╨а╨╡╨│╤Г╨╗╨╕╤А╨╛╨▓╨║╨░ ╨║╨╗╤О╤З╨╛╨╝ ╨┤╨▓╨╡╤А╤М ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣","unit":"╤И╤В","prices":[1100,950,800]},{"id":"srv_53","name":"╨а╨╡╨│╤Г╨╗╨╕╤А╨╛╨▓╨║╨░ ╨║╨╗╤О╤З╨╛╨╝ ╨┤╨▓╨╡╤А╤М ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╤И╤В","prices":[1000,850,700]},{"id":"srv_54","name":"╨а╨╡╨│╤Г╨╗╨╕╤А╨╛╨▓╨║╨░ ╨║╨╗╤О╤З╨╛╨╝ ╨╛╨║╨╜╨╛ ╨Р╨╗╤О╨╝╨╕╨╜╨╕╨╣","unit":"╤И╤В","prices":[800,700,600]},{"id":"srv_55","name":"╨а╨╡╨│╤Г╨╗╨╕╤А╨╛╨▓╨║╨░ ╨║╨╗╤О╤З╨╛╨╝ ╨╛╨║╨╜╨╛ ╨┐╨╗╨░╤Б╤В╨╕╨║","unit":"╤И╤В","prices":[600,500,400]},{"id":"srv_56","name":"╨а╨╡╨╖╨╕╨╜╨░ ╤А╨░╨▒╨╛╤В╨░ ╨╝╨░╤В╨╡╤А╨╕╨░╨╗","unit":"╨╝╨╡╤В╤А","prices":[150,70,50]},{"id":"srv_57","name":"╨б╨▓╨░╤А╨║╨░ ╨▒╨░╨╗╨║╨╛╨╜╨░","unit":"╤И╤В","prices":[50000,40000,35000]},{"id":"srv_58","name":"╨б╨╡╤В╨║╨░ ╨╛╨▒╤Л╤З╨╜╨░╤П","unit":"╤И╤В","prices":[700,600,500]},{"id":"srv_59","name":"╨б╨╡╤В╨║╨░ ╨┐╨╗╨╕╤Б╤Б╨╡","unit":"╤И╤В","prices":[1500,1200,1000]},{"id":"srv_60","name":"╨б╨╝╨░╨╖╨║╨░ ╤Д╤Г╤А╨╜╨╕╤В╤Г╤А╤Л","unit":"╤И╤В","prices":[200,150,100]},{"id":"srv_61","name":"╨б╤В╨╕╨╖","unit":"╨╝2","prices":[600,500,400]},{"id":"srv_62","name":"╨Ь╨╛╨╜╤В╨░╨╢ ╨┐╤А╨╛╤В╨╕╨▓╨╛╨┐╨╛╨╢╨░╤А╨╜╤Л╤Е ╨┤╨▓╨╡╤А╨╡╨╣","unit":"╤И╤В","prices":[4500,4000,3500]}];
+
+function initPresetServices() {
+    let select = document.getElementById('srv-preset');
+    let priceTierEl = document.getElementById('srv-pricelist');
+    if (!select || !priceTierEl) return;
+    
+    let priceTier = priceTierEl.value;
+    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
+    
+    // Save current selection to restore after re-render
+    let currentVal = select.value;
+    
+    select.innerHTML = '<option value="">-- ╨Т╤Л╨▒╤А╨░╤В╤М ╤Г╤Б╨╗╤Г╨│╤Г ╨╕╨╖ ╨┐╤А╨░╨╣╤Б╨░ --</option>';
+    PRESET_SERVICES_DB.forEach(srv => {
+        let price = srv.prices[tierIdx];
+        select.innerHTML += `<option value="${srv.id}">${srv.name} тАФ ${price} тВ╜/${srv.unit}</option>`;
+    });
+    
+    select.value = currentVal;
+}
+
+function applyPresetService() {
+    let select = document.getElementById('srv-preset');
+    let srvId = select.value;
+    if (!srvId) return;
+
+    let srv = PRESET_SERVICES_DB.find(s => s.id === srvId);
+    if (!srv) return;
+
+    let priceTier = document.getElementById('srv-pricelist').value;
+    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
+
+    let basePrice = srv.prices[tierIdx];
+    let amount = basePrice;
+    
+    // Auto-calc from cart if unit is m2 or metr or sht
+    let glassArea = 0, framelessArea = 0, showerCount = 0;
+    let sillLengthM = 0;
+    let netCount = 0;
+
+    ITEMS.forEach(it => {
+        if (it.category === 'glass') glassArea += (it.area || 0) * (it.qty || 1);
+        else if (it.category === 'frameless') framelessArea += (it.area || 0);
+        else if (it.category === 'shower') showerCount += 1;
+        else if (it.category === 'sill') sillLengthM += ((it.h || 0) / 1000) * (it.qty || 1);
+        else if (it.category === 'net') netCount += (it.qty || 1);
+        else if (it.category === 'slope') glassArea += (it.area || 0) * (it.qty || 1);
+    });
+
+    let totalArea = glassArea + framelessArea;
+
+    if (srv.unit.includes('╨╝2')) {
+        amount = Math.ceil(totalArea * basePrice);
+        if (amount === 0) amount = basePrice; // fallback if cart empty
+    } else if (srv.unit.includes('╨╝.╨┐') || srv.unit.includes('╨╝╨╡╤В╤А')) {
+        amount = Math.ceil(sillLengthM * basePrice);
+        if (amount === 0) amount = basePrice; 
+    } else if (srv.unit.includes('╤И╤В')) {
+        let maxQty = Math.max(showerCount, netCount, 1);
+        amount = Math.ceil(maxQty * basePrice);
+    }
+
+    document.getElementById('srv-new-name').value = srv.name;
+    document.getElementById('srv-new-amount').value = amount || 0;
+    
+    // Reset selection so user can pick again
+    select.value = '';
+}
+
+// Attach event listener to pricelist to update dropdown automatically
+window.addEventListener('DOMContentLoaded', () => {
+    let priceTierEl = document.getElementById('srv-pricelist');
+    if (priceTierEl) {
+        priceTierEl.addEventListener('change', () => {
+            initPresetServices();
+            if (typeof autoFillServices === 'function') autoFillServices();
+        });
+    }
+});
+
+function removeService(idx) {
+    SERVICES.splice(idx, 1);
+    renderServicesList();
+    renderCart();
+}
+
+function editService(idx) {
+    let srv = SERVICES[idx];
+    document.getElementById('srv-new-name').value = srv.name;
+    document.getElementById('srv-new-amount').value = srv.amount;
+    SERVICES.splice(idx, 1);
+    renderServicesList();
+    renderCart();
+}
+
+function addServiceFromInput() {
+    let nameEl = document.getElementById('srv-new-name');
+    let amountEl = document.getElementById('srv-new-amount');
+    let name = (nameEl.value || '').trim();
+    let amount = parseFloat(amountEl.value) || 0;
+    if (!name) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╨╜╨░╨╖╨▓╨░╨╜╨╕╨╡ ╤Г╤Б╨╗╤Г╨│╨╕!'); return; }
+    if (amount <= 0) { alert('╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤Б╤Г╨╝╨╝╤Г!'); return; }
+    SERVICES.push({ name: name, amount: amount });
+    nameEl.value = '';
+    amountEl.value = '';
+    renderServicesList();
+    renderCart();
+}
+
+function renderServicesList() {
+    let container = document.getElementById('services-list');
+    if (!container) return;
+    if (SERVICES.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-400 text-xs py-3">╨Э╨╡╤В ╤Г╤Б╨╗╤Г╨│</div>';
+        return;
+    }
+    container.innerHTML = SERVICES.map((srv, i) => `
+        <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0" ondblclick="editService(${i})">
+            <span class="flex-1 text-xs text-slate-700 font-medium truncate cursor-pointer">${srv.name}</span>
+            <span class="text-xs font-bold text-slate-800 whitespace-nowrap">${srv.amount.toLocaleString()} тВ╜</span>
+            <button onclick="editService(${i})" class="text-slate-300 hover:text-blue-500 p-0.5 flex-shrink-0" title="╨а╨╡╨┤╨░╨║╤В╨╕╤А╨╛╨▓╨░╤В╤М"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button onclick="removeService(${i})" class="text-slate-300 hover:text-red-500 p-0.5 flex-shrink-0" title="╨г╨┤╨░╨╗╨╕╤В╤М"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        </div>
+    `).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function autoFillServices() {
+    let priceTier = document.getElementById('srv-pricelist').value;
+    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
+    let P = (key) => MOUNT_PRICES[key][tierIdx];
+
+    let glassArea = 0, framelessArea = 0, showerCount = 0;
+    let sillLengthCrystallitM = 0, sillLengthSimpleM = 0;
+    let netCount = 0, netPleatedCount = 0;
+
+    ITEMS.forEach(it => {
+        if (it.category === 'glass') {
+            glassArea += (it.area || 0) * (it.qty || 1);
+        } else if (it.category === 'frameless') {
+            framelessArea += (it.area || 0);
+        } else if (it.category === 'shower') {
+            showerCount += 1;
+        } else if (it.category === 'sill') {
+            let lenM = (it.h || 0) / 1000;
+            let qty = it.qty || 1;
+            if (it.type && it.type.includes('Crystallit')) sillLengthCrystallitM += lenM * qty;
+            else sillLengthSimpleM += lenM * qty;
+        } else if (it.category === 'net') {
+            let isPleated = it.type && it.type.toLowerCase().includes('\u043f\u043b\u0438\u0441\u0441');
+            if (isPleated) netPleatedCount++; else netCount++;
+        }
+    });
+
+    let totalArea = glassArea + framelessArea;
+    if (totalArea === 0 && showerCount === 0 && sillLengthCrystallitM === 0 && sillLengthSimpleM === 0 && netCount === 0 && netPleatedCount === 0) {
+        alert('\u041a\u043e\u0440\u0437\u0438\u043d\u0430 \u043f\u0443\u0441\u0442\u0430\u044f \u2014 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f \u043f\u0435\u0440\u0435\u0434 \u0430\u0432\u0442\u043e\u0440\u0430\u0441\u0447\u0451\u0442\u043e\u043c!'); return;
+    }
+
+    let installTotal = Math.ceil((glassArea * P('montaz58')) + (framelessArea * P('razdvizh')) + (showerCount * P('shower')));
+    let sillMount = Math.ceil((sillLengthCrystallitM * P('sill')) + (sillLengthSimpleM * P('sillSimple')));
+    let netMount = Math.ceil((netCount * P('net')) + (netPleatedCount * P('netPleated')));
+    let liftTotal = totalArea > 0 ? Math.ceil(totalArea * P('lift')) : 0;
+    let utilTotal = totalArea > 0 ? Math.ceil(totalArea * P('util')) : 0;
+
+    // ╨Ч╨░╨┐╨╛╨╗╨╜╤П╨╡╨╝ ╨╝╨░╤Б╤Б╨╕╨▓ SERVICES
+    SERVICES = [];
+    if (installTotal > 0) SERVICES.push({ name: '╨Ь╨╛╨╜╤В╨░╨╢ ╨╕╨╖╨┤╨╡╨╗╨╕╨╣', amount: installTotal });
+    if (liftTotal > 0) SERVICES.push({ name: '╨Я╨╛╨┤╤К╤С╨╝', amount: liftTotal });
+    if (utilTotal > 0) SERVICES.push({ name: '╨г╤В╨╕╨╗╨╕╨╖╨░╤Ж╨╕╤П', amount: utilTotal });
+    if (sillMount + netMount > 0) SERVICES.push({ name: '╨и╤В╨░╨┐╨╕╨║╨╕ / ╨б╨╡╤В╨║╨╕', amount: sillMount + netMount });
+
+    let tierName = priceTier === 'office' ? '\u041e\u0444\u0438\u0441' : priceTier === 'vitalik' ? '\u041c\u043e\u043d\u0442\u0430\u0436\u043d\u0438\u043a' : '\u0411\u0440\u0438\u0433\u0430\u0434\u0430';
+    let total = SERVICES.reduce((s, srv) => s + srv.amount, 0);
+    alert(`\u2705 \u0410\u0432\u0442\u043e\u0440\u0430\u0441\u0447\u0451\u0442 (\u041f\u0440\u0430\u0439\u0441: ${tierName})\n\n\u0418\u0442\u043e\u0433 \u0443\u0441\u043b\u0443\u0433: ${total.toLocaleString()} \u20bd`);
+    renderServicesList();
+    renderCart();
+}
+
+function clearServices() {
+    SERVICES = [];
+    renderServicesList();
+    renderCart();
+}
+
+// --- CART & PROPOSAL LOGIC ---
+function remove(id) { ITEMS = ITEMS.filter(i => i.id !== id); renderCart(); }
+
+// --- EDIT ITEM LOGIC ---
+let editingItemId = null;
+function editItem(id) {
+    let item = ITEMS.find(i => i.id === id);
+    if (!item) return;
+    editingItemId = id;
+    document.getElementById('edit-item-type').value = item.type || '';
+    document.getElementById('edit-item-qty').value = item.qty || 1;
+    document.getElementById('edit-item-cost').value = Math.round(item.unitCost) || 0;
+    document.getElementById('edit-item-modal').classList.remove('hidden');
+}
+function closeEditModal() {
+    document.getElementById('edit-item-modal').classList.add('hidden');
+    editingItemId = null;
+}
+function saveEditItem() {
+    let item = ITEMS.find(i => i.id === editingItemId);
+    if (!item) return;
+    let newType = document.getElementById('edit-item-type').value.trim();
+    let newQty = parseInt(document.getElementById('edit-item-qty').value) || 1;
+    let newCost = parseFloat(document.getElementById('edit-item-cost').value) || 0;
+    if (newType) item.type = newType;
+    item.qty = newQty;
+    item.unitCost = newCost;
+    item.baseTotal = newCost * newQty;
+    closeEditModal();
+    renderCart();
+}
+
+function calculateTotals() {
+    let markup = getGlobalMarkup();
+    let baseSum = 0;
+    ITEMS.forEach(it => {
+        let costMult = (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') ? 1 : markup;
+        baseSum += Math.ceil(it.baseTotal * costMult);
+    });
+
+    let manMarkupRub = parseFloat(document.getElementById('manual-markup-rub').value) || 0;
+    let manMarkupPct = parseFloat(document.getElementById('manual-markup-pct').value) || 0;
+    let totalManualMarkup = manMarkupRub + (baseSum * (manMarkupPct / 100));
+    
+    let manDiscRub = parseFloat(document.getElementById('manual-discount-rub').value) || 0;
+    let manDiscPct = parseFloat(document.getElementById('manual-discount-pct').value) || 0;
+    let totalDiscount = manDiscRub + (baseSum * (manDiscPct / 100));
+    
+    let servSum = SERVICES.reduce((s, srv) => s + (srv.amount || 0), 0);
+    
+    let sumWithMarkup = baseSum + totalManualMarkup;
+    let finalTotal = sumWithMarkup + servSum - totalDiscount;
+    
+    return {
+        baseSum: baseSum,
+        totalManualMarkup: totalManualMarkup,
+        totalDiscount: totalDiscount,
+        servSum: servSum,
+        sumWithMarkup: sumWithMarkup,
+        finalTotal: Math.ceil(finalTotal)
+    };
+}
+
+function renderCart() {
+    let list = document.getElementById('cart-items'); list.innerHTML = '';
+    let totals = calculateTotals();
+    let markup = getGlobalMarkup();
+    if (ITEMS.length === 0) {
+        list.innerHTML = '<div class="text-center text-slate-400 py-12 flex flex-col items-center gap-3"><i data-lucide="package-open" class="w-10 h-10 text-slate-200"></i><span class="text-sm">╨б╨╝╨╡╤В╨░ ╨┐╤Г╤Б╤В╨░.<br>╨Ф╨╛╨▒╨░╨▓╤М╤В╨╡ ╨╕╨╖╨┤╨╡╨╗╨╕╤П ╨╛╨▒╨╛╨╣╨┤╤П ╨║╨░╤В╨╡╨│╨╛╤А╨╕╨╕.</span></div>';
+    } else {
+        ITEMS.forEach((it, idx) => {
+            let costMult = (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') ? 1 : markup;
+            let cost = Math.ceil(it.baseTotal * costMult);
+            let icon = { glass: 'layout-grid', net: 'grid-3x3', frameless: 'blinds', sill: 'align-horizontal-justify-end', slope: 'square-split-horizontal', slope_profile: 'frame', shower: 'droplets', custom: 'package-plus', roller: 'archive', blinds: 'app-window' }[it.category] || 'box';
+            let col = { glass: 'brand-primary', net: 'brand-secondary', frameless: 'slate-800', sill: 'amber-700', slope: 'slate-600', slope_profile: 'slate-500', shower: 'blue-500', custom: 'slate-600', roller: 'brand-primary', blinds: 'indigo-500' }[it.category] || 'slate-600';
+            let opts = it.optionsDesc.length > 0 ? `<div class="mt-1.5 space-y-0.5">${it.optionsDesc.map(o => `<p class="text-[11px] text-slate-500">тАв ${o}</p>`).join('')}</div>` : '';
+            let qtyBadge = (it.qty && it.qty > 1) ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-1">├Ч${it.qty}</span>` : '';
+            let totalArea = it.area * (it.qty || 1);
+            let dimLine;
+            if (it.category === 'custom' || it.category === 'slope_profile') {
+                dimLine = `${it.qty || 1} ${it.unit || '╤И╤В.'}`;
+            } else if (it.category === 'shower') {
+                dimLine = getShowerDimensionLine(it, true);
+            } else {
+                dimLine = `${it.w} ├Ч ${it.h} ╨╝╨╝ | ${totalArea.toFixed(2)} ╨╝┬▓`;
+            }
+            list.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative group"><div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="editItem(${it.id})" class="text-slate-300 hover:text-blue-500 p-1" title="╨а╨╡╨┤╨░╨║╤В╨╕╤А╨╛╨▓╨░╤В╤М"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="remove(${it.id})" class="text-slate-300 hover:text-red-500 p-1" title="╨г╨┤╨░╨╗╨╕╤В╤М"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-${col}/10 flex items-center justify-center flex-shrink-0 text-${col}"><i data-lucide="${icon}" class="w-4 h-4"></i></div><div><div class="font-bold text-sm text-slate-800 pr-14">${idx + 1}. ${it.type}${qtyBadge}</div><div class="text-xs text-slate-500 font-medium">${dimLine}</div>${opts}</div></div><div class="mt-2 text-right font-black text-${col}">${cost.toLocaleString()} тВ╜</div></div>`;
+        });
+    }
+    document.getElementById('items-count-badge').innerText = ITEMS.reduce((s, it) => s + (it.qty || 1), 0);
+    document.getElementById('cart-total-display').innerText = totals.finalTotal.toLocaleString() + ' тВ╜';
+    lucide.createIcons();
+}
+
+function showProposal() {
+    if (ITEMS.length === 0) { document.getElementById('print-error').classList.remove('hidden'); setTimeout(() => document.getElementById('print-error').classList.add('hidden'), 3000); return; }
+    
+    let totals = calculateTotals();
+    let kpNum = document.getElementById('kp-number-input').value;
+    document.getElementById('kp-number-display-right').innerText = kpNum ? `тДЦ ${kpNum}` : '';
+    document.getElementById('kp-client-display').innerText = document.getElementById('client-name').value || '╨Э╨╡ ╤Г╨║╨░╨╖╨░╨╜';
+    
+    let tbody = document.getElementById('kp-table-body'); tbody.innerHTML = '';
+    let markup = getGlobalMarkup();
+    
+    // ╨Ф╨╗╤П ╤А╨░╤Б╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╤П ╨╜╨░╤Ж╨╡╨╜╨║╨╕ ╨┐╨╛ ╤Б╤В╤А╨╛╨║╨░╨╝ ╤В╨░╨▒╨╗╨╕╤Ж╤Л
+    let sumWithManualMarkup = Math.round(totals.baseSum + totals.totalManualMarkup);
+    let markupFactor = totals.baseSum > 0 ? (sumWithManualMarkup / totals.baseSum) : 1;
+    let runningSum = 0;
+
+    let totalArea = 0;
+    ITEMS.forEach((it, idx) => {
+        let costMult = (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') ? 1 : markup;
+        let baseWithMarkup = Math.ceil(it.baseTotal * costMult);
+        
+        let cost = 0;
+        if (idx === ITEMS.length - 1) {
+            cost = sumWithManualMarkup - runningSum;
+        } else {
+            cost = Math.ceil(baseWithMarkup * markupFactor);
+            runningSum += cost;
+        }
+
+        totalArea += it.area * (it.qty || 1);
+        let opts = it.optionsDesc.length > 0 ? `<div class="mt-1 space-y-[2px]">${it.optionsDesc.map(o => `<div class="text-[10px] text-slate-500">тАв ${o}</div>`).join('')}</div>` : '';
+        let canvasId = `sketch-${it.id}`;
+        let qty = it.qty || 1;
+        
+        // ╨ж╨╡╨╜╨░ ╨╖╨░ ╨╡╨┤╨╕╨╜╨╕╤Ж╤Г
+        let unitCostDisplay = '';
+        if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller') {
+            unitCostDisplay = it.unitCost > 0 ? `${Math.ceil(it.unitCost).toLocaleString()} тВ╜/${it.unit || '╤И╤В.'}` : 'тАФ';
+        } else if (it.category === 'blinds') {
+            unitCostDisplay = `${Math.ceil(cost / qty).toLocaleString()} тВ╜/╤И╤В.`;
+        } else if (it.area > 0 && qty === 1) {
+            unitCostDisplay = `${Math.ceil(cost / it.area).toLocaleString()} тВ╜/╨╝┬▓`;
+        } else if (qty > 1) {
+            unitCostDisplay = `${Math.ceil(cost / qty).toLocaleString()} тВ╜/╤И╤В.`;
+        } else {
+            unitCostDisplay = 'тАФ';
+        }
+        
+        let itemTotalArea = it.area * qty;
+        let dimLine = '';
+        if (it.category === 'custom' || it.category === 'slope_profile' || it.category === 'roller' || it.category === 'blinds') {
+            if (it.w > 0 && it.h > 0) dimLine = `╨а╨░╨╖╨╝╨╡╤А╤Л: ${it.w} ├Ч ${it.h} ╨╝╨╝`;
+            if (it.category === 'roller' || it.category === 'blinds') dimLine += ` (S = ${itemTotalArea.toFixed(2)} ╨╝┬▓)`;
+        } else if (it.category === 'shower') {
+            dimLine = getShowerDimensionLine(it, true);
+        } else {
+            dimLine = `${it.w} ├Ч ${it.h} ╨╝╨╝ (S = ${itemTotalArea.toFixed(2)} ╨╝┬▓)`;
+        }
+        
+        let unitLabel = (it.category === 'custom' || it.category === 'slope_profile') ? (it.unit || '╤И╤В.') : '╤И╤В.';
+        canvasId = `sketch-${it.id}`;
+        let sketchHtml = it.customSvg || generateSvgSketch(it);
+        
+        tbody.innerHTML += `<tr class="border-b border-slate-200 hover:bg-slate-50"><td class="p-3 text-slate-500 align-middle">${idx + 1}</td><td class="p-3 align-middle text-center">${sketchHtml}</td><td class="p-3 align-middle"><div class="font-bold text-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${it.type}</div><div class="text-xs text-slate-500 font-medium opacity-80 mt-0.5 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${dimLine}</div>${opts}</td><td class="p-3 align-middle text-center font-medium text-slate-700 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${qty} ${unitLabel}</td><td class="p-3 align-middle text-right text-xs text-slate-500 whitespace-nowrap outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${unitCostDisplay}</td><td class="p-3 align-middle text-right font-bold text-slate-800 whitespace-nowrap outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${cost.toLocaleString()} тВ╜</td></tr>`;
+    });
+    
+    // (sketches are now SVG)
+    
+    
+    
+    let sList = document.getElementById('kp-services-list');
+    sList.innerHTML = `<div class="flex justify-between text-sm mb-2 pb-2 border-b border-slate-100"><span class="text-slate-500">╨Ю╨▒╤Й╨░╤П ╨┐╨╗╨╛╤Й╨░╨┤╤М ╨╕╨╖╨┤╨╡╨╗╨╕╨╣:</span><span class="font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary rounded px-1" contenteditable="true">${totalArea.toFixed(2)} ╨╝┬▓</span></div>`;
+    sList.innerHTML += `<div class="flex justify-between text-base mb-1"><span class="text-slate-700 font-bold uppercase tracking-wide">╨б╤В╨╛╨╕╨╝╨╛╤Б╤В╤М ╨╕╨╖╨┤╨╡╨╗╨╕╨╣:</span><span class="font-black text-slate-900">${sumWithManualMarkup.toLocaleString()} тВ╜</span></div>`;
+    
+    let roundedDiscount = Math.round(totals.totalDiscount);
+    if (roundedDiscount > 0) sList.innerHTML += `<div class="flex justify-between text-sm mb-2 text-emerald-700"><span class="font-bold uppercase tracking-wider">╨б╨║╨╕╨┤╨║╨░ ╨╜╨░ ╨╕╨╖╨┤╨╡╨╗╨╕╤П:</span><span class="font-bold">-${roundedDiscount.toLocaleString()} тВ╜</span></div>`;
+    
+    let discountedSumItems = sumWithManualMarkup - roundedDiscount;
+    if (roundedDiscount > 0) sList.innerHTML += `<div class="flex justify-between text-sm mb-3 pb-3 border-b border-b-slate-300"><span class="text-slate-600 font-medium tracking-wide">╨Ш╤В╨╛╨│╨╛ ╨╖╨░ ╨╕╨╖╨┤╨╡╨╗╨╕╤П:</span><span class="font-bold text-slate-800"><span class="line-through text-slate-400 mr-2 text-xs">${sumWithManualMarkup.toLocaleString()} тВ╜</span>${discountedSumItems.toLocaleString()} тВ╜</span></div>`;
+    else sList.innerHTML += `<div class="w-full mb-3 pb-3 border-b border-slate-300"></div>`;
+    
+    if (totals.servSum > 0) {
+        SERVICES.forEach(srv => {
+            if (srv.amount > 0) {
+                sList.innerHTML += `<div class="flex justify-between text-sm mb-1"><span class="text-slate-600">${srv.name}:</span><span class="font-medium text-slate-800">${srv.amount.toLocaleString()} тВ╜</span></div>`;
+            }
+        });
+    }
+
+    document.getElementById('kp-total-sum').innerText = totals.finalTotal.toLocaleString() + ' тВ╜';
+    
+    let selectedCompany = document.getElementById('select-company').value;
+    let comp = COMPANIES[selectedCompany];
+    
+    let paymentBlock = document.getElementById('kp-payment-block');
+    if (paymentBlock) {
+        paymentBlock.style.display = (selectedCompany === 'alex') ? 'none' : 'block';
+    }
+
+    if (selectedCompany === 'alex') {
+        let ndsAmount = totals.finalTotal * 22 / 122;
+        sList.innerHTML += `<div class="flex justify-between text-xs mt-3 text-slate-500 font-medium"><span>╨Т ╤В╨╛╨╝ ╤З╨╕╤Б╨╗╨╡ ╨Э╨Ф╨б (22%):</span><span>${Math.ceil(ndsAmount).toLocaleString()} тВ╜</span></div>`;
+    }
+    
+    // --- ╨Ч╨░╨┐╨╛╨╗╨╜╤П╨╡╨╝ ╨▒╨╗╨╛╨║ ╤А╨╡╨║╨▓╨╕╨╖╨╕╤В╨╛╨▓ ╨┤╨╗╤П ╨╛╨┐╨╗╨░╤В╤Л ---
+    let bankReqContainer = document.getElementById('kp-bank-requisites');
+    if (bankReqContainer && comp) {
+        let rows = [
+            ['╨Я╨╛╨╗╤Г╤З╨░╤В╨╡╨╗╤М:', comp.name_full],
+            ['╨Ш╨Э╨Э:', comp.inn || 'тАФ'],
+            ['╨а╨░╤Б╤З. ╤Б╤З╤С╤В:', comp.account || 'тАФ'],
+            ['╨С╨░╨╜╨║:', comp.bank_name || 'тАФ'],
+            ['╨С╨Ш╨Ъ:', comp.bik || 'тАФ'],
+            ['╨Ъ╨╛╤А╤А. ╤Б╤З╤С╤В:', comp.corr_account || 'тАФ']
+        ];
+        if (comp.inn_bank) rows.push(['╨Ш╨Э╨Э ╨▒╨░╨╜╨║╨░:', comp.inn_bank]);
+        if (comp.kpp_bank) rows.push(['╨Ъ╨Я╨Я ╨▒╨░╨╜╨║╨░:', comp.kpp_bank]);
+        if (comp.kpp) rows.push(['╨Ъ╨Я╨Я:', comp.kpp]);
+        if (comp.ogrnip) rows.push(['╨Ю╨У╨а╨Э╨Ш╨Я:', comp.ogrnip]);
+        if (comp.ogrn) rows.push(['╨Ю╨У╨а╨Э:', comp.ogrn]);
+        
+        bankReqContainer.innerHTML = rows.map(([label, val]) => 
+            `<span class="text-slate-500 font-medium whitespace-nowrap">${label}</span><span class="font-bold text-slate-800 break-all">${val}</span>`
+        ).join('');
+    }
+    
+    document.getElementById('calculator-screen').style.display = 'none';
+    document.getElementById('proposal-screen').style.display = 'block';
+    window.scrollTo(0, 0);
+}
+
+
+function hideProposal() {
+    document.getElementById('calculator-screen').style.display = 'block';
+    document.getElementById('proposal-screen').style.display = 'none';
+}
+
+
+
+
+
+
+
+
+
+
+// --- SKETCH SVG GENERATOR ---
+function generateSvgSketch(item) {
+    if (!item) return '';
+
+    const VB_SIZE = 500;
+    
+    let typeStr = (item.type || '').toLowerCase();
+    let isIcon = false;
+    let iconPath = '';
+    let iconColor = '#475569';
+    let w = parseFloat(item.w) || 0;
+    let h = parseFloat(item.h) || 0;
+    if (item.category === 'sill') { w = parseFloat(item.h) || 0; h = parseFloat(item.w) || 0; }
+
+    if (item.category === 'custom' || item.category === 'slope_profile' || item.category === 'services') {
+        if (typeStr.includes('╤Б╨▓╨░╤А╨║╨░') || typeStr.includes('╤Б╨▓╨░╤А╨╛╤З') || typeStr.includes('╤Г╤Б╨╕╨╗╨╡╨╜')) {
+            isIcon = true; iconColor = '#f59e0b';
+            iconPath = `<path d="M2 22 L2 2 L6 2 L6 22 Z" fill="#94a3b8"/><path d="M6 18 L16 18 L20 10 L20 6 L16 6 L6 6" stroke="${iconColor}" stroke-width="2" fill="none"/><path d="M12 6 L16 18" stroke="${iconColor}" stroke-width="1" stroke-dasharray="2,2"/><circle cx="18" cy="8" r="2" fill="#ef4444"/>`;
+        } else if (typeStr.includes('╨▓╤Л╨╜╨╛╤Б') || typeStr.includes('╨▒╨░╨╗╨║╨╛╨╜')) {
+            isIcon = true; iconColor = '#3b82f6';
+            iconPath = `<path d="M4 22 L4 10 L12 4 L12 10 L10 10 L10 22 Z" stroke="${iconColor}" stroke-width="2" fill="none"/>`;
+        } else if (typeStr.includes('╨║╤А╤Л╤И╨░') || typeStr.includes('╨║╤А╨╛╨▓╨╗') || typeStr.includes('╨║╨╛╨╖╤Л╤А╨╡╨║')) {
+            isIcon = true; iconColor = '#ef4444';
+            iconPath = `<path d="M2 12L12 3l10 9M5 12v8h14v-8" stroke="${iconColor}" stroke-width="2" fill="none"/>`;
+        } else if (typeStr.includes('╤Д╤Г╤А╨╜╨╕╤В╤Г╤А') || typeStr.includes('╤А╤Г╤З╨║') || typeStr.includes('╨╖╨░╨╝╨╛╨║') || typeStr.includes('╨┐╨╡╤В╨╗')) {
+            isIcon = true; iconColor = '#8b5cf6';
+            iconPath = `<rect x="6" y="10" width="12" height="10" rx="2" stroke="${iconColor}" stroke-width="2" fill="none"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="${iconColor}" stroke-width="2" fill="none"/><circle cx="12" cy="15" r="1.5" fill="${iconColor}"/>`;
+        } else if (typeStr.includes('╤А╨╡╨╖╨╕╨╜') || typeStr.includes('╤Г╨┐╨╗╨╛╤В╨╜')) {
+            isIcon = true; iconColor = '#10b981';
+            iconPath = `<circle cx="12" cy="12" r="8" stroke="${iconColor}" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" fill="${iconColor}"/>`;
+        } 
+    }
+
+    if (isIcon) {
+        return `<svg viewBox="0 0 24 24" style="width: 100%; max-width: 80px; height: auto; display: block; margin: 0 auto;">${iconPath}</svg>`;
+    }
+
+    let innerSvg = '';
+    let drawW = w || 1000;
+    let drawH = h || 1000;
+    let ratio = drawW / drawH;
+    
+    let maxDrawW = 320; 
+    let maxDrawH = 320;
+    if (item.category === 'roller' || typeStr.includes('╨▓╨╛╤А╨╛╤В')) {
+        maxDrawW = 400; 
+        maxDrawH = 400;
+    }
+
+    let svgW = maxDrawW;
+    let svgH = maxDrawH;
+    
+    if (ratio > 1) {
+        svgH = maxDrawW / ratio;
+    } else {
+        svgW = maxDrawH * ratio;
+    }
+    if (svgW < 80) svgW = 80;
+    if (svgH < 80) svgH = 80;
+
+    let x = (VB_SIZE - svgW) / 2 - 40; 
+    let y = (VB_SIZE - svgH) / 2 + 40; 
+
+    let getFrameColor = () => {
+        let allText = (typeStr + ' ' + (item.optionsDesc||[]).join(' ')).toLowerCase();
+        if (allText.includes('╨░╨╜╤В╤А╨░╤Ж╨╕╤В') || allText.includes('╤Б╨╡╤А╤Л╨╣') || allText.includes('7016')) return '#334155';
+        if (allText.includes('╨║╨╛╤А╨╕╤З╨╜') || allText.includes('8017') || allText.includes('8014') || allText.includes('╤И╨╛╨║╨╛╨╗╨░╨┤')) return '#78350f';
+        if (allText.includes('╤З╨╡╤А╨╜') || allText.includes('9005')) return '#0f172a';
+        if (allText.includes('╨╖╨╛╨╗╨╛╤В') || allText.includes('╨┤╤Г╨▒') || allText.includes('╨╛╤А╨╡╤Е')) return '#b45309';
+        if (allText.includes('╨▒╨╡╨╗') || allText.includes('9016')) return '#e2e8f0'; 
+        return '#78350f'; 
+    };
+
+    let swFrame = 8;
+    let swInner = 4;
+
+    if (item.category === 'glass') {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f0f9ff" stroke="#1e293b" stroke-width="${swFrame}"/>`;
+        innerSvg += `<rect x="${x+12}" y="${y+12}" width="${svgW-24}" height="${svgH-24}" fill="none" stroke="#475569" stroke-width="${swInner}"/>`;
+        innerSvg += `<path d="M${x + svgW*0.2} ${y + svgH - 20} L${x + svgW - 20} ${y + svgH*0.2}" stroke="#ffffff" stroke-width="${svgW/5}" stroke-opacity="0.6" fill="none"/>`;
+        
+        let totalCross = (item.layoutCross || 0) + (item.layoutEnd || 0);
+        if (totalCross > 0) {
+            let cols = item.layoutCross + 1;
+            let rows = item.layoutCross + 1;
+            let layoutColor = '#c8a84e';
+            if (item.layoutName) {
+                let ln = item.layoutName.toLowerCase();
+                if (ln.includes('╨║╨╛╤А╨╕╤З╨╜╨╡╨▓')) layoutColor = '#6b4226';
+                else if (ln.includes('╨▒╨╡╨╗')) layoutColor = '#e2e8f0';
+            }
+            let innerX = x + 16, innerY = y + 16, innerW = svgW - 32, innerH = svgH - 32;
+            for (let i = 1; i < cols; i++) {
+                let lx = innerX + (innerW / cols) * i;
+                innerSvg += `<line x1="${lx}" y1="${innerY}" x2="${lx}" y2="${innerY+innerH}" stroke="${layoutColor}" stroke-width="${swInner+2}"/>`;
+            }
+            for (let j = 1; j < rows; j++) {
+                let ly = innerY + (innerH / rows) * j;
+                innerSvg += `<line x1="${innerX}" y1="${ly}" x2="${innerX+innerW}" y2="${ly}" stroke="${layoutColor}" stroke-width="${swInner+2}"/>`;
+            }
+        }
+    } else if (item.category === 'frameless') {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="#1e293b" stroke-width="${swFrame}"/>`;
+        let match = (item.shape||'').match(/╨Я╨░╨╜╨╡╨╗╨╡╨╣: (\d+)/);
+        let panels = match ? parseInt(match[1]) : 1;
+        let pWidth = svgW / panels;
+        
+        if (panels > 1) {
+            let doorPanel = null;
+            let doorDirStr = 'right';
+            if (item.optionsDesc) {
+                let dDesc = item.optionsDesc.find(d => d.includes('╨Ф╨▓╨╡╤А╤М: ╨Я╨░╨╜╨╡╨╗╤М'));
+                if (dDesc) {
+                    let m = dDesc.match(/╨Я╨░╨╜╨╡╨╗╤М (\d+)/);
+                    if (m) doorPanel = parseInt(m[1]);
+                    if (dDesc.includes('╨Т╨╗╨╡╨▓╨╛')) doorDirStr = 'left';
+                }
+            }
+
+            if (doorPanel) {
+                let doorIdx = doorPanel - 1;
+                let dLeft = x + doorIdx * pWidth;
+                innerSvg += `<rect x="${dLeft}" y="${y}" width="${pWidth}" height="${svgH}" fill="#e2e8f0" />`;
+                let cx = dLeft + pWidth/2;
+                let cy = y + svgH/2;
+                innerSvg += `<text x="${cx}" y="${cy+20}" font-family="Arial" font-size="64" font-weight="bold" fill="#0f172a" text-anchor="middle">${doorDirStr === 'right' ? '<' : '>'}</text>`;
+            }
+            for (let i = 1; i < panels; i++) {
+                let lx = x + i * pWidth;
+                innerSvg += `<line x1="${lx}" y1="${y}" x2="${lx}" y2="${y+svgH}" stroke="#1e293b" stroke-width="${swInner}"/>`;
+            }
+        }
+    } else if (item.category === 'net') {
+        let frameColor = getFrameColor();
+        let isPleated = typeStr.includes('╨┐╨╗╨╕╤Б╤Б');
+        
+        if (isPleated) {
+            innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#fff9f0" stroke="${frameColor}" stroke-width="12"/>`;
+            
+            let dirText = 'тЖТ'; 
+            if (item.optionsDesc) {
+                let dirEntry = item.optionsDesc.find(d => d && d.includes('╨б╤В╨▓╨╛╤А╨║╨░:'));
+                if (dirEntry) {
+                    if (dirEntry.includes('╨Т╨╗╨╡╨▓╨╛')) dirText = 'тЖР';
+                    else if (dirEntry.includes('╤Ж╨╡╨╜╤В╤А')) dirText = 'тЖРтЖТ';
+                }
+            }
+            
+            let handleX = x + svgW / 2; 
+            if (dirText === 'тЖРтЖТ') {
+                let plStep = 16;
+                for (let i = x + plStep; i < x + svgW*0.3; i += plStep) {
+                    innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                }
+                for (let i = x + svgW - plStep; i > x + svgW*0.7; i -= plStep) {
+                    innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                }
+                innerSvg += `<rect x="${x+svgW*0.3}" y="${y+6}" width="16" height="${svgH-12}" fill="${frameColor}" rx="4" />`;
+                innerSvg += `<rect x="${x+svgW*0.7-16}" y="${y+6}" width="16" height="${svgH-12}" fill="${frameColor}" rx="4" />`;
+                innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+20}" font-family="Arial" font-size="64" font-weight="bold" fill="#1d4ed8" text-anchor="middle">тЖРтЖТ</text>`;
+            } else {
+                let plStep = 16;
+                if (dirText === 'тЖТ') {
+                    for (let i = x + plStep; i < handleX; i += plStep) {
+                        innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                    }
+                    innerSvg += `<rect x="${handleX-8}" y="${y+6}" width="20" height="${svgH-12}" fill="${frameColor}" rx="5" />`;
+                    innerSvg += `<text x="${handleX + 45}" y="${y+svgH/2+20}" font-family="Arial" font-size="70" font-weight="bold" fill="#1d4ed8" text-anchor="middle">тЖТ</text>`;
+                } else {
+                    for (let i = x + svgW - plStep; i > handleX; i -= plStep) {
+                        innerSvg += `<line x1="${i}" y1="${y+6}" x2="${i}" y2="${y+svgH-6}" stroke="#64748b" stroke-width="3"/>`;
+                    }
+                    innerSvg += `<rect x="${handleX-12}" y="${y+6}" width="20" height="${svgH-12}" fill="${frameColor}" rx="5" />`;
+                    innerSvg += `<text x="${handleX - 45}" y="${y+svgH/2+20}" font-family="Arial" font-size="70" font-weight="bold" fill="#1d4ed8" text-anchor="middle">тЖР</text>`;
+                }
+            }
+        } else {
+            innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#ffffff" stroke="${frameColor}" stroke-width="12"/>`;
+            let step = 18;
+            for (let i = x + step; i < x + svgW; i += step) { innerSvg += `<line x1="${i}" y1="${y}" x2="${i}" y2="${y+svgH}" stroke="#64748b" stroke-width="3"/>`; }
+            for (let j = y + step; j < y + svgH; j += step) { innerSvg += `<line x1="${x}" y1="${j}" x2="${x+svgW}" y2="${j}" stroke="#64748b" stroke-width="3"/>`; }
+            if (h >= 1000) {
+                innerSvg += `<line x1="${x}" y1="${y+svgH/2}" x2="${x+svgW}" y2="${y+svgH/2}" stroke="${frameColor}" stroke-width="10"/>`;
+            }
+        }
+    } else if (item.category === 'sill') {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#fef3c7" stroke="#1e293b" stroke-width="6"/>`;
+        innerSvg += `<rect x="${x}" y="${y+svgH-26}" width="${svgW}" height="26" fill="#fde68a" stroke="#1e293b" stroke-width="6"/>`; 
+        innerSvg += `<line x1="${x}" y1="${y+svgH-26}" x2="${x+svgW}" y2="${y+svgH-26}" stroke="#1e293b" stroke-width="4"/>`;
+        innerSvg += `<path d="M${x+20} ${y+svgH-13} L${x+svgW-20} ${y+svgH-13}" stroke="#d97706" stroke-width="3" stroke-dasharray="8,8" fill="none"/>`;
+    } else if (item.category === 'roller' || typeStr.includes('╨▓╨╛╤А╨╛╤В')) {
+        let isGate = typeStr.includes('╨▓╨╛╤А╨╛╤В');
+        let rColor = getFrameColor();
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="${rColor}" stroke-width="8"/>`;
+        if (isGate) {
+            let panelH = 50;
+            for(let i=y+panelH; i<y+svgH; i+=panelH) {
+                innerSvg += `<line x1="${x}" y1="${i}" x2="${x+svgW}" y2="${i}" stroke="${rColor}" stroke-width="6"/>`;
+                innerSvg += `<rect x="${x+16}" y="${i-panelH+8}" width="${svgW-32}" height="${panelH-16}" fill="#f1f5f9" stroke="${rColor}" stroke-width="2"/>`;
+            }
+        } else {
+            for(let i=16; i<svgH; i+=16) {
+                innerSvg += `<line x1="${x}" y1="${y+i}" x2="${x+svgW}" y2="${y+i}" stroke="${rColor}" stroke-width="3"/>`;
+            }
+            innerSvg += `<rect x="${x-8}" y="${y-12}" width="${svgW+16}" height="24" fill="${rColor}" stroke="${rColor}" stroke-width="4" rx="6"/>`; 
+        }
+    } else if (item.category === 'shower') {
+        let swColor = '#0369a1';
+        let glColor = '#e0f2fe';
+        
+        let panels = item.showerPanels || [];
+        let totalW = 0;
+        
+        if (panels.length === 0) {
+            panels = [{ w: svgW, type: 'fixed' }]; 
+            totalW = svgW;
+        } else {
+            totalW = panels.reduce((sum, p) => sum + p.w, 0);
+        }
+        
+        let currX = x;
+        for (let idx = 0; idx < panels.length; idx++) {
+            let p = panels[idx];
+            let pw = (p.w / totalW) * svgW;
+            if (pw < 10) pw = 10; 
+            
+            innerSvg += `<rect x="${currX}" y="${y}" width="${pw}" height="${svgH}" fill="${glColor}" stroke="${swColor}" stroke-width="6" fill-opacity="0.6"/>`;
+            
+            // ╨Я╨╕╤И╨╡╨╝ ╤И╨╕╤А╨╕╨╜╤Г ╨Ъ╨Ю╨Э╨Ъ╨а╨Х╨в╨Э╨Ю╨Щ ╨Я╨Р╨Э╨Х╨Ы╨Ш ╨б╨Э╨Ш╨Ч╨г ╤Н╤Б╨║╨╕╨╖╨░
+            if (p.w > 0) {
+                // ╨Т╤Л╨▓╨╛╨┤╨╕╨╝ ╨▓╤Б╨╡ ╤А╨░╨╖╨╝╨╡╤А╤Л ╤Б╤В╤А╨╛╨│╨╛ ╨▓ ╤А╤П╨┤
+                let subY = y + svgH + 20;
+                let fontSize = pw < 40 ? 24 : 32; // ╨г╨╝╨╡╨╜╤М╤И╨░╨╡╨╝ ╤И╤А╨╕╤Д╤В, ╨╡╤Б╨╗╨╕ ╨┐╨░╨╜╨╡╨╗╤М ╤Г╨╖╨║╨░╤П
+                
+                // ╨а╨╕╤Б╤Г╨╡╨╝ ╨┐╤Г╨╜╨║╤В╨╕╤А╨╜╤Г╤О ╨▓╤Л╨╜╨╛╤Б╨║╤Г
+                innerSvg += `<line x1="${currX + pw/2}" y1="${y + svgH + 2}" x2="${currX + pw/2}" y2="${subY - 15}" stroke="#0369a1" stroke-width="2" stroke-dasharray="4,4" opacity="0.5"/>`;
+                
+                innerSvg += `<text x="${currX + pw/2}" y="${subY}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="normal" fill="#0369a1" text-anchor="middle">${p.w}</text>`;
+            }
+
+            if (p.type === 'door' || p.type === 'sliding') {
+                innerSvg += `<rect x="${currX+3}" y="${y+3}" width="${pw-6}" height="${svgH-6}" fill="#bae6fd" opacity="0.5"/>`;
+                let cx = currX + pw/2;
+                let cy = y + svgH/2;
+                
+                if (p.type === 'sliding') {
+                    innerSvg += `<text x="${cx}" y="${cy+15}" font-family="Arial" font-size="48" font-weight="bold" fill="#0c4a6e" text-anchor="middle">тЖФ</text>`;
+                } else {
+                    let isRight = item.openingDirection && item.openingDirection.toLowerCase().includes('╨▓╨┐╤А╨░╨▓╨╛');
+                    innerSvg += `<text x="${cx}" y="${cy+15}" font-family="Arial" font-size="56" font-weight="bold" fill="#0c4a6e" text-anchor="middle">${isRight ? '<' : '>'}</text>`;
+                }
+            }
+            
+            if (currX + pw < x + svgW - 5) {
+                innerSvg += `<line x1="${currX+pw}" y1="${y}" x2="${currX+pw}" y2="${y+svgH}" stroke="${swColor}" stroke-width="6"/>`;
+            }
+            currX += pw;
+        }
+        
+        // ╨Т╨╡╤А╤Е╨╜╤П╤П ╤И╤В╨░╨╜╨│╨░
+        innerSvg += `<line x1="${x-10}" y1="${y}" x2="${x+svgW+10}" y2="${y}" stroke="#334155" stroke-width="12" stroke-linecap="round"/>`;
+    } else {
+        innerSvg += `<rect x="${x}" y="${y}" width="${svgW}" height="${svgH}" fill="#f8fafc" stroke="#94a3b8" stroke-width="6" stroke-dasharray="10,10" rx="8"/>`;
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2-10}" font-family="Arial" font-size="56" fill="#cbd5e1" text-anchor="middle">тЬж</text>`;
+        innerSvg += `<text x="${x+svgW/2}" y="${y+svgH/2+30}" font-family="Arial" font-size="28" font-weight="bold" fill="#64748b" text-anchor="middle">╨Ф╨Ю╨Я. ╨Ю╨Я╨ж╨Ш╨п</text>`;
+    }
+
+    let bottomLabel = w > 0 ? (w + ' ╨╝╨╝') : '';
+    let rightLabel = h > 0 ? (h + ' ╨╝╨╝') : '';
+    
+    // ╨Я╨╕╤И╨╡╨╝ ╨╛╨▒╤Й╤Г╤О ╤И╨╕╤А╨╕╨╜╤Г ╤Б╨▓╨╡╤А╤Е╤Г ╨┤╨╗╤П ╨Т╨б╨Х╨е ╨╕╨╖╨┤╨╡╨╗╨╕╨╣ (╨▓╨║╨╗╤О╤З╨░╤П ╨┤╤Г╤И╨╡╨▓╤Л╨╡)
+    if (w > 0) {
+        let fSize = 56;
+        innerSvg += `<text x="${x + svgW/2}" y="${y - 35}" font-family="Arial, sans-serif" font-size="${fSize}" fill="#334155" text-anchor="middle">${bottomLabel}</text>`;
+        innerSvg += `<path d="M${x} ${y-10} L${x} ${y-20} L${x+svgW} ${y-20} L${x+svgW} ${y-10}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
+    }
+    
+    // ╨Я╨╕╤И╨╡╨╝ ╨▓╤Л╤Б╨╛╤В╤Г ╤Б╨┐╤А╨░╨▓╨░ ╨┤╨╗╤П ╨Т╨б╨Х╨е ╨╕╨╖╨┤╨╡╨╗╨╕╨╣
+    if (h > 0) {
+        let fSize = 56;
+        let textX = x + svgW + 90; 
+        let textY = y + svgH/2;
+        innerSvg += `<text x="${textX}" y="${textY}" font-family="Arial, sans-serif" font-size="${fSize}" fill="#334155" text-anchor="middle" transform="rotate(-90, ${textX}, ${textY})">${rightLabel}</text>`;
+        innerSvg += `<path d="M${x+svgW+10} ${y} L${x+svgW+20} ${y} L${x+svgW+20} ${y+svgH} L${x+svgW+10} ${y+svgH}" stroke="#94a3b8" stroke-width="3" fill="none"/>`;
+    }
+
+    return `
+    <svg viewBox="0 0 ${VB_SIZE} ${VB_SIZE}" style="width: 100%; min-width: 150px; max-width: 280px; height: auto; display: block; margin: 0 auto;">
+        ${innerSvg}
+    </svg>`;
+}
+
+
+// --- SETTINGS AND PRICING LOGIC ---
+function toggleSettingsModal() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+function updateSettingsUI() {
+    let srcText = "╨Т╤Б╤В╤А╨╛╨╡╨╜╨╜╤Л╨╡ (╨┐╨╛-╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О)";
+    if (currentPricesSource === 'excel') srcText = "╨Ш╨╖ ╤Д╨░╨╣╨╗╨░ Excel";
+    if (currentPricesSource === 'google') srcText = "Google ╨в╨░╨▒╨╗╨╕╤Ж╤Л";
+    document.getElementById('current-prices-source').innerText = srcText;
+    document.getElementById('current-prices-date').innerText = currentPricesDate ? `╨Ю╨▒╨╜╨╛╨▓╨╗╨╡╨╜╨╛: ${currentPricesDate}` : '';
+}
+function setStatus(id, msg, isError = false) {
+    const el = document.getElementById(id); el.innerHTML = msg;
+    el.className = `mt-2 text-xs font-medium ${isError ? 'text-red-500' : 'text-emerald-600'}`;
+    el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 5000);
+}
+const PRICES_VERSION = 'v2_dealer';
+function loadPricesFromStorage() {
+    try {
+        const saved = localStorage.getItem('oko_prices_data');
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.version !== PRICES_VERSION) { localStorage.removeItem('oko_prices_data'); return; }
+            applyPrices(data.glass, data.shapes, data.layouts, data.nets, data.salinox, data.options);
+            currentPricesSource = data.source; currentPricesDate = data.date; updateSettingsUI();
+        }
+    } catch (e) { console.error("Error loading prices", e); }
+}
+function savePricesToStorage() {
+    const data = { version: PRICES_VERSION, glass: GLASS_TYPES, shapes: SHAPES, layouts: LAYOUTS, nets: NET_TYPES, salinox: SALINOX_PRICES, options: OPTIONS, source: currentPricesSource, date: new Date().toLocaleString('ru-RU') };
+    localStorage.setItem('oko_prices_data', JSON.stringify(data));
+    currentPricesDate = data.date; updateSettingsUI();
+}
+function applyPrices(glassData, shapesData, layoutsData, netsData, salinoxData, optionsData) {
+    if (glassData) GLASS_TYPES = glassData; if (shapesData) SHAPES = shapesData;
+    if (layoutsData) LAYOUTS = layoutsData; if (netsData) NET_TYPES = netsData;
+    if (salinoxData) SALINOX_PRICES = salinoxData; if (optionsData) OPTIONS = optionsData;
+    const glassShape = document.getElementById('glass-shape');
+    if (glassShape) { glassShape.innerHTML = ''; SHAPES.forEach((s, i) => glassShape.innerHTML += `<option value="${i}">${s.name}</option>`); }
+    updateDropdownPrices(); renderCart();
+}
+
+// --- Google Sheets Sync ---
+async function syncGoogleSheets() {
+    let urlInp = document.getElementById('g-sheets-url').value.trim();
+    if (!urlInp) return setStatus('gsheets-status', '╨Т╨▓╨╡╨┤╨╕╤В╨╡ ╤Б╤Б╤Л╨╗╨║╤Г.', true);
+    if (urlInp.includes('/pub') || urlInp.includes('output=csv')) {
+        const match = urlInp.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (match) { urlInp = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=xlsx`; document.getElementById('g-sheets-url').value = urlInp; }
+    }
+    localStorage.setItem('oko_gsheets_url', urlInp);
+    const btnIcon = document.getElementById('icon-sync-gsheets'); btnIcon.classList.add('animate-spin');
+    try {
+        const response = await fetch(urlInp); if (!response.ok) throw new Error("Network response was not ok");
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        if (parseWorkbook(workbook)) { currentPricesSource = 'google'; savePricesToStorage(); setStatus('gsheets-status', '╨ж╨╡╨╜╤Л ╤Г╤Б╨┐╨╡╤И╨╜╨╛ ╨╛╨▒╨╜╨╛╨▓╨╗╨╡╨╜╤Л ╨╕╨╖ Google!'); updateDropdownPrices(); handleSettingsChange(); }
+        else { setStatus('gsheets-status', '╨Ю╤И╨╕╨▒╨║╨░ ╤Д╨╛╤А╨╝╨░╤В╨░ ╤В╨░╨▒╨╗╨╕╤Ж╤Л. ╨Я╤А╨╛╨▓╨╡╤А╤М╤В╨╡ ╤И╨░╨▒╨╗╨╛╨╜.', true); }
+    } catch (e) { console.error(e); setStatus('gsheets-status', '╨Ю╤И╨╕╨▒╨║╨░ ╨╖╨░╨│╤А╤Г╨╖╨║╨╕. ╨Я╤А╨╛╨▓╨╡╤А╤М╤В╨╡ ╤Б╤Б╤Л╨╗╨║╤Г ╨╕ ╨┤╨╛╤Б╤В╤Г╨┐.', true); }
+    finally { btnIcon.classList.remove('animate-spin'); }
+}
+
+// --- Excel Upload ---
+function handleExcelUpload(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            if (parseWorkbook(workbook)) { currentPricesSource = 'excel'; savePricesToStorage(); setStatus('excel-status', `╨г╤Б╨┐╨╡╤И╨╜╨╛ ╨╖╨░╨│╤А╤Г╨╢╨╡╨╜╨╛ ╨╕╨╖ ${file.name}`); updateDropdownPrices(); handleSettingsChange(); }
+            else { setStatus('excel-status', '╨Э╨╡╨▓╨╡╤А╨╜╤Л╨╣ ╤Д╨╛╤А╨╝╨░╤В ╤И╨░╨▒╨╗╨╛╨╜╨░.', true); }
+        } catch (error) { console.error(error); setStatus('excel-status', '╨Я╤А╨╛╨╕╨╖╨╛╤И╨╗╨░ ╨╛╤И╨╕╨▒╨║╨░ ╨┐╤А╨╕ ╤З╤В╨╡╨╜╨╕╨╕ ╤Д╨░╨╣╨╗╨░.', true); }
+    };
+    reader.readAsArrayBuffer(file); event.target.value = '';
+}
+
+// --- Parser Logic ---
+function parseWorkbook(workbook) {
+    const parseNum = v => parseFloat(String(v).replace(',', '.').replace(/[^0-9.-]+/g, ""));
+    let hasValidData = false;
+    let newGlass = [], newLayouts = [];
+    let newShapes = JSON.parse(JSON.stringify(SHAPES));
+    let newNets = JSON.parse(JSON.stringify(NET_TYPES));
+    let newSalinox = { 'F1_F2': [], 'F4': [], 'F5': [], 'F6': [], 'FB_cr': [] };
+    let newOptions = JSON.parse(JSON.stringify(OPTIONS));
+    workbook.SheetNames.forEach(sheetName => {
+        let sheet = workbook.Sheets[sheetName];
+        let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        if (!rows || rows.length < 2) return;
+        let sn = sheetName.toLowerCase();
+        if (sn.includes('╤Б╤В╨╡╨║╨╗╨╛╨┐╨░╨║╨╡╤В')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0]) continue; let val = parseNum(rows[i][1]); if (!isNaN(val)) { newGlass.push({ name: String(rows[i][0]).trim(), price: val }); hasValidData = true; } }
+        } else if (sn.includes('╤А╨░╤Б╨║╨╗╨░╨┤╨║') || sn.includes('╤И╨┐╤А╨╛╤Б')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0]) continue; let val = parseNum(rows[i][1]); if (!isNaN(val)) { newLayouts.push({ name: String(rows[i][0]).trim(), price: val }); hasValidData = true; } }
+        } else if (sn.includes('╨▒╨╡╨╖╤А╨░╨╝') || sn.includes('salinox')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0] || !rows[i][1]) continue; let sys = String(rows[i][0]).trim(); let maxW = parseNum(rows[i][1]); let val = parseNum(rows[i][2]); if (!isNaN(maxW) && !isNaN(val) && newSalinox[sys]) { newSalinox[sys].push({ max: maxW, p: val }); hasValidData = true; } }
+        } else if (sn.includes('╤Б╨╡╤В╨║')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0]) continue; let id = String(rows[i][0]).trim(); let name = String(rows[i][1]).trim(); let p1 = parseNum(rows[i][2] || "0"); let p2 = parseNum(rows[i][3] || "0"); let existing = newNets.find(n => n.id === id); if (existing) { existing.name = name; if (!isNaN(p1)) existing.price_min = p1; if (!isNaN(p2)) existing.price_sqm = p2; hasValidData = true; } }
+        } else if (sn.includes('╨╛╨┐╤Ж╨╕') || sn.includes('╤Г╤Б╨╗╤Г╨│')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0]) continue; let key = String(rows[i][0]).trim(); let val = parseNum(rows[i][1]); if (!isNaN(val) && newOptions[key] !== undefined) { newOptions[key] = val; hasValidData = true; } }
+        } else if (sn.includes('╤Д╨╛╤А╨╝')) {
+            for (let i = 1; i < rows.length; i++) { if (!rows[i][0]) continue; let name = String(rows[i][0]).trim(); let val = parseNum(rows[i][1]); if (!isNaN(val)) { let existing = newShapes.find(s => s.name === name); if (existing) existing.multiplier = val; else newShapes.push({ name: name, multiplier: val }); hasValidData = true; } }
+        }
+    });
+    if (!hasValidData) return false;
+    if (newGlass.length > 0) GLASS_TYPES = newGlass;
+    if (newLayouts.length > 0) LAYOUTS = newLayouts;
+    SHAPES = newShapes; NET_TYPES = newNets; OPTIONS = newOptions;
+    for (let sys in newSalinox) { if (newSalinox[sys].length > 0) { newSalinox[sys].sort((a, b) => a.max - b.max); SALINOX_PRICES[sys] = newSalinox[sys]; } }
+    return true;
+}
+
+// --- Template Generator ---
+function downloadExcelTemplate() {
+    try {
+        const wb = XLSX.utils.book_new();
+        const addSheet = (name, rows, colWidths) => { let ws = XLSX.utils.aoa_to_sheet(rows); if (colWidths) ws['!cols'] = colWidths.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name); };
+        let ws1 = [["╨Э╨░╨╕╨╝╨╡╨╜╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╤В╨╡╨║╨╗╨╛╨┐╨░╨║╨╡╤В╨░", "╨ж╨╡╨╜╨░ ╨╖╨░ ╨╝┬▓ (тВ╜)"]]; GLASS_TYPES.forEach(g => ws1.push([g.name, g.price])); addSheet("╨б╤В╨╡╨║╨╗╨╛╨┐╨░╨║╨╡╤В╤Л", ws1, [40, 20]);
+        let ws2 = [["╨в╨╕╨┐ ╤А╨░╤Б╨║╨╗╨░╨┤╨║╨╕ (╨и╨┐╤А╨╛╤Б╤Л)", "╨ж╨╡╨╜╨░ ╨╖╨░ ╨┐╨╛╨│.╨╝. (тВ╜)"]]; LAYOUTS.forEach(g => ws2.push([g.name, g.price])); addSheet("╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░_╨и╨┐╤А╨╛╤Б╤Л", ws2, [40, 20]);
+        let ws3 = [["╨б╨╗╨╛╨╢╨╜╨╛╤Б╤В╤М ╤Д╨╛╤А╨╝╤Л", "╨Ъ╨╛╤Н╤Д╤Д╨╕╤Ж╨╕╨╡╨╜╤В ╨╜╨░╤Ж╨╡╨╜╨║╨╕ (0.5 = +50%)"]]; SHAPES.forEach(g => ws3.push([g.name, g.multiplier])); addSheet("╨д╨╛╤А╨╝╤Л_╨╛╨║╨╛╨╜", ws3, [30, 30]);
+        let ws4 = [["╨Ш╨┤╨╡╨╜╤В╨╕╤Д╨╕╨║╨░╤В╨╛╤А (╨╜╨╡ ╨╝╨╡╨╜╤П╤В╤М!)", "╨Э╨░╨╕╨╝╨╡╨╜╨╛╨▓╨░╨╜╨╕╨╡", "╨Ь╨╕╨╜. ╤Ж╨╡╨╜╨░ / ╨С╨░╨╖╨╛╨▓╨░╤П (тВ╜)", "╨ж╨╡╨╜╨░ ╨╖╨░ ╨╝┬▓ / ╨С╨╛╨╗╤М╤И╨░╤П (тВ╜)"]]; NET_TYPES.forEach(n => ws4.push([n.id, n.name, n.price_min, n.price_sqm])); addSheet("╨Ь╨╛╤Б╨║╨╕╤В╨╜╤Л╨╡_╤Б╨╡╤В╨║╨╕", ws4, [25, 45, 25, 25]);
+        let ws5 = [["╨б╨╕╤Б╤В╨╡╨╝╨░", "╨Ь╨░╨║╤Б. ╨и╨╕╤А╨╕╨╜╨░ ╨Я╨░╨╜╨╡╨╗╨╕ (╤Б╨╝)", "╨С╨░╨╖╨╛╨▓╨░╤П ╨ж╨╡╨╜╨░ (тВ╜)"]]; for (let sys in SALINOX_PRICES) { SALINOX_PRICES[sys].forEach(p => ws5.push([sys, p.max, p.p])); } addSheet("╨С╨╡╨╖╤А╨░╨╝╨╜╨╛╨╡_Salinox", ws5, [20, 30, 20]);
+        let ws6 = [["╨б╨╕╤Б╤В╨╡╨╝╨╜╤Л╨╣ ╨║╨╗╤О╤З (╨╜╨╡ ╨╝╨╡╨╜╤П╤В╤М!)", "╨Ч╨╜╨░╤З╨╡╨╜╨╕╨╡ (тВ╜)"]]; for (let k in OPTIONS) { ws6.push([k, OPTIONS[k]]); } addSheet("╨Ю╨┐╤Ж╨╕╨╕_╨╕_╨г╤Б╨╗╤Г╨│╨╕", ws6, [30, 20]);
+        XLSX.writeFile(wb, 'oko_prices.xlsx');
+    } catch (e) {
+        console.error('╨Ю╤И╨╕╨▒╨║╨░ ╨┐╤А╨╕ ╤Б╨║╨░╤З╨╕╨▓╨░╨╜╨╕╨╕ ╤И╨░╨▒╨╗╨╛╨╜╨░ Excel', e);
+        alert('╨в╨╡╤Е╨╜╨╕╤З╨╡╤Б╨║╨░╤П ╨╛╤И╨╕╨▒╨║╨░: ' + e.message + '\n╨б╨║╤А╨╕╨╜╤И╨╛╤В ╤Н╤В╨╛╨│╨╛ ╨╛╨║╨╜╨░ ╨┐╨╛╨╝╨╛╨╢╨╡╤В ╤А╨░╨╖╤А╨░╨▒╨╛╤В╤З╨╕╨║╤Г!');
+    }
+}
+
+// ==========================================
+// ╨Р╨а╨е╨Ш╨Т ╨Я╨а╨Ю╨б╨з╨Б╨в╨Ю╨Т (localStorage)
+// ==========================================
+const ARCHIVE_KEY = 'oko_archive';
+function getArchive() { try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]'); } catch(e) { return []; } }
+function saveArchive(arr) { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(arr)); }
+
+function collectState() {
+    let getVal = (id) => { let el = document.getElementById(id); return el ? el.value : ''; };
+    return {
+        items: JSON.parse(JSON.stringify(ITEMS)),
+        services: JSON.parse(JSON.stringify(SERVICES)),
+        markup: getVal('select-global-markup'), company: getVal('select-company'),
+        manualRub: getVal('manual-markup-rub'), manualPct: getVal('manual-markup-pct'),
+        discount: getVal('manual-discount'),
+        kpClient: getVal('kp-client'), kpObject: getVal('kp-object'),
+        kpDate: getVal('kp-date'), kpMgr: getVal('kp-manager')
+    };
+}
+
+function applyState(state) {
+    let setVal = (id, v) => { let el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+    ITEMS = state.items || [];
+    SERVICES = state.services || [];
+    if (state.markup) setVal('select-global-markup', state.markup);
+    if (state.company) setVal('select-company', state.company);
+    setVal('manual-markup-rub', state.manualRub || ''); setVal('manual-markup-pct', state.manualPct || '');
+    setVal('manual-discount', state.discount || '');
+    setVal('kp-client', state.kpClient || ''); setVal('kp-object', state.kpObject || '');
+    setVal('kp-date', state.kpDate || ''); setVal('kp-manager', state.kpMgr || '');
+    handleSettingsChange(); updateDropdownPrices(); renderServicesList(); renderCart();
+}
+
+function saveCalculation() {
+    if (ITEMS.length === 0) { alert('╨б╨╝╨╡╤В╨░ ╨┐╤Г╤Б╤В╨░ тАФ ╨╜╨╡╤З╨╡╨│╨╛ ╤Б╨╛╤Е╤А╨░╨╜╤П╤В╤М!'); return; }
+    let client = (document.getElementById('kp-client') || {}).value || '';
+    let obj = (document.getElementById('kp-object') || {}).value || '';
+    let suggestion = [client.trim(), obj.trim()].filter(Boolean).join(' тАФ ') || '╨Я╤А╨╛╤Б╤З╤С╤В';
+    let name = prompt('╨Ш╨╝╤П ╨┐╤А╨╛╤Б╤З╤С╤В╨░ (╨║╨╗╨╕╨╡╨╜╤В / ╨╛╨▒╤К╨╡╨║╤В):', suggestion);
+    if (name === null) return;
+    if (!name.trim()) name = suggestion;
+    let archive = getArchive();
+    let entry = { id: Date.now(), name: name.trim(), date: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}), itemCount: ITEMS.length, state: collectState() };
+    archive.unshift(entry);
+    if (archive.length > 100) archive = archive.slice(0, 100);
+    saveArchive(archive);
+    alert(`\u2705 ╨Я╤А╨╛╤Б╤З╤С╤В "${name.trim()}" ╤Б╨╛╤Е╤А╨░╨╜╤С╨╜!`);
+}
+
+function loadCalculation(id) {
+    let entry = getArchive().find(e => e.id === id);
+    if (!entry) return;
+    if (!confirm(`╨Ч╨░╨│╤А╤Г╨╖╨╕╤В╤М "${entry.name}"?\n\n╨в╨╡╨║╤Г╤Й╨░╤П ╤Б╨╝╨╡╤В╨░ ╨▒╤Г╨┤╨╡╤В ╨╖╨░╨╝╨╡╨╜╨╡╨╜╨░.`)) return;
+    applyState(entry.state); closeArchive();
+}
+
+function deleteCalculation(id) {
+    let entry = getArchive().find(e => e.id === id);
+    if (!entry || !confirm(`╨г╨┤╨░╨╗╨╕╤В╤М "${entry.name}"?`)) return;
+    saveArchive(getArchive().filter(e => e.id !== id)); renderArchiveList();
+}
+
+function renameCalculation(id) {
+    let archive = getArchive(); let entry = archive.find(e => e.id === id);
+    if (!entry) return;
+    let newName = prompt('╨Э╨╛╨▓╨╛╨╡ ╨╕╨╝╤П:', entry.name);
+    if (!newName || !newName.trim()) return;
+    entry.name = newName.trim(); saveArchive(archive); renderArchiveList();
+}
+
+function renderArchiveList() {
+    let archive = getArchive(); let container = document.getElementById('archive-list'); if (!container) return;
+    if (archive.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-400 py-12"><p class="text-3xl mb-2">ЁЯУн</p><p class="text-sm">╨Р╤А╤Е╨╕╨▓ ╨┐╤Г╤Б╤В.<br>╨Э╨░╨╢╨╝╨╕╤В╨╡ ┬л╨б╨╛╤Е╤А╨░╨╜╨╕╤В╤М┬╗ ╨▓ ╤И╨░╨┐╨║╨╡ ╤Б╨╝╨╡╤В╤Л.</p></div>'; return;
+    }
+    container.innerHTML = archive.map(e => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 hover:border-brand-primary transition-all group">
+            <div class="flex justify-between items-start gap-2">
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm text-slate-800 truncate">${e.name}</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">${e.date} ┬╖ ${e.itemCount} ╨┐╨╛╨╖.</p>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="renameCalculation(${e.id})" title="╨Я╨╡╤А╨╡╨╕╨╝╨╡╨╜╨╛╨▓╨░╤В╤М" class="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50">тЬПя╕П</button>
+                    <button onclick="deleteCalculation(${e.id})" title="╨г╨┤╨░╨╗╨╕╤В╤М" class="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50">ЁЯЧС</button>
+                </div>
+            </div>
+            <button onclick="loadCalculation(${e.id})" class="mt-2 w-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-brand-primary hover:text-white py-1.5 rounded-lg transition-all">ЁЯУВ ╨Ч╨░╨│╤А╤Г╨╖╨╕╤В╤М</button>
+        </div>`).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function showArchive() {
+    let panel = document.getElementById('archive-panel'); let overlay = document.getElementById('archive-overlay');
+    if (!panel || !overlay) return;
+    panel.style.display = 'flex'; overlay.style.display = 'block';
+    setTimeout(() => { panel.style.transform = 'translateX(0)'; }, 10);
+    renderArchiveList();
+}
+
+function closeArchive() {
+    let panel = document.getElementById('archive-panel'); let overlay = document.getElementById('archive-overlay');
+    if (!panel || !overlay) return;
+    panel.style.transform = 'translateX(100%)';
+    setTimeout(() => { panel.style.display = 'none'; overlay.style.display = 'none'; }, 300);
+}
+
+// --- Export to Factory Logic ---
+function exportFactoryExcel() {
+    let glassItems = ITEMS.filter(it => it.category === 'glass');
+    if (glassItems.length === 0) {
+        alert('╨Э╨╡╤В ╤Б╤В╨╡╨║╨╗╨╛╨┐╨░╨║╨╡╤В╨╛╨▓ ╨┤╨╗╤П ╨▓╤Л╨│╤А╤Г╨╖╨║╨╕ ╨╜╨░ ╨╖╨░╨▓╨╛╨┤!');
+        return;
+    }
+    try {
+        const wb = XLSX.utils.book_new();
+        let wsData = [
+            ["тДЦ", "╨Э╨░╨╕╨╝╨╡╨╜╨╛╨▓╨░╨╜╨╕╨╡", "╨и╨╕╤А╨╕╨╜╨░ (╨╝╨╝)", "╨Т╤Л╤Б╨╛╤В╨░ (╨╝╨╝)", "╨Ъ╨╛╨╗-╨▓╨╛ (╤И╤В)", "╨Я╨╗╨╛╤Й╨░╨┤╤М (╨╝┬▓)", "╨д╨╛╤А╨╝╨░ / ╨а╨░╤Б╨║╨╗╨░╨┤╨║╨░", "╨Ъ╨╛╨╝╨╝╨╡╨╜╤В╨░╤А╨╕╨╣/╨Ю╨┐╤Ж╨╕╨╕"]
+        ];
+        
+        glassItems.forEach((it, idx) => {
+            let totalArea = it.area * (it.qty || 1);
+            let opts = it.optionsDesc.join("; ");
+            wsData.push([
+                idx + 1,
+                it.type,
+                it.w,
+                it.h,
+                it.qty || 1,
+                parseFloat(totalArea.toFixed(3)),
+                it.shape !== '╨Я╤А╤П╨╝╨╛╤Г╨│╨╛╨╗╤М╨╜╨╕╨║' ? it.shape : (it.layoutName ? it.layoutName : '╨Я╤А╤П╨╝╨╛╤Г╨│╨╛╨╗╤М╨╜╨╕╨║'),
+                opts
+            ]);
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{wch: 5}, {wch: 40}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 50}];
+        XLSX.utils.book_append_sheet(wb, ws, "╨б╤В╨╡╨║╨╗╨╛╨┐╨░╨║╨╡╤В╤Л (╨Ч╨░╨▓╨╛╨┤)");
+        
+        let clientNameEl = document.getElementById('client-name');
+        let clientName = clientNameEl && clientNameEl.value ? clientNameEl.value.trim().replace(/[^a-z╨░-╤П0-9\s]/gi, '') : '╨С╨╡╨╖_╨╕╨╝╨╡╨╜╨╕';
+        let fileName = `╨Ч╨░╨▓╨╛╨┤_${clientName}_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    } catch (e) {
+        console.error('╨Ю╤И╨╕╨▒╨║╨░ ╨▓╤Л╨│╤А╤Г╨╖╨║╨╕', e);
+        alert('╨в╨╡╤Е╨╜╨╕╤З╨╡╤Б╨║╨░╤П ╨╛╤И╨╕╨▒╨║╨░ ╨┐╤А╨╕ ╨▓╤Л╨│╤А╤Г╨╖╨║╨╡: ' + e.message);
+    }
+}

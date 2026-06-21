@@ -85,13 +85,20 @@ function renderAdminBrand() {
         </h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Логотип (URL изображения)</label>
-                <input type="text" id="brand-logo-url" value="${b.logoUrl || ''}" 
-                    class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none" 
-                    placeholder="https://example.com/logo.png">
-                <div class="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-center h-20">
-                    <img src="${b.logoUrl || ''}" alt="Превью" class="max-h-16 max-w-[200px] object-contain" onerror="this.style.display='none'">
+                <label class="block text-xs font-bold text-slate-600 mb-1">Логотип компании</label>
+                <input type="file" id="brand-logo-file" accept="image/*" style="display:none"
+                    onchange="handleBrandFileUpload('upload_logo', this, 'brand-logo-preview')">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="document.getElementById('brand-logo-file').click()"
+                        class="px-4 py-2.5 bg-brand-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+                        <i data-lucide="upload" class="w-4 h-4"></i> Выбрать файл
+                    </button>
+                    <span id="brand-logo-filename" class="text-xs text-slate-400">${b.logoUrl ? 'Загружено' : 'Файл не выбран'}</span>
                 </div>
+                <div class="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-center h-20">
+                    <img id="brand-logo-preview" src="${b.logoUrl || ''}" alt="Превью логотипа" class="max-h-16 max-w-[200px] object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
+                </div>
+                <input type="hidden" id="brand-logo-url" value="${b.logoUrl || ''}">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">Главный цвет бренда</label>
@@ -112,10 +119,20 @@ function renderAdminBrand() {
             <p class="text-[10px] text-slate-400 mt-1">Используйте \\n для переноса строки.</p>
         </div>
         <div class="mt-4">
-            <label class="block text-xs font-bold text-slate-600 mb-1">QR-код для оплаты (URL изображения)</label>
-            <input type="text" id="brand-qr-url" value="${b.qrUrl || ''}" 
-                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none"
-                placeholder="QR для оплаты .png">
+            <label class="block text-xs font-bold text-slate-600 mb-1">QR-код для оплаты</label>
+            <input type="file" id="brand-qr-file" accept="image/*" style="display:none"
+                onchange="handleBrandFileUpload('upload_qr', this, 'brand-qr-preview')">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="document.getElementById('brand-qr-file').click()"
+                    class="px-4 py-2.5 bg-brand-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+                    <i data-lucide="upload" class="w-4 h-4"></i> Выбрать файл
+                </button>
+                <span id="brand-qr-filename" class="text-xs text-slate-400">${b.qrUrl ? 'Загружено' : 'Файл не выбран'}</span>
+            </div>
+            <div class="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-center h-20">
+                <img id="brand-qr-preview" src="${b.qrUrl || ''}" alt="Превью QR" class="max-h-16 max-w-[200px] object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
+            </div>
+            <input type="hidden" id="brand-qr-url" value="${b.qrUrl || ''}">
         </div>
     </div>
 
@@ -522,3 +539,199 @@ function applyBrandToKP() {
 
 // Init on load
 initBrand();
+
+// ==========================================
+// MULTI-TENANCY: Серверная синхронизация бренда
+// ==========================================
+
+/**
+ * Загружает настройки бренда (реквизиты, лого, QR) с сервера для текущей компании.
+ * company_id определяется на сервере по токену — клиент не передаёт его.
+ */
+async function loadBrandFromServer() {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) return;
+
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        const resp = await fetch(apiUrl + '?action=get_company_settings', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const result = await resp.json();
+
+        if (result.success && result.settings) {
+            const s = result.settings;
+            // Маппинг полей сервера → Oko_User_Brand
+            Oko_User_Brand.companyName = s.legal_name || '';
+            Oko_User_Brand.companyNameFull = s.legal_name_full || '';
+            Oko_User_Brand.inn = s.inn || '';
+            Oko_User_Brand.ogrnip = s.ogrnip || '';
+            Oko_User_Brand.ogrn = s.ogrn || '';
+            Oko_User_Brand.kpp = s.kpp || '';
+            Oko_User_Brand.account = s.account || '';
+            Oko_User_Brand.bankName = s.bank_name || '';
+            Oko_User_Brand.bik = s.bik || '';
+            Oko_User_Brand.corrAccount = s.corr_account || '';
+            Oko_User_Brand.innBank = s.inn_bank || '';
+            Oko_User_Brand.kppBank = s.kpp_bank || '';
+            Oko_User_Brand.signName = s.sign_name || '';
+            Oko_User_Brand.phone = s.phone || '';
+            Oko_User_Brand.email = s.email || '';
+            Oko_User_Brand.slogan = s.slogan || '';
+            Oko_User_Brand.customText = s.custom_text || '';
+            Oko_User_Brand.primaryColor = s.primary_color || '#2568a9';
+
+            // Логотип и QR — путь с сервера (относительный URL)
+            if (s.logo_path) {
+                const baseUrl = apiUrl.replace(/api\.php.*$/, '');
+                Oko_User_Brand.logoUrl = baseUrl + s.logo_path;
+            }
+            if (s.qr_path) {
+                const baseUrl = apiUrl.replace(/api\.php.*$/, '');
+                Oko_User_Brand.qrUrl = baseUrl + s.qr_path;
+            }
+
+            // Конструктор КП
+            if (s.cp_layout && Array.isArray(s.cp_layout)) {
+                Oko_User_Brand.cpLayout = s.cp_layout;
+            }
+
+            // Сохраняем локально (кэш)
+            saveBrand();
+            console.log('[Multi-tenancy] Настройки бренда загружены с сервера');
+        }
+    } catch (e) {
+        console.warn('[Multi-tenancy] Не удалось загрузить настройки бренда:', e);
+    }
+}
+
+/**
+ * Сохраняет настройки бренда (реквизиты, цвет, слоган) на сервер.
+ * company_id определяется на сервере по токену — клиент не передаёт его.
+ */
+async function saveBrandToServer() {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) return;
+
+        const b = Oko_User_Brand;
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        
+        const payload = {
+            legal_name: b.companyName || '',
+            legal_name_full: b.companyNameFull || '',
+            inn: b.inn || '',
+            ogrnip: b.ogrnip || '',
+            ogrn: b.ogrn || '',
+            kpp: b.kpp || '',
+            account: b.account || '',
+            bank_name: b.bankName || '',
+            bik: b.bik || '',
+            corr_account: b.corrAccount || '',
+            inn_bank: b.innBank || '',
+            kpp_bank: b.kppBank || '',
+            sign_name: b.signName || '',
+            phone: b.phone || '',
+            email: b.email || '',
+            slogan: b.slogan || '',
+            custom_text: b.customText || '',
+            primary_color: b.primaryColor || '#2568a9',
+            cp_layout: b.cpLayout || []
+        };
+
+        const resp = await fetch(apiUrl + '?action=save_company_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            console.log('[Multi-tenancy] Настройки бренда сохранены на сервер');
+        } else {
+            console.warn('[Multi-tenancy] Ошибка сохранения бренда:', result.error);
+        }
+    } catch (e) {
+        console.warn('[Multi-tenancy] Не удалось сохранить бренд на сервер:', e);
+    }
+}
+
+/**
+ * Загружает файл (логотип или QR) на сервер.
+ * @param {'upload_logo'|'upload_qr'} action - тип загрузки
+ * @param {File} file - выбранный файл
+ * @param {function} onSuccess - callback при успехе, получает путь к файлу
+ */
+async function uploadBrandFile(action, file, onSuccess) {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) { alert('Не авторизован'); return; }
+
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const resp = await fetch(apiUrl + '?action=' + action, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        const result = await resp.json();
+
+        if (result.success && result.path) {
+            const baseUrl = apiUrl.replace(/api\.php.*$/, '');
+            const fullUrl = baseUrl + result.path;
+            if (onSuccess) onSuccess(fullUrl);
+            console.log('[Multi-tenancy] Файл загружен:', result.path);
+        } else {
+            alert('Ошибка загрузки: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (e) {
+        alert('Ошибка загрузки файла: ' + e.message);
+    }
+}
+
+/**
+ * Обработчик выбора файла в input — показывает превью и загружает на сервер.
+ * @param {'upload_logo'|'upload_qr'} action
+ * @param {HTMLInputElement} inputEl
+ * @param {string} previewId - ID элемента img для превью
+ */
+function handleBrandFileUpload(action, inputEl, previewId) {
+    const file = inputEl.files && inputEl.files[0];
+    if (!file) return;
+
+    // Мгновенное локальное превью
+    const preview = document.getElementById(previewId);
+    if (preview) {
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            preview.src = e.target.result; 
+            preview.style.display = ''; 
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Обновляем текст статуса
+    const filenameSpan = action === 'upload_logo' 
+        ? document.getElementById('brand-logo-filename')
+        : document.getElementById('brand-qr-filename');
+    if (filenameSpan) filenameSpan.textContent = file.name;
+
+    // Загружаем на сервер
+    uploadBrandFile(action, file, (fullUrl) => {
+        // Обновляем скрытый input и Oko_User_Brand
+        if (action === 'upload_logo') {
+            const hidden = document.getElementById('brand-logo-url');
+            if (hidden) hidden.value = fullUrl;
+            Oko_User_Brand.logoUrl = fullUrl;
+        } else {
+            const hidden = document.getElementById('brand-qr-url');
+            if (hidden) hidden.value = fullUrl;
+            Oko_User_Brand.qrUrl = fullUrl;
+        }
+        saveBrand(); // Сохраняем в localStorage
+    });
+}

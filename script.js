@@ -49,6 +49,14 @@ async function doLogin() {
             
             applyModules();
             
+            // Multi-tenancy: сохраняем company_id и загружаем данные компании с сервера
+            if (data.company_id) {
+                localStorage.setItem('oko_company_id', data.company_id);
+            }
+            if (typeof loadCompanyDataFromServer === 'function') {
+                loadCompanyDataFromServer();
+            }
+            
             // Перезагрузим архив, если он есть
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
@@ -111,6 +119,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateTrialCounter();
         applyModules();
         loadTabsOrder();
+        
+        // Multi-tenancy: загружаем данные компании с сервера при восстановлении сессии
+        if (typeof loadCompanyDataFromServer === 'function') {
+            loadCompanyDataFromServer();
+        }
     } else {
         document.getElementById('pwd-screen').style.display = 'flex';
         document.getElementById('app').style.display = 'none';

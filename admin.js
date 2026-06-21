@@ -860,6 +860,10 @@ function saveAdminPrices(silent = false) {
         // Save brand settings too
         if (typeof saveBrandFromAdmin === 'function') saveBrandFromAdmin();
         
+        // Multi-tenancy: сохраняем бренд и прайсы на сервер
+        if (typeof saveBrandToServer === 'function') saveBrandToServer();
+        if (typeof savePricesToServer === 'function') savePricesToServer();
+        
         // Sync global arrays from Oko_User_Prices so dropdowns reflect new items
         if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
         if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = Oko_User_Prices.raw_glasses || [];
@@ -991,4 +995,103 @@ function downloadExcelTemplate(category) {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Прайс");
     XLSX.writeFile(wb, `Шаблон_${category}.xlsx`);
+}
+
+// ==========================================
+// MULTI-TENANCY: Серверная синхронизация цен
+// ==========================================
+
+/**
+ * Сохраняет прайс-лист текущей компании на сервер.
+ * company_id определяется на сервере по токену.
+ */
+async function savePricesToServer() {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) return;
+
+        const apiUrl = getApiUrl();
+        const resp = await fetch(apiUrl + '?action=save_company_prices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ prices: Oko_User_Prices })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            console.log('[Multi-tenancy] Прайс-лист сохранён на сервер');
+        } else {
+            console.warn('[Multi-tenancy] Ошибка сохранения прайсов:', result.error);
+        }
+    } catch (e) {
+        console.warn('[Multi-tenancy] Не удалось сохранить прайсы на сервер:', e);
+    }
+}
+
+/**
+ * Загружает прайс-лист текущей компании с сервера.
+ * Если на сервере есть данные — обновляет Oko_User_Prices и localStorage.
+ */
+async function loadPricesFromServer() {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) return;
+
+        const apiUrl = getApiUrl();
+        const resp = await fetch(apiUrl + '?action=get_company_prices', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const result = await resp.json();
+
+        if (result.success && result.prices) {
+            Oko_User_Prices = result.prices;
+            const username = localStorage.getItem('oko_username') || 'admin';
+            localStorage.setItem('oko_user_prices_' + username, JSON.stringify(Oko_User_Prices));
+
+            // Синхронизируем глобальные массивы
+            if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
+            if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = Oko_User_Prices.raw_glasses || [];
+            if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
+            if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
+            if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
+            if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
+            if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
+            if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
+            if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
+            if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
+            if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
+            if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
+            if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
+            if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
+            if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
+            if (typeof BLINDS_TYPES !== 'undefined') BLINDS_TYPES = Oko_User_Prices.blinds || [];
+            if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = Oko_User_Prices.blinds || [];
+
+            console.log('[Multi-tenancy] Прайс-лист загружен с сервера');
+        }
+    } catch (e) {
+        console.warn('[Multi-tenancy] Не удалось загрузить прайсы с сервера:', e);
+    }
+}
+
+/**
+ * Загружает ВСЕ данные компании с сервера (бренд + прайсы).
+ * Вызывается после успешного логина.
+ */
+async function loadCompanyDataFromServer() {
+    console.log('[Multi-tenancy] Загружаю данные компании с сервера...');
+    
+    // Загружаем параллельно — бренд и прайсы
+    const promises = [];
+    
+    if (typeof loadBrandFromServer === 'function') {
+        promises.push(loadBrandFromServer());
+    }
+    promises.push(loadPricesFromServer());
+    
+    await Promise.all(promises);
+    
+    console.log('[Multi-tenancy] Все данные компании загружены');
 }

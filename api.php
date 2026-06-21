@@ -85,11 +85,72 @@ try {
         $pdo->exec("ALTER TABLE oko_users MODIFY COLUMN subscription_until DATETIME DEFAULT NULL");
     } catch(PDOException $e) { /* Уже DATETIME */ }
 
+    // === MULTI-TENANCY: Таблица компаний ===
+    $pdo->exec("CREATE TABLE IF NOT EXISTS oko_companies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Добавляем company_id в oko_users (привязка пользователя к компании)
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN company_id INT DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+
+    // === MULTI-TENANCY: Настройки компании (реквизиты, лого, QR) ===
+    $pdo->exec("CREATE TABLE IF NOT EXISTS oko_company_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL UNIQUE,
+        legal_name VARCHAR(255) DEFAULT '',
+        legal_name_full VARCHAR(500) DEFAULT '',
+        inn VARCHAR(30) DEFAULT '',
+        ogrnip VARCHAR(30) DEFAULT '',
+        ogrn VARCHAR(30) DEFAULT '',
+        kpp VARCHAR(20) DEFAULT '',
+        account VARCHAR(30) DEFAULT '',
+        bank_name VARCHAR(255) DEFAULT '',
+        bik VARCHAR(20) DEFAULT '',
+        corr_account VARCHAR(30) DEFAULT '',
+        inn_bank VARCHAR(20) DEFAULT '',
+        kpp_bank VARCHAR(20) DEFAULT '',
+        sign_name VARCHAR(255) DEFAULT '',
+        phone VARCHAR(50) DEFAULT '',
+        email VARCHAR(255) DEFAULT '',
+        slogan VARCHAR(500) DEFAULT '',
+        custom_text TEXT,
+        primary_color VARCHAR(10) DEFAULT '#2568a9',
+        logo_path VARCHAR(500) DEFAULT '',
+        qr_path VARCHAR(500) DEFAULT '',
+        cp_layout TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // === MULTI-TENANCY: Прайс-лист компании (JSON) ===
+    $pdo->exec("CREATE TABLE IF NOT EXISTS oko_company_prices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL UNIQUE,
+        prices_json LONGTEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
     // Создаем админа по умолчанию, если нет пользователей
     $stmt = $pdo->query("SELECT COUNT(*) FROM oko_users");
     if ($stmt->fetchColumn() == 0) {
+        // Сначала создаём компанию для админа
+        $pdo->exec("INSERT IGNORE INTO oko_companies (id, name) VALUES (1, 'Главный Администратор')");
         $hash = function_exists('password_hash') ? password_hash('admin123', PASSWORD_DEFAULT) : 'admin123';
-        $pdo->exec("INSERT INTO oko_users (username, password_hash, company_name, subscription_until, modules) VALUES ('admin', '$hash', 'Главный Администратор', '2099-12-31', '[\"all\"]')");
+        $pdo->exec("INSERT INTO oko_users (username, password_hash, company_name, subscription_until, modules, company_id) VALUES ('admin', '$hash', 'Главный Администратор', '2099-12-31', '[\"all\"]', 1)");
+    }
+
+    // Миграция: присвоить company_id существующим пользователям, у которых его нет
+    $orphans = $pdo->query("SELECT id, company_name FROM oko_users WHERE company_id IS NULL");
+    foreach ($orphans as $orphan) {
+        // Создаём компанию для каждого пользователя без company_id
+        $ins = $pdo->prepare("INSERT INTO oko_companies (name) VALUES (?)");
+        $ins->execute([$orphan['company_name']]);
+        $newCompanyId = $pdo->lastInsertId();
+        $upd = $pdo->prepare("UPDATE oko_users SET company_id = ? WHERE id = ?");
+        $upd->execute([$newCompanyId, $orphan['id']]);
     }
 
 } catch (PDOException $e) {
@@ -181,6 +242,7 @@ if ($action === 'login') {
                 'token' => $token, 
                 'company_name' => $user['company_name'],
                 'is_admin' => ($user['id'] == 1),
+                'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
                 'subscription_until' => $user['subscription_until'],
                 'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
             ]);
@@ -205,6 +267,7 @@ if ($action === 'me') {
         'username' => $user['username'],
         'company_name' => $user['company_name'],
         'is_admin' => ($user['id'] == 1),
+        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
         'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
     ]);
     exit;
@@ -383,6 +446,219 @@ if ($action === 'admin_subscription') {
     $stmt = $pdo->prepare("UPDATE oko_users SET subscription_until = ?, is_active = 1 WHERE id = ?");
     $stmt->execute([$newDate, $targetUserId]);
     echo json_encode(['success' => true, 'new_date' => $newDate]);
+    exit;
+}
+
+// === MULTI-TENANCY: НАСТРОЙКИ КОМПАНИИ ===
+
+// Получаем company_id текущего пользователя (из токена, НЕ из запроса)
+$companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
+
+if ($action === 'get_company_settings') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+    $stmt = $pdo->prepare("SELECT * FROM oko_company_settings WHERE company_id = ?");
+    $stmt->execute([$companyId]);
+    $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($settings) {
+        // Декодируем cp_layout из JSON
+        $settings['cp_layout'] = $settings['cp_layout'] ? json_decode($settings['cp_layout'], true) : null;
+        echo json_encode(['success' => true, 'settings' => $settings]);
+    } else {
+        echo json_encode(['success' => true, 'settings' => null]);
+    }
+    exit;
+}
+
+if ($action === 'save_company_settings') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data) { echo json_encode(['error' => 'Неверные данные']); exit; }
+
+    // Проверяем, есть ли уже настройки для этой компании
+    $check = $pdo->prepare("SELECT id FROM oko_company_settings WHERE company_id = ?");
+    $check->execute([$companyId]);
+
+    $cpLayoutJson = isset($data['cp_layout']) ? json_encode($data['cp_layout'], JSON_UNESCAPED_UNICODE) : '[]';
+
+    if ($check->fetch()) {
+        // UPDATE
+        $stmt = $pdo->prepare("UPDATE oko_company_settings SET 
+            legal_name = ?, legal_name_full = ?, inn = ?, ogrnip = ?, ogrn = ?, kpp = ?,
+            account = ?, bank_name = ?, bik = ?, corr_account = ?, inn_bank = ?, kpp_bank = ?,
+            sign_name = ?, phone = ?, email = ?, slogan = ?, custom_text = ?, primary_color = ?,
+            cp_layout = ?
+            WHERE company_id = ?");
+        $stmt->execute([
+            $data['legal_name'] ?? '', $data['legal_name_full'] ?? '',
+            $data['inn'] ?? '', $data['ogrnip'] ?? '', $data['ogrn'] ?? '', $data['kpp'] ?? '',
+            $data['account'] ?? '', $data['bank_name'] ?? '', $data['bik'] ?? '',
+            $data['corr_account'] ?? '', $data['inn_bank'] ?? '', $data['kpp_bank'] ?? '',
+            $data['sign_name'] ?? '', $data['phone'] ?? '', $data['email'] ?? '',
+            $data['slogan'] ?? '', $data['custom_text'] ?? '', $data['primary_color'] ?? '#2568a9',
+            $cpLayoutJson,
+            $companyId
+        ]);
+    } else {
+        // INSERT
+        $stmt = $pdo->prepare("INSERT INTO oko_company_settings 
+            (company_id, legal_name, legal_name_full, inn, ogrnip, ogrn, kpp,
+             account, bank_name, bik, corr_account, inn_bank, kpp_bank,
+             sign_name, phone, email, slogan, custom_text, primary_color, cp_layout)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $companyId,
+            $data['legal_name'] ?? '', $data['legal_name_full'] ?? '',
+            $data['inn'] ?? '', $data['ogrnip'] ?? '', $data['ogrn'] ?? '', $data['kpp'] ?? '',
+            $data['account'] ?? '', $data['bank_name'] ?? '', $data['bik'] ?? '',
+            $data['corr_account'] ?? '', $data['inn_bank'] ?? '', $data['kpp_bank'] ?? '',
+            $data['sign_name'] ?? '', $data['phone'] ?? '', $data['email'] ?? '',
+            $data['slogan'] ?? '', $data['custom_text'] ?? '', $data['primary_color'] ?? '#2568a9',
+            $cpLayoutJson
+        ]);
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// === MULTI-TENANCY: ЗАГРУЗКА ФАЙЛОВ (ЛОГОТИП / QR) ===
+
+if ($action === 'upload_logo' || $action === 'upload_qr') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+
+    $fileKey = 'file';
+    if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['error' => 'Файл не загружен или произошла ошибка']); exit;
+    }
+
+    $file = $_FILES[$fileKey];
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $maxSize) {
+        echo json_encode(['error' => 'Файл слишком большой (макс. 5MB)']); exit;
+    }
+
+    // Проверяем тип файла
+    $allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    if (!in_array($mimeType, $allowedTypes)) {
+        echo json_encode(['error' => 'Недопустимый тип файла. Разрешены: PNG, JPG, GIF, WebP, SVG']); exit;
+    }
+
+    // Создаём изолированную директорию для компании
+    $uploadDir = __DIR__ . '/uploads/company_' . $companyId . '/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Определяем имя файла
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'png';
+    $filename = ($action === 'upload_logo') ? 'logo.' . $ext : 'qr.' . $ext;
+
+    // Удаляем старый файл (если другое расширение)
+    $pattern = ($action === 'upload_logo') ? 'logo.*' : 'qr.*';
+    foreach (glob($uploadDir . $pattern) as $oldFile) {
+        unlink($oldFile);
+    }
+
+    // Сохраняем файл
+    $targetPath = $uploadDir . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+        echo json_encode(['error' => 'Не удалось сохранить файл']); exit;
+    }
+
+    // Относительный путь для БД и клиента
+    $relativePath = 'uploads/company_' . $companyId . '/' . $filename;
+
+    // Обновляем путь в настройках компании
+    $column = ($action === 'upload_logo') ? 'logo_path' : 'qr_path';
+    $check = $pdo->prepare("SELECT id FROM oko_company_settings WHERE company_id = ?");
+    $check->execute([$companyId]);
+    if ($check->fetch()) {
+        $stmt = $pdo->prepare("UPDATE oko_company_settings SET $column = ? WHERE company_id = ?");
+        $stmt->execute([$relativePath, $companyId]);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO oko_company_settings (company_id, $column) VALUES (?, ?)");
+        $stmt->execute([$companyId, $relativePath]);
+    }
+
+    echo json_encode(['success' => true, 'path' => $relativePath]);
+    exit;
+}
+
+// === MULTI-TENANCY: ПРАЙС-ЛИСТЫ ===
+
+if ($action === 'get_company_prices') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+    $stmt = $pdo->prepare("SELECT prices_json FROM oko_company_prices WHERE company_id = ?");
+    $stmt->execute([$companyId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row && $row['prices_json']) {
+        echo json_encode(['success' => true, 'prices' => json_decode($row['prices_json'], true)]);
+    } else {
+        echo json_encode(['success' => true, 'prices' => null]);
+    }
+    exit;
+}
+
+if ($action === 'save_company_prices') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['prices'])) { echo json_encode(['error' => 'Неверные данные']); exit; }
+
+    $pricesJson = json_encode($data['prices'], JSON_UNESCAPED_UNICODE);
+
+    $check = $pdo->prepare("SELECT id FROM oko_company_prices WHERE company_id = ?");
+    $check->execute([$companyId]);
+    if ($check->fetch()) {
+        $stmt = $pdo->prepare("UPDATE oko_company_prices SET prices_json = ? WHERE company_id = ?");
+        $stmt->execute([$pricesJson, $companyId]);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO oko_company_prices (company_id, prices_json) VALUES (?, ?)");
+        $stmt->execute([$companyId, $pricesJson]);
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// === MULTI-TENANCY: Создание пользователя с привязкой к компании ===
+
+if ($action === 'admin_create_company_user') {
+    if ($userId != 1) { echo json_encode(['error' => 'Доступ запрещен']); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['username']) || !isset($data['password']) || !isset($data['company_name'])) {
+        echo json_encode(['error' => 'Не заполнены все поля']); exit;
+    }
+
+    $targetCompanyId = null;
+
+    if (isset($data['company_id']) && intval($data['company_id']) > 0) {
+        // Привязываем к существующей компании (для добавления менеджера)
+        $targetCompanyId = intval($data['company_id']);
+        $checkComp = $pdo->prepare("SELECT id FROM oko_companies WHERE id = ?");
+        $checkComp->execute([$targetCompanyId]);
+        if (!$checkComp->fetch()) {
+            echo json_encode(['error' => 'Компания не найдена']); exit;
+        }
+    } else {
+        // Создаём новую компанию
+        $ins = $pdo->prepare("INSERT INTO oko_companies (name) VALUES (?)");
+        $ins->execute([$data['company_name']]);
+        $targetCompanyId = $pdo->lastInsertId();
+    }
+
+    $hash = function_exists('password_hash') ? password_hash($data['password'], PASSWORD_DEFAULT) : $data['password'];
+    $subDays = isset($data['subscription_days']) ? intval($data['subscription_days']) : 30;
+    $subUntil = date('Y-m-d', strtotime("+{$subDays} days"));
+    $modules = isset($data['modules']) && is_array($data['modules']) ? json_encode($data['modules']) : '[]';
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO oko_users (username, password_hash, company_name, subscription_until, modules, company_id) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$data['username'], $hash, $data['company_name'], $subUntil, $modules, $targetCompanyId]);
+        echo json_encode(['success' => true, 'company_id' => $targetCompanyId]);
+    } catch (PDOException $e) {
+        echo json_encode(['error' => 'Ошибка создания (возможно логин занят)']);
+    }
     exit;
 }
 
