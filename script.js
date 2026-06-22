@@ -18,26 +18,23 @@ async function doLogin() {
     if (!userInp.value || !passInp.value) return;
 
     try {
-        const res = await fetch(API_URL_AUTH + '?action=login', {
+        const res = await fetch(API_URL_AUTH + '?action=login_email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: userInp.value, password: passInp.value })
+            body: JSON.stringify({ email: userInp.value, password: passInp.value })
         });
         const data = await res.json();
         
         if (data.success) {
-            localStorage.setItem('oko_token', data.token);
+            localStorage.setItem('oko_token', data.session_token || data.token);
             localStorage.setItem('oko_company', data.company_name);
             localStorage.setItem('oko_username', userInp.value);
             localStorage.setItem('oko_is_admin', data.is_admin ? 'true' : 'false');
+            localStorage.setItem('oko_role', data.role || 'owner');
             if (data.subscription_until) {
                 localStorage.setItem('oko_subscription_until', data.subscription_until);
             } else {
                 localStorage.removeItem('oko_subscription_until');
-            }
-            
-            if (data.modules === undefined) {
-                alert("ВНИМАНИЕ! Вы забыли загрузить обновленный файл api.php на хостинг Beget! Сервер не вернул доступы к разделам, поэтому у нового аккаунта отображается только раздел 'Прочее'. Пожалуйста, загрузите api.php на сервер.");
             }
             
             localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
@@ -63,7 +60,7 @@ async function doLogin() {
             if (data.error) {
                 errorEl.textContent = data.error;
             } else {
-                errorEl.textContent = 'Неверный логин или пароль';
+                errorEl.textContent = 'Неверный email или пароль';
             }
             showLoginError(errorEl, userInp, passInp);
         }
@@ -104,8 +101,150 @@ function doLogout() {
     localStorage.removeItem('oko_username');
     localStorage.removeItem('oko_is_admin');
     localStorage.removeItem('oko_modules');
+    localStorage.removeItem('oko_role');
     location.reload();
 }
+
+// === RBAC: Переключение форм вход/регистрация ===
+function showRegisterForm() {
+    document.querySelector('#pwd-screen > .relative:first-of-type').style.display = 'none';
+    const regCard = document.getElementById('register-card');
+    regCard.style.display = 'block';
+    regCard.classList.add('animate-[fadeInUp_0.4s_ease-out_forwards]');
+    if (window.lucide) window.lucide.createIcons();
+}
+function showLoginForm() {
+    document.getElementById('register-card').style.display = 'none';
+    document.querySelector('#pwd-screen > .relative:first-of-type').style.display = 'block';
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// === RBAC: Регистрация (шаг 1) ===
+let _regEmail = '';
+async function doRegisterRequest() {
+    const emailInp = document.getElementById('reg-email');
+    const companyInp = document.getElementById('reg-company');
+    const errorEl = document.getElementById('reg-error-1');
+    if (!emailInp.value || !companyInp.value) { errorEl.textContent = 'Заполните все поля'; errorEl.classList.remove('hidden'); return; }
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=register_request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailInp.value, company_name: companyInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            _regEmail = emailInp.value;
+            document.getElementById('reg-step-1').style.display = 'none';
+            document.getElementById('reg-step-2').style.display = 'block';
+            document.getElementById('reg-email-display').textContent = _regEmail;
+            // Показываем debug OTP (пока нет SMTP)
+            if (data.debug_otp) {
+                document.getElementById('reg-debug-otp').textContent = 'Код для отладки: ' + data.debug_otp;
+            }
+            errorEl.classList.add('hidden');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => document.getElementById('reg-otp').focus(), 100);
+        } else {
+            errorEl.textContent = data.error || 'Ошибка';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// === RBAC: Регистрация (шаг 2) ===
+async function doRegisterVerify() {
+    const otpInp = document.getElementById('reg-otp');
+    const errorEl = document.getElementById('reg-error-2');
+    if (!otpInp.value || otpInp.value.length < 4) return;
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=register_verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _regEmail, otp_code: otpInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('reg-step-2').style.display = 'none';
+            document.getElementById('reg-step-3').style.display = 'block';
+            errorEl.classList.add('hidden');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => document.getElementById('reg-password').focus(), 100);
+        } else {
+            errorEl.textContent = data.error || 'Неверный код';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// === RBAC: Регистрация (шаг 3) ===
+async function doRegisterSetPassword() {
+    const passInp = document.getElementById('reg-password');
+    const confirmInp = document.getElementById('reg-password-confirm');
+    const errorEl = document.getElementById('reg-error-3');
+    if (!passInp.value || passInp.value.length < 6) {
+        errorEl.textContent = 'Пароль должен быть не менее 6 символов';
+        errorEl.classList.remove('hidden'); return;
+    }
+    if (passInp.value !== confirmInp.value) {
+        errorEl.textContent = 'Пароли не совпадают';
+        errorEl.classList.remove('hidden'); return;
+    }
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=register_set_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _regEmail, password: passInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Автовход после регистрации
+            localStorage.setItem('oko_token', data.session_token);
+            localStorage.setItem('oko_company', data.company_name);
+            localStorage.setItem('oko_username', _regEmail);
+            localStorage.setItem('oko_is_admin', data.is_admin ? 'true' : 'false');
+            localStorage.setItem('oko_role', data.role || 'owner');
+            localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
+            if (data.company_id) localStorage.setItem('oko_company_id', data.company_id);
+            document.getElementById('pwd-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('current-company-name').textContent = data.company_name;
+            applyModules();
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            if (typeof fetchArchive === 'function') fetchArchive();
+        } else {
+            errorEl.textContent = data.error || 'Ошибка';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+// === RBAC: Глобальный обработчик 401 (Strict Single Session) ===
+const _originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await _originalFetch.apply(this, args);
+    if (response.status === 401) {
+        try {
+            const clone = response.clone();
+            const body = await clone.json();
+            if (body.kicked) {
+                alert('Выполнен вход с другого устройства. Вы будете разлогинены.');
+                doLogout();
+                return response;
+            }
+        } catch(e) { /* ignore parse errors */ }
+    }
+    return response;
+};
 
 // Проверяем статус при загрузке скрипта
 document.addEventListener('DOMContentLoaded', async () => {

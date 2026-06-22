@@ -169,14 +169,14 @@
             <div class="space-y-6">
                 <div class="space-y-4">
                     <div class="space-y-2">
-                        <label for="login-username" class="block text-sm font-bold text-slate-700">Логин</label>
+                        <label for="login-username" class="block text-sm font-bold text-slate-700">Email</label>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                <i data-lucide="user" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                                <i data-lucide="mail" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
                             </div>
-                            <input type="text" id="login-username" 
+                            <input type="email" id="login-username" 
                                    class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium placeholder:text-slate-400 placeholder:font-normal transition-all"
-                                   placeholder="Введите ваш логин"
+                                   placeholder="Введите ваш email"
                                    onkeypress="if(event.key === 'Enter') document.getElementById('login-password').focus()">
                         </div>
                     </div>
@@ -206,6 +206,136 @@
                     </span>
                 </button>
                 <div id="mock-toggle-container"></div>
+                <div class="text-center mt-4">
+                    <span class="text-sm text-slate-500">Нет аккаунта? </span>
+                    <a href="#" onclick="showRegisterForm(); return false;" class="text-sm font-bold text-brand-primary hover:underline">Зарегистрироваться</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Card -->
+        <div id="register-card" class="relative w-full max-w-[420px] bg-white rounded-3xl shadow-xl border border-slate-100 p-8 sm:p-10 transform" style="display: none;">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-6 shadow-lg shadow-emerald-500/30 relative">
+                    <i data-lucide="user-plus" class="w-10 h-10 text-white relative z-10"></i>
+                    <div class="absolute inset-0 bg-white/20 rounded-2xl blur-sm mix-blend-overlay"></div>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-2">Регистрация</h1>
+                <p class="text-slate-500 font-medium">Создайте аккаунт компании</p>
+            </div>
+
+            <!-- Step 1: Email + Company -->
+            <div id="reg-step-1" class="space-y-6">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Email</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="mail" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="email" id="reg-email" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium placeholder:text-slate-400 placeholder:font-normal transition-all"
+                                   placeholder="your@email.com"
+                                   onkeypress="if(event.key === 'Enter') document.getElementById('reg-company').focus()">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Название компании</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="building-2" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="text" id="reg-company" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium placeholder:text-slate-400 placeholder:font-normal transition-all"
+                                   placeholder="ООО Ваша Компания"
+                                   onkeypress="if(event.key === 'Enter') doRegisterRequest()">
+                        </div>
+                    </div>
+                    <p id="reg-error-1" class="hidden text-red-500 text-sm font-medium pl-1"></p>
+                </div>
+                <button onclick="doRegisterRequest()" 
+                        class="w-full relative group overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-600/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Получить код
+                        <i data-lucide="send" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Step 2: OTP Code -->
+            <div id="reg-step-2" class="space-y-6" style="display: none;">
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-3">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-emerald-600"></i>
+                        </div>
+                        <p class="text-slate-600 text-sm">Введите 4-значный код, отправленный на <b id="reg-email-display"></b></p>
+                    </div>
+                    <div class="space-y-2">
+                        <input type="text" id="reg-otp" maxlength="4" 
+                               class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl py-4 text-center text-3xl font-black tracking-[0.5em] focus:outline-none focus:ring-0 focus:border-emerald-500 focus:bg-white transition-all"
+                               placeholder="••••"
+                               oninput="if(this.value.length===4) doRegisterVerify()"
+                               onkeypress="if(event.key === 'Enter') doRegisterVerify()">
+                    </div>
+                    <p id="reg-error-2" class="hidden text-red-500 text-sm font-medium pl-1 text-center"></p>
+                    <p id="reg-debug-otp" class="text-xs text-slate-400 text-center"></p>
+                </div>
+                <button onclick="doRegisterVerify()" 
+                        class="w-full relative group overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-600/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Подтвердить код
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Step 3: Set Password -->
+            <div id="reg-step-3" class="space-y-6" style="display: none;">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Придумайте пароль</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="password" id="reg-password" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-12 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                                   placeholder="Минимум 6 символов"
+                                   onkeypress="if(event.key === 'Enter') document.getElementById('reg-password-confirm').focus()">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('reg-password', 'reg-eye-icon')">
+                                <i id="reg-eye-icon" data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-brand-primary transition-colors"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Повторите пароль</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="password" id="reg-password-confirm" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                                   placeholder="Повторите пароль"
+                                   onkeypress="if(event.key === 'Enter') doRegisterSetPassword()">
+                        </div>
+                    </div>
+                    <p id="reg-error-3" class="hidden text-red-500 text-sm font-medium pl-1"></p>
+                </div>
+                <button onclick="doRegisterSetPassword()" 
+                        class="w-full relative group overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-600/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Создать аккаунт
+                        <i data-lucide="rocket" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Back to login -->
+            <div class="text-center mt-6">
+                <span class="text-sm text-slate-500">Уже есть аккаунт? </span>
+                <a href="#" onclick="showLoginForm(); return false;" class="text-sm font-bold text-brand-primary hover:underline">Войти</a>
             </div>
         </div>
     </div>

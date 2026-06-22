@@ -133,6 +133,32 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // === RBAC: Новые колонки для oko_companies ===
+    try {
+        $pdo->exec("ALTER TABLE oko_companies ADD COLUMN modules_access JSON DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+
+    // === RBAC: Новые колонки для oko_users ===
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN email VARCHAR(255) DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD UNIQUE INDEX idx_email (email)");
+    } catch(PDOException $e) { /* Индекс уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN role ENUM('owner', 'employee') NOT NULL DEFAULT 'owner'");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN session_token VARCHAR(255) DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN otp_code VARCHAR(10) DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN otp_expires_at DATETIME DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+
+
     // Создаем админа по умолчанию, если нет пользователей
     $stmt = $pdo->query("SELECT COUNT(*) FROM oko_users");
     if ($stmt->fetchColumn() == 0) {
@@ -171,9 +197,210 @@ function getUser($pdo) {
     return null;
 }
 
+// === RBAC: Проверка session_token (Strict Single Session) ===
+function checkSessionSecure($pdo) {
+    $headers = getallheaders();
+    $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : '');
+    if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $clientToken = $matches[1];
+        // Проверяем и по session_token, и по старому token (обратная совместимость)
+        $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE session_token = ? OR token = ?");
+        $stmt->execute([$clientToken, $clientToken]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user) {
+            return $user;
+        }
+    }
+    http_response_code(401);
+    echo json_encode(['error' => 'Выполнен вход с другого устройства', 'kicked' => true]);
+    exit;
+}
+
+// Генерация криптостойкого токена
+function generateSecureToken() {
+    if (function_exists('random_bytes')) {
+        return bin2hex(random_bytes(32));
+    } elseif (function_exists('openssl_random_pseudo_bytes')) {
+        return bin2hex(openssl_random_pseudo_bytes(32));
+    } else {
+        return md5(uniqid(mt_rand(), true)) . md5(uniqid(mt_rand(), true));
+    }
+}
+
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // === ПУБЛИЧНЫЕ РОУТЫ ===
+
+// --- RBAC: Регистрация (шаг 1 — запрос OTP) ---
+if ($action === 'register_request') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['company_name'])) {
+        echo json_encode(['error' => 'Укажите email и название компании']); exit;
+    }
+    $email = trim(strtolower($data['email']));
+    $companyName = trim($data['company_name']);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['error' => 'Некорректный email']); exit;
+    }
+    // Проверяем, что email не занят (среди подтверждённых пользователей с паролем)
+    $stmt = $pdo->prepare("SELECT id, password_hash FROM oko_users WHERE email = ?");
+    $stmt->execute([$email]);
+    $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($existing && !empty($existing['password_hash'])) {
+        echo json_encode(['error' => 'Этот email уже зарегистрирован']); exit;
+    }
+    // Генерируем 4-значный OTP
+    $otp = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+    $otpExpires = date('Y-m-d H:i:s', time() + 300); // 5 минут
+    if ($existing) {
+        // Обновляем существующую незавершённую запись
+        $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = ?, otp_expires_at = ?, company_name = ? WHERE id = ?");
+        $stmt->execute([$otp, $otpExpires, $companyName, $existing['id']]);
+    } else {
+        // Создаём временную запись (без пароля)
+        $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, otp_code, otp_expires_at, role, subscription_until, modules) VALUES (?, ?, '', ?, ?, ?, 'owner', '2099-12-31', '[\"all\"]')");
+        $stmt->execute([$email, $email, $companyName, $otp, $otpExpires]);
+    }
+    // Пока логируем OTP (позже — SMTP)
+    error_log("OKO OTP for $email: $otp");
+    echo json_encode(['success' => true, 'message' => 'Код отправлен на email', 'debug_otp' => $otp]);
+    exit;
+}
+
+// --- RBAC: Регистрация (шаг 2 — подтверждение OTP) ---
+if ($action === 'register_verify') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['otp_code'])) {
+        echo json_encode(['error' => 'Укажите email и код']); exit;
+    }
+    $email = trim(strtolower($data['email']));
+    $stmt = $pdo->prepare("SELECT id, otp_code, otp_expires_at FROM oko_users WHERE email = ? AND password_hash = ''");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['error' => 'Пользователь не найден']); exit;
+    }
+    if ($user['otp_code'] !== trim($data['otp_code'])) {
+        echo json_encode(['error' => 'Неверный код']); exit;
+    }
+    if (strtotime($user['otp_expires_at']) < time()) {
+        echo json_encode(['error' => 'Код истёк. Запросите новый']); exit;
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+// --- RBAC: Регистрация (шаг 3 — установка пароля) ---
+if ($action === 'register_set_password') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['password'])) {
+        echo json_encode(['error' => 'Укажите email и пароль']); exit;
+    }
+    $email = trim(strtolower($data['email']));
+    $password = $data['password'];
+    if (strlen($password) < 6) {
+        echo json_encode(['error' => 'Пароль должен быть не менее 6 символов']); exit;
+    }
+    // Находим временного пользователя
+    $stmt = $pdo->prepare("SELECT id, company_name FROM oko_users WHERE email = ? AND password_hash = ''");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['error' => 'Пользователь не найден или уже зарегистрирован']); exit;
+    }
+    // Создаём компанию
+    $ins = $pdo->prepare("INSERT INTO oko_companies (name) VALUES (?)");
+    $ins->execute([$user['company_name']]);
+    $companyId = $pdo->lastInsertId();
+    // Обновляем пользователя: пароль, компания, роль, сессия
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $sessionToken = generateSecureToken();
+    $stmt = $pdo->prepare("UPDATE oko_users SET password_hash = ?, company_id = ?, role = 'owner', session_token = ?, token = ?, otp_code = NULL, otp_expires_at = NULL WHERE id = ?");
+    $stmt->execute([$hash, $companyId, $sessionToken, $sessionToken, $user['id']]);
+    echo json_encode([
+        'success' => true,
+        'session_token' => $sessionToken,
+        'company_name' => $user['company_name'],
+        'company_id' => intval($companyId),
+        'role' => 'owner',
+        'is_admin' => false,
+        'modules' => ['all']
+    ]);
+    exit;
+}
+
+// --- RBAC: Вход по email ---
+if ($action === 'login_email') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['password'])) {
+        echo json_encode(['error' => 'Укажите email и пароль']); exit;
+    }
+    $email = trim(strtolower($data['email']));
+    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user || empty($user['password_hash'])) {
+        echo json_encode(['error' => 'Неверный email или пароль']); exit;
+    }
+    if (!password_verify($data['password'], $user['password_hash'])) {
+        echo json_encode(['error' => 'Неверный email или пароль']); exit;
+    }
+    if (!$user['is_active']) {
+        echo json_encode(['error' => 'Аккаунт деактивирован']); exit;
+    }
+    if ($user['id'] != 1 && $user['subscription_until'] && strtotime($user['subscription_until']) < time()) {
+        echo json_encode(['error' => 'Подписка истекла (' . $user['subscription_until'] . ')']); exit;
+    }
+    // Strict Single Session: генерируем НОВЫЙ session_token → старый "умирает"
+    $sessionToken = generateSecureToken();
+    $stmt = $pdo->prepare("UPDATE oko_users SET session_token = ?, token = ? WHERE id = ?");
+    $stmt->execute([$sessionToken, $sessionToken, $user['id']]);
+    echo json_encode([
+        'success' => true,
+        'session_token' => $sessionToken,
+        'token' => $sessionToken,
+        'company_name' => $user['company_name'],
+        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'role' => isset($user['role']) ? $user['role'] : 'owner',
+        'is_admin' => ($user['id'] == 1),
+        'subscription_until' => $user['subscription_until'],
+        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+    ]);
+    exit;
+}
+
+// --- RBAC: Добавление сотрудника (только для owner) ---
+if ($action === 'add_employee') {
+    $owner = checkSessionSecure($pdo);
+    if (!$owner || (isset($owner['role']) && $owner['role'] !== 'owner')) {
+        echo json_encode(['error' => 'Только владелец может добавлять сотрудников']); exit;
+    }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['password'])) {
+        echo json_encode(['error' => 'Укажите email и пароль сотрудника']); exit;
+    }
+    $email = trim(strtolower($data['email']));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['error' => 'Некорректный email']); exit;
+    }
+    // Проверяем что email не занят
+    $check = $pdo->prepare("SELECT id FROM oko_users WHERE email = ?");
+    $check->execute([$email]);
+    if ($check->fetch()) {
+        echo json_encode(['error' => 'Этот email уже используется']); exit;
+    }
+    $hash = password_hash($data['password'], PASSWORD_DEFAULT);
+    $ownerCompanyId = intval($owner['company_id']);
+    $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, company_id, role, subscription_until, modules) VALUES (?, ?, ?, ?, ?, 'employee', ?, ?)");
+    $stmt->execute([
+        $email, $email, $hash,
+        $owner['company_name'], $ownerCompanyId,
+        $owner['subscription_until'],
+        $owner['modules'] ? $owner['modules'] : '[]'
+    ]);
+    echo json_encode(['success' => true, 'employee_id' => intval($pdo->lastInsertId())]);
+    exit;
+}
 
 if ($action === 'login') {
     $data = json_decode(file_get_contents('php://input'), true);
