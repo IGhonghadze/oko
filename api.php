@@ -261,14 +261,33 @@ if ($action === 'register_request') {
         $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, otp_code, otp_expires_at, role, subscription_until, modules) VALUES (?, ?, '', ?, ?, ?, 'owner', '2099-12-31', '[\"all\"]')");
         $stmt->execute([$email, $email, $companyName, $otp, $otpExpires]);
     }
-    // Отправка OTP на email
+    // Отправка красивого HTML OTP на email
     $subject = "Код подтверждения для Око";
-    $message = "Здравствуйте!\n\nВаш код подтверждения: $otp\n\nНикому не сообщайте этот код.";
-    $headers = "From: oko@xn--j1aabe.xn--p1ai\r\n";
-    $headers .= "Reply-To: oko@xn--j1aabe.xn--p1ai\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $message = '
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 20px; margin: 0;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #0f172a; margin: 0;">Калькулятор Око</h2>
+            </div>
+            <p style="color: #475569; font-size: 16px; margin-top: 0;">Здравствуйте!</p>
+            <p style="color: #475569; font-size: 16px;">Ваш код подтверждения для завершения регистрации:</p>
+            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0;">
+                <span style="font-size: 36px; font-weight: bold; color: #0ea5e9; letter-spacing: 8px;">' . $otp . '</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 0; text-align: center;">Никому не сообщайте этот код.<br>Если вы не запрашивали регистрацию, проигнорируйте письмо.</p>
+        </div>
+    </body>
+    </html>
+    ';
     
-    mail($email, $subject, $message, $headers);
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=utf-8\r\n";
+    $headers .= "From: =?utf-8?B?" . base64_encode("Калькулятор Око") . "?= <oko@xn--j1aabe.xn--p1ai>\r\n";
+    $headers .= "Reply-To: oko@xn--j1aabe.xn--p1ai\r\n";
+    
+    // Параметр -f меняет "Return-Path" и скрывает имя технического пользователя сервера Beget
+    mail($email, $subject, $message, $headers, "-foko@xn--j1aabe.xn--p1ai");
     
     // Временно оставляем отправку кода и в ответе (на случай если почта не дойдет)
     echo json_encode(['success' => true, 'message' => 'Код отправлен на email', 'debug_otp' => $otp]);
