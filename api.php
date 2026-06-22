@@ -229,6 +229,55 @@ function generateSecureToken() {
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
+// === SMTP MAILER ===
+function sendSmtpEmail($to, $subject, $htmlMessage) {
+    $host = 'ssl://smtp.beget.com';
+    $port = 465;
+    $user = 'oko@xn--j1aabe.xn--p1ai';
+    $pass = '2008Larik1997!';
+    $from = $user;
+    
+    $socket = fsockopen($host, $port, $errno, $errstr, 10);
+    if (!$socket) return false;
+    
+    function serverParse($socket, $expected) {
+        $serverResponse = '';
+        while (substr($serverResponse, 3, 1) != ' ') {
+            if (!($serverResponse = fgets($socket, 256))) return false;
+        }
+        if (!(substr($serverResponse, 0, 3) == $expected)) return false;
+        return true;
+    }
+    
+    serverParse($socket, '220');
+    fwrite($socket, "EHLO $host\r\n");
+    serverParse($socket, '250');
+    fwrite($socket, "AUTH LOGIN\r\n");
+    serverParse($socket, '334');
+    fwrite($socket, base64_encode($user) . "\r\n");
+    serverParse($socket, '334');
+    fwrite($socket, base64_encode($pass) . "\r\n");
+    serverParse($socket, '235');
+    fwrite($socket, "MAIL FROM: <$from>\r\n");
+    serverParse($socket, '250');
+    fwrite($socket, "RCPT TO: <$to>\r\n");
+    serverParse($socket, '250');
+    fwrite($socket, "DATA\r\n");
+    serverParse($socket, '354');
+    
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: =?UTF-8?B?" . base64_encode("Калькулятор Око") . "?= <$from>\r\n";
+    $headers .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
+    $headers .= "To: <$to>\r\n";
+    
+    fwrite($socket, $headers . "\r\n" . $htmlMessage . "\r\n.\r\n");
+    serverParse($socket, '250');
+    fwrite($socket, "QUIT\r\n");
+    fclose($socket);
+    return true;
+}
+
 // === ПУБЛИЧНЫЕ РОУТЫ ===
 
 // --- RBAC: Регистрация (шаг 1 — запрос OTP) ---
@@ -237,7 +286,8 @@ if ($action === 'register_request') {
     if (!$data || !isset($data['email']) || !isset($data['company_name'])) {
         echo json_encode(['error' => 'Укажите email и название компании']); exit;
     }
-    $email = trim(strtolower($data['email']));
+    // FIX: Using mb_strtolower to not corrupt cyrillic domains
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
     $companyName = trim($data['company_name']);
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['error' => 'Некорректный email']); exit;
@@ -281,38 +331,35 @@ if ($action === 'register_request') {
     </html>
     ';
     
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-type: text/html; charset=utf-8\r\n";
-    $headers .= "From: =?utf-8?B?" . base64_encode("Калькулятор Око") . "?= <oko@xn--j1aabe.xn--p1ai>\r\n";
-    $headers .= "Reply-To: oko@xn--j1aabe.xn--p1ai\r\n";
-    
-    // Параметр -f меняет "Return-Path" и скрывает имя технического пользователя сервера Beget
-    mail($email, $subject, $message, $headers, "-foko@xn--j1aabe.xn--p1ai");
+    sendSmtpEmail($email, $subject, $message);
     
     // Временно оставляем отправку кода и в ответе (на случай если почта не дойдет)
     echo json_encode(['success' => true, 'message' => 'Код отправлен на email', 'debug_otp' => $otp]);
     exit;
 }
 
-// --- RBAC: Регистрация (шаг 2 — подтверждение OTP) ---
+// --- RBAC: Регистрация (шаг 2 — проверка OTP) ---
 if ($action === 'register_verify') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data || !isset($data['email']) || !isset($data['otp_code'])) {
         echo json_encode(['error' => 'Укажите email и код']); exit;
     }
-    $email = trim(strtolower($data['email']));
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $otp = trim($data['otp_code']);
     $stmt = $pdo->prepare("SELECT id, otp_code, otp_expires_at FROM oko_users WHERE email = ? AND password_hash = ''");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
         echo json_encode(['error' => 'Пользователь не найден']); exit;
     }
-    if ($user['otp_code'] !== trim($data['otp_code'])) {
+    if ($user['otp_code'] !== $otp) {
         echo json_encode(['error' => 'Неверный код']); exit;
     }
     if (strtotime($user['otp_expires_at']) < time()) {
         echo json_encode(['error' => 'Код истёк. Запросите новый']); exit;
     }
+    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFIED' WHERE id = ?");
+    $stmt->execute([$user['id']]);
     echo json_encode(['success' => true]);
     exit;
 }
@@ -323,13 +370,13 @@ if ($action === 'register_set_password') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
-    $email = trim(strtolower($data['email']));
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
     $password = $data['password'];
     if (strlen($password) < 6) {
         echo json_encode(['error' => 'Пароль должен быть не менее 6 символов']); exit;
     }
     // Находим временного пользователя
-    $stmt = $pdo->prepare("SELECT id, company_name FROM oko_users WHERE email = ? AND password_hash = ''");
+    $stmt = $pdo->prepare("SELECT id, company_name FROM oko_users WHERE email = ? AND otp_code = 'VERIFIED'");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
@@ -356,13 +403,103 @@ if ($action === 'register_set_password') {
     exit;
 }
 
+// --- RBAC: Забыли пароль ---
+if ($action === 'forgot_request') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email'])) {
+        echo json_encode(['error' => 'Укажите email']); exit;
+    }
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $stmt = $pdo->prepare("SELECT id FROM oko_users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['error' => 'Пользователь с таким email не найден']); exit;
+    }
+    $otp = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+    $otpExpires = date('Y-m-d H:i:s', time() + 300); // 5 минут
+    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = ?, otp_expires_at = ? WHERE id = ?");
+    $stmt->execute([$otp, $otpExpires, $user['id']]);
+    
+    $subject = "Восстановление пароля Око";
+    $message = '
+    <html>
+    <body style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 20px; margin: 0;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #0f172a; margin: 0;">Восстановление доступа</h2>
+            </div>
+            <p style="color: #475569; font-size: 16px; margin-top: 0;">Здравствуйте!</p>
+            <p style="color: #475569; font-size: 16px;">Ваш код для сброса пароля:</p>
+            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0;">
+                <span style="font-size: 36px; font-weight: bold; color: #f59e0b; letter-spacing: 8px;">' . $otp . '</span>
+            </div>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 0; text-align: center;">Никому не сообщайте этот код.<br>Если вы не запрашивали сброс, проигнорируйте письмо.</p>
+        </div>
+    </body>
+    </html>';
+    
+    sendSmtpEmail($email, $subject, $message);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'forgot_verify') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['otp_code'])) {
+        echo json_encode(['error' => 'Укажите email и код']); exit;
+    }
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $otp = trim($data['otp_code']);
+    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = ? AND otp_expires_at > NOW()");
+    $stmt->execute([$email, $otp]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['error' => 'Неверный или просроченный код']); exit;
+    }
+    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFIED_FORGOT' WHERE id = ?");
+    $stmt->execute([$user['id']]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'forgot_set_password') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['email']) || !isset($data['password'])) {
+        echo json_encode(['error' => 'Укажите email и пароль']); exit;
+    }
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFIED_FORGOT'");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) {
+        echo json_encode(['error' => 'Сессия сброса пароля не найдена']); exit;
+    }
+    $hash = password_hash($data['password'], PASSWORD_DEFAULT);
+    $sessionToken = generateSecureToken();
+    $stmt = $pdo->prepare("UPDATE oko_users SET password_hash = ?, otp_code = NULL, session_token = ?, token = ? WHERE id = ?");
+    $stmt->execute([$hash, $sessionToken, $sessionToken, $user['id']]);
+    echo json_encode([
+        'success' => true,
+        'session_token' => $sessionToken,
+        'token' => $sessionToken,
+        'company_name' => $user['company_name'],
+        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'role' => isset($user['role']) ? $user['role'] : 'owner',
+        'is_admin' => ($user['id'] == 1),
+        'subscription_until' => $user['subscription_until'],
+        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+    ]);
+    exit;
+}
+
 // --- RBAC: Вход по email ---
 if ($action === 'login_email') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
-    $login = trim(strtolower($data['email']));
+    $login = trim(mb_strtolower($data['email'], 'UTF-8'));
     $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? OR username = ?");
     $stmt->execute([$login, $data['email']]); // username is not lowercased in the input
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -433,7 +570,7 @@ if ($action === 'add_employee') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль сотрудника']); exit;
     }
-    $email = trim(strtolower($data['email']));
+    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['error' => 'Некорректный email']); exit;
     }
