@@ -261,8 +261,16 @@ if ($action === 'register_request') {
         $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, otp_code, otp_expires_at, role, subscription_until, modules) VALUES (?, ?, '', ?, ?, ?, 'owner', '2099-12-31', '[\"all\"]')");
         $stmt->execute([$email, $email, $companyName, $otp, $otpExpires]);
     }
-    // Пока логируем OTP (позже — SMTP)
-    error_log("OKO OTP for $email: $otp");
+    // Отправка OTP на email
+    $subject = "Код подтверждения для Око";
+    $message = "Здравствуйте!\n\nВаш код подтверждения: $otp\n\nНикому не сообщайте этот код.";
+    $headers = "From: oko@xn--j1aabe.xn--p1ai\r\n";
+    $headers .= "Reply-To: oko@xn--j1aabe.xn--p1ai\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    
+    mail($email, $subject, $message, $headers);
+    
+    // Временно оставляем отправку кода и в ответе (на случай если почта не дойдет)
     echo json_encode(['success' => true, 'message' => 'Код отправлен на email', 'debug_otp' => $otp]);
     exit;
 }

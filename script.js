@@ -138,10 +138,10 @@ async function doRegisterRequest() {
             document.getElementById('reg-step-1').style.display = 'none';
             document.getElementById('reg-step-2').style.display = 'block';
             document.getElementById('reg-email-display').textContent = _regEmail;
-            // Показываем debug OTP (пока нет SMTP)
-            if (data.debug_otp) {
-                document.getElementById('reg-debug-otp').textContent = 'Код для отладки: ' + data.debug_otp;
-            }
+            // Скрываем debug OTP из интерфейса (оставлен только в network-ответе)
+            // if (data.debug_otp) {
+            //     document.getElementById('reg-debug-otp').textContent = 'Код для отладки: ' + data.debug_otp;
+            // }
             errorEl.classList.add('hidden');
             if (window.lucide) window.lucide.createIcons();
             setTimeout(() => document.getElementById('reg-otp').focus(), 100);
