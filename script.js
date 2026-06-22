@@ -107,7 +107,7 @@ function doLogout() {
 
 // === RBAC: Переключение форм вход/регистрация ===
 function showRegisterForm() {
-    document.querySelector('#pwd-screen > .relative:first-of-type').style.display = 'none';
+    document.getElementById('login-card').style.display = 'none';
     const regCard = document.getElementById('register-card');
     regCard.style.display = 'block';
     regCard.classList.add('animate-[fadeInUp_0.4s_ease-out_forwards]');
@@ -115,7 +115,7 @@ function showRegisterForm() {
 }
 function showLoginForm() {
     document.getElementById('register-card').style.display = 'none';
-    document.querySelector('#pwd-screen > .relative:first-of-type').style.display = 'block';
+    document.getElementById('login-card').style.display = 'block';
     if (window.lucide) window.lucide.createIcons();
 }
 
