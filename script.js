@@ -119,13 +119,65 @@ function showLoginForm() {
     if (window.lucide) window.lucide.createIcons();
 }
 
+// === RBAC: Глобальный обработчик 401 (Strict Single Session) ===
+const _originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await _originalFetch.apply(this, args);
+    if (response.status === 401) {
+        try {
+            const clone = response.clone();
+            const body = await clone.json();
+            if (body.kicked) {
+                alert('Выполнен вход с другого устройства. Вы будете разлогинены.');
+                doLogout();
+                return response;
+            }
+        } catch(e) { /* ignore parse errors */ }
+    }
+    return response;
+};
+
+// === RBAC: Таймер для кнопок отправки кода ===
+function startOtpTimer(btnId, textId, defaultText) {
+    const btn = document.getElementById(btnId);
+    const textSpan = document.getElementById(textId);
+    if (!btn || !textSpan) return;
+    
+    let timeLeft = 60;
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    const interval = setInterval(() => {
+        timeLeft--;
+        textSpan.textContent = `Повторить через ${timeLeft} сек`;
+        if (timeLeft <= 0) {
+            clearInterval(interval);
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            textSpan.textContent = defaultText;
+        }
+    }, 1000);
+}
+
 // === RBAC: Регистрация (шаг 1) ===
 let _regEmail = '';
 async function doRegisterRequest() {
     const emailInp = document.getElementById('reg-email');
     const companyInp = document.getElementById('reg-company');
     const errorEl = document.getElementById('reg-error-1');
+    const btn = document.querySelector('#reg-step-1 button');
+    
+    if (btn.disabled) return;
     if (!emailInp.value || !companyInp.value) { errorEl.textContent = 'Заполните все поля'; errorEl.classList.remove('hidden'); return; }
+    
+    // Запускаем таймер
+    startOtpTimer(btn.id || 'reg-btn-1', 'reg-btn-text' || btn.querySelector('span > span').id, 'Получить код');
+    if (!btn.id) {
+        btn.id = 'reg-btn-1';
+        btn.querySelector('span > span') ? btn.querySelector('span > span').id = 'reg-btn-text' : btn.querySelector('span').innerHTML = '<span id="reg-btn-text">Получить код</span>' + btn.querySelector('span').innerHTML.replace('Получить код', '');
+        startOtpTimer('reg-btn-1', 'reg-btn-text', 'Получить код');
+    }
+    
     try {
         const res = await fetch(API_URL_AUTH + '?action=register_request', {
             method: 'POST',
@@ -138,10 +190,6 @@ async function doRegisterRequest() {
             document.getElementById('reg-step-1').style.display = 'none';
             document.getElementById('reg-step-2').style.display = 'block';
             document.getElementById('reg-email-display').textContent = _regEmail;
-            // Скрываем debug OTP из интерфейса (оставлен только в network-ответе)
-            // if (data.debug_otp) {
-            //     document.getElementById('reg-debug-otp').textContent = 'Код для отладки: ' + data.debug_otp;
-            // }
             errorEl.classList.add('hidden');
             if (window.lucide) window.lucide.createIcons();
             setTimeout(() => document.getElementById('reg-otp').focus(), 100);
@@ -204,7 +252,6 @@ async function doRegisterSetPassword() {
         });
         const data = await res.json();
         if (data.success) {
-            // Автовход после регистрации
             localStorage.setItem('oko_token', data.session_token);
             localStorage.setItem('oko_company', data.company_name);
             localStorage.setItem('oko_username', _regEmail);
@@ -228,23 +275,122 @@ async function doRegisterSetPassword() {
     }
 }
 
-// === RBAC: Глобальный обработчик 401 (Strict Single Session) ===
-const _originalFetch = window.fetch;
-window.fetch = async function(...args) {
-    const response = await _originalFetch.apply(this, args);
-    if (response.status === 401) {
-        try {
-            const clone = response.clone();
-            const body = await clone.json();
-            if (body.kicked) {
-                alert('Выполнен вход с другого устройства. Вы будете разлогинены.');
-                doLogout();
-                return response;
-            }
-        } catch(e) { /* ignore parse errors */ }
+// === RBAC: Восстановление пароля ===
+function showForgotPasswordForm() {
+    document.getElementById('login-card').style.display = 'none';
+    document.getElementById('register-card').style.display = 'none';
+    const forgotCard = document.getElementById('forgot-card');
+    forgotCard.style.display = 'block';
+    forgotCard.classList.add('animate-[fadeInUp_0.4s_ease-out_forwards]');
+    if (window.lucide) window.lucide.createIcons();
+}
+
+let _forgotEmail = '';
+async function doForgotRequest() {
+    const emailInp = document.getElementById('forgot-email');
+    const errorEl = document.getElementById('forgot-error-1');
+    const btn = document.getElementById('forgot-btn-1');
+    
+    if (btn.disabled) return;
+    if (!emailInp.value) { errorEl.textContent = 'Укажите email'; errorEl.classList.remove('hidden'); return; }
+    
+    startOtpTimer('forgot-btn-1', 'forgot-btn-text', 'Получить код');
+    
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=forgot_request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            _forgotEmail = emailInp.value;
+            document.getElementById('forgot-step-1').style.display = 'none';
+            document.getElementById('forgot-step-2').style.display = 'block';
+            document.getElementById('forgot-email-display').textContent = _forgotEmail;
+            errorEl.classList.add('hidden');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => document.getElementById('forgot-otp').focus(), 100);
+        } else {
+            errorEl.textContent = data.error || 'Ошибка';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
     }
-    return response;
-};
+}
+
+async function doForgotVerify() {
+    const otpInp = document.getElementById('forgot-otp');
+    const errorEl = document.getElementById('forgot-error-2');
+    if (!otpInp.value || otpInp.value.length < 4) return;
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=forgot_verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _forgotEmail, otp_code: otpInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('forgot-step-2').style.display = 'none';
+            document.getElementById('forgot-step-3').style.display = 'block';
+            errorEl.classList.add('hidden');
+            if (window.lucide) window.lucide.createIcons();
+            setTimeout(() => document.getElementById('forgot-password').focus(), 100);
+        } else {
+            errorEl.textContent = data.error || 'Неверный код';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
+    }
+}
+
+async function doForgotSetPassword() {
+    const passInp = document.getElementById('forgot-password');
+    const confirmInp = document.getElementById('forgot-password-confirm');
+    const errorEl = document.getElementById('forgot-error-3');
+    if (!passInp.value || passInp.value.length < 6) {
+        errorEl.textContent = 'Пароль должен быть не менее 6 символов';
+        errorEl.classList.remove('hidden'); return;
+    }
+    if (passInp.value !== confirmInp.value) {
+        errorEl.textContent = 'Пароли не совпадают';
+        errorEl.classList.remove('hidden'); return;
+    }
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=forgot_set_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: _forgotEmail, password: passInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // Автовход
+            localStorage.setItem('oko_token', data.session_token);
+            localStorage.setItem('oko_company', data.company_name);
+            localStorage.setItem('oko_username', _forgotEmail);
+            localStorage.setItem('oko_is_admin', data.is_admin ? 'true' : 'false');
+            localStorage.setItem('oko_role', data.role || 'owner');
+            localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
+            if (data.company_id) localStorage.setItem('oko_company_id', data.company_id);
+            document.getElementById('pwd-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('current-company-name').textContent = data.company_name;
+            applyModules();
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            if (typeof fetchArchive === 'function') fetchArchive();
+        } else {
+            errorEl.textContent = data.error || 'Ошибка';
+            errorEl.classList.remove('hidden');
+        }
+    } catch(e) {
+        errorEl.textContent = 'Ошибка сети: ' + e.message;
+        errorEl.classList.remove('hidden');
+    }
+}
 
 // Проверяем статус при загрузке скрипта
 document.addEventListener('DOMContentLoaded', async () => {

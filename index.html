@@ -181,7 +181,10 @@
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <label for="login-password" class="block text-sm font-bold text-slate-700">Пароль</label>
+                        <div class="flex justify-between items-center">
+                            <label for="login-password" class="block text-sm font-bold text-slate-700">Пароль</label>
+                            <a href="#" onclick="showForgotPasswordForm(); return false;" class="text-xs font-semibold text-brand-primary hover:underline">Забыли пароль?</a>
+                        </div>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                                 <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
@@ -337,6 +340,119 @@
             <div class="text-center mt-6">
                 <span class="text-sm text-slate-500">Уже есть аккаунт? </span>
                 <a href="#" onclick="showLoginForm(); return false;" class="text-sm font-bold text-brand-primary hover:underline">Войти</a>
+            </div>
+        </div>
+
+        <!-- Forgot Password Card -->
+        <div id="forgot-card" class="relative w-full max-w-[420px] bg-white rounded-3xl shadow-xl border border-slate-100 p-8 sm:p-10 transform" style="display: none;">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mb-6 shadow-lg shadow-amber-500/30 relative">
+                    <i data-lucide="key-round" class="w-10 h-10 text-white relative z-10"></i>
+                    <div class="absolute inset-0 bg-white/20 rounded-2xl blur-sm mix-blend-overlay"></div>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-2">Сброс пароля</h1>
+                <p class="text-slate-500 font-medium">Восстановление доступа</p>
+            </div>
+
+            <!-- Step 1: Email -->
+            <div id="forgot-step-1" class="space-y-6">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Ваш Email</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="mail" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="email" id="forgot-email" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium placeholder:text-slate-400 placeholder:font-normal transition-all"
+                                   placeholder="your@email.com"
+                                   onkeypress="if(event.key === 'Enter') doForgotRequest()">
+                        </div>
+                    </div>
+                    <p id="forgot-error-1" class="hidden text-red-500 text-sm font-medium pl-1"></p>
+                </div>
+                <button id="forgot-btn-1" onclick="doForgotRequest()" 
+                        class="w-full relative group overflow-hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        <span id="forgot-btn-text">Получить код</span>
+                        <i data-lucide="send" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Step 2: OTP Code -->
+            <div id="forgot-step-2" class="space-y-6" style="display: none;">
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mb-3">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-amber-600"></i>
+                        </div>
+                        <p class="text-slate-600 text-sm">Введите 4-значный код, отправленный на <b id="forgot-email-display"></b></p>
+                        <p class="text-slate-400 text-xs mt-2">Если письма нет во входящих, проверьте папку <b>«Спам»</b>.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <input type="text" id="forgot-otp" maxlength="4" 
+                               class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl py-4 text-center text-3xl font-black tracking-[0.5em] focus:outline-none focus:ring-0 focus:border-amber-500 focus:bg-white transition-all"
+                               placeholder="••••"
+                               oninput="if(this.value.length===4) doForgotVerify()"
+                               onkeypress="if(event.key === 'Enter') doForgotVerify()">
+                    </div>
+                    <p id="forgot-error-2" class="hidden text-red-500 text-sm font-medium pl-1 text-center"></p>
+                </div>
+                <button onclick="doForgotVerify()" 
+                        class="w-full relative group overflow-hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Подтвердить код
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Step 3: Set New Password -->
+            <div id="forgot-step-3" class="space-y-6" style="display: none;">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Новый пароль</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="password" id="forgot-password" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-12 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                                   placeholder="Минимум 6 символов"
+                                   onkeypress="if(event.key === 'Enter') document.getElementById('forgot-password-confirm').focus()">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('forgot-password', 'forgot-eye-icon')">
+                                <i id="forgot-eye-icon" data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-brand-primary transition-colors"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Повторите пароль</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400 group-focus-within:text-brand-primary transition-colors"></i>
+                            </div>
+                            <input type="password" id="forgot-password-confirm" 
+                                   class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
+                                   placeholder="Повторите пароль"
+                                   onkeypress="if(event.key === 'Enter') doForgotSetPassword()">
+                        </div>
+                    </div>
+                    <p id="forgot-error-3" class="hidden text-red-500 text-sm font-medium pl-1"></p>
+                </div>
+                <button onclick="doForgotSetPassword()" 
+                        class="w-full relative group overflow-hidden bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        Сохранить и войти
+                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Back to login -->
+            <div class="text-center mt-6">
+                <a href="#" onclick="showLoginForm(); return false;" class="text-sm font-bold text-slate-500 hover:text-brand-primary hover:underline">Вернуться ко входу</a>
             </div>
         </div>
     </div>
