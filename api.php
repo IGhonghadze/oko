@@ -235,7 +235,8 @@ function sendSmtpEmail($to, $subject, $htmlMessage) {
     $port = 465;
     $user = 'oko@ооко.рф';
     $pass = '2008Larik1997!';
-    $from = 'oko@xn--j1aabe.xn--p1ai';
+    $from_envelope = 'oko@ооко.рф'; // Beget requires Cyrillic for envelope
+    $from_header = 'oko@xn--j1aabe.xn--p1ai'; // Email clients need punycode
     
     $socket = fsockopen($host, $port, $errno, $errstr, 10);
     if (!$socket) return false;
@@ -258,7 +259,7 @@ function sendSmtpEmail($to, $subject, $htmlMessage) {
     serverParse($socket, '334');
     fwrite($socket, base64_encode($pass) . "\r\n");
     serverParse($socket, '235');
-    fwrite($socket, "MAIL FROM: <$from>\r\n");
+    fwrite($socket, "MAIL FROM: <$from_envelope>\r\n");
     serverParse($socket, '250');
     fwrite($socket, "RCPT TO: <$to>\r\n");
     serverParse($socket, '250');
@@ -267,7 +268,7 @@ function sendSmtpEmail($to, $subject, $htmlMessage) {
     
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: =?UTF-8?B?" . base64_encode("Калькулятор Око") . "?= <$from>\r\n";
+    $headers .= "From: =?UTF-8?B?" . base64_encode("Калькулятор Око") . "?= <$from_header>\r\n";
     $headers .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
     $headers .= "To: <$to>\r\n";
     
