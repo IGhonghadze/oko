@@ -115,6 +115,8 @@ function showRegisterForm() {
 }
 function showLoginForm() {
     document.getElementById('register-card').style.display = 'none';
+    const forgotCard = document.getElementById('forgot-card');
+    if (forgotCard) forgotCard.style.display = 'none';
     document.getElementById('login-card').style.display = 'block';
     if (window.lucide) window.lucide.createIcons();
 }
