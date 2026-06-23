@@ -1062,4 +1062,4 @@ if ($action === 'admin_create_company_user') {
     exit;
 }
 
-echo json_encode(['error' => 'Неизвестное действие']);
+echo json_encode(['error' => 'Неизвестное действие: "' . htmlspecialchars($action) . '"']);
