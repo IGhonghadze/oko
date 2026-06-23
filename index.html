@@ -1926,6 +1926,7 @@
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-services" onclick="switchAdminTab('tab-admin-services')">Услуги</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-brand" onclick="switchAdminTab('tab-admin-brand')">Бренд и КП</button>
                 <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-users" onclick="switchAdminTab('tab-admin-users')"><i data-lucide="users" class="w-3 h-3 inline-block mr-1"></i>Пользователи</button>
+                <button class="admin-tab-btn bg-white text-slate-600 px-3 py-1.5 rounded font-bold text-xs" data-target="tab-admin-account" onclick="switchAdminTab('tab-admin-account')"><i data-lucide="user" class="w-3 h-3 inline-block mr-1"></i>Аккаунт</button>
             </div>
 
             <div id="tab-admin-glasses" class="admin-tab-content">
@@ -2070,6 +2071,23 @@
                 </div>
             </div>
             
+            <!-- Account Tab -->
+            <div id="tab-admin-account" class="admin-tab-content hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Настройки аккаунта</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-lg">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">Email для входа и восстановления пароля</label>
+                            <input type="email" id="account-email" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary" placeholder="Ваш Email">
+                        </div>
+                        <p id="account-msg" class="hidden text-sm font-medium pl-1"></p>
+                        <button onclick="saveAccountEmail()" class="bg-brand-primary hover:bg-brand-dark text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-sm transition-colors mt-2"><i data-lucide="save" class="w-4 h-4"></i> Сохранить Email</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Create User Modal -->
             <div id="modal-create-user" class="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center hidden">
                 <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -2391,7 +2409,7 @@
     <script src="contract_template_base64.js" defer></script>
     <script src="contract.js" defer></script>
     <script src="brand.js" defer></script>
-    <script src="admin.js?v=9" defer></script>
+    <script src="admin.js?v=10" defer></script>
     <script src="script.js?v=23" defer></script>
 
     <!-- ПЕРЕКЛЮЧЕНИЕ ПО ENTER В ДОГОВОРЕ -->

@@ -1062,4 +1062,32 @@ if ($action === 'admin_create_company_user') {
     exit;
 }
 
+// === УПРАВЛЕНИЕ АККАУНТОМ ===
+if ($action === 'get_account') {
+    echo json_encode(['success' => true, 'email' => isset($user['email']) ? $user['email'] : '']);
+    exit;
+}
+
+if ($action === 'update_account') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!isset($data['email'])) {
+        echo json_encode(['error' => 'Укажите email']); exit;
+    }
+    $newEmail = normalizeEmail($data['email']);
+    
+    // Проверка уникальности
+    if ($newEmail !== '') {
+        $stmt = $pdo->prepare("SELECT id FROM oko_users WHERE email = ? AND id != ?");
+        $stmt->execute([$newEmail, $user['id']]);
+        if ($stmt->fetch()) {
+            echo json_encode(['error' => 'Этот email уже используется другим аккаунтом']); exit;
+        }
+    }
+
+    $stmt = $pdo->prepare("UPDATE oko_users SET email = ? WHERE id = ?");
+    $stmt->execute([$newEmail, $user['id']]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 echo json_encode(['error' => 'Неизвестное действие: "' . htmlspecialchars($action) . '"']);

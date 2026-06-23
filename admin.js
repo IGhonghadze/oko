@@ -38,6 +38,10 @@ function openAdminPanel() {
     renderAllAdminTabs();
     switchAdminTab('tab-admin-glasses');
     
+    if (typeof loadAccountEmail === 'function') {
+        loadAccountEmail();
+    }
+    
     // Скрыть вкладку «Пользователи» для не-админов
     const isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_username') === 'admin';
     const usersTabBtn = document.querySelector('.admin-tab-btn[data-target="tab-admin-users"]');
@@ -1094,4 +1098,54 @@ async function loadCompanyDataFromServer() {
     await Promise.all(promises);
     
     console.log('[Multi-tenancy] Все данные компании загружены');
+}
+
+// === ACCOUNT MANAGEMENT ===
+async function loadAccountEmail() {
+    const emailInp = document.getElementById('account-email');
+    if (!emailInp) return;
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=get_account', {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
+        const data = await res.json();
+        if (data.success && data.email) {
+            emailInp.value = data.email;
+        }
+    } catch (e) {
+        console.error('Failed to load account email', e);
+    }
+}
+
+async function saveAccountEmail() {
+    const emailInp = document.getElementById('account-email');
+    const msgEl = document.getElementById('account-msg');
+    if (!emailInp || !msgEl) return;
+    
+    msgEl.textContent = 'Сохранение...';
+    msgEl.className = 'text-sm font-medium pl-1 text-slate-500 mt-1';
+    msgEl.classList.remove('hidden');
+    
+    try {
+        const res = await fetch(API_URL_AUTH + '?action=update_account', {
+            method: 'POST',
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ email: emailInp.value })
+        });
+        const data = await res.json();
+        if (data.success) {
+            msgEl.textContent = 'Email успешно сохранен!';
+            msgEl.className = 'text-sm font-medium pl-1 text-green-600 mt-1';
+        } else {
+            msgEl.textContent = data.error || 'Ошибка сохранения';
+            msgEl.className = 'text-sm font-medium pl-1 text-red-500 mt-1';
+        }
+    } catch (e) {
+        msgEl.textContent = 'Ошибка сети';
+        msgEl.className = 'text-sm font-medium pl-1 text-red-500 mt-1';
+    }
 }

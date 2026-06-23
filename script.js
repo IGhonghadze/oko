@@ -256,6 +256,10 @@ async function doRegisterSetPassword() {
         errorEl.textContent = 'Пароль должен быть не менее 6 символов';
         errorEl.classList.remove('hidden'); return;
     }
+    if (!/^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(passInp.value)) {
+        errorEl.textContent = 'Пароль может содержать только латинские буквы, цифры и спецсимволы';
+        errorEl.classList.remove('hidden'); return;
+    }
     if (passInp.value !== confirmInp.value) {
         errorEl.textContent = 'Пароли не совпадают';
         errorEl.classList.remove('hidden'); return;
@@ -370,6 +374,10 @@ async function doForgotSetPassword() {
     const errorEl = document.getElementById('forgot-error-3');
     if (!passInp.value || passInp.value.length < 6) {
         errorEl.textContent = 'Пароль должен быть не менее 6 символов';
+        errorEl.classList.remove('hidden'); return;
+    }
+    if (!/^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(passInp.value)) {
+        errorEl.textContent = 'Пароль может содержать только латинские буквы, цифры и спецсимволы';
         errorEl.classList.remove('hidden'); return;
     }
     if (passInp.value !== confirmInp.value) {
