@@ -233,9 +233,9 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 function sendSmtpEmail($to, $subject, $htmlMessage) {
     $host = 'ssl://smtp.beget.com';
     $port = 465;
-    $user = 'oko@xn--j1aabe.xn--p1ai';
+    $user = 'oko@ооко.рф';
     $pass = '2008Larik1997!';
-    $from = $user;
+    $from = 'oko@xn--j1aabe.xn--p1ai';
     
     $socket = fsockopen($host, $port, $errno, $errstr, 10);
     if (!$socket) return false;
