@@ -229,54 +229,18 @@ function generateSecureToken() {
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-// === SMTP MAILER ===
+// === MAIL SENDER ===
 function sendSmtpEmail($to, $subject, $htmlMessage) {
-    $host = 'ssl://smtp.beget.com';
-    $port = 465;
-    $user = 'oko@ооко.рф';
-    $pass = '2008Larik1997!';
-    $from_envelope = 'oko@ооко.рф'; // Beget requires Cyrillic for envelope
-    $from_header = 'oko@xn--j1aabe.xn--p1ai'; // Email clients need punycode
-    
-    $socket = fsockopen($host, $port, $errno, $errstr, 10);
-    if (!$socket) return false;
-    
-    function serverParse($socket, $expected) {
-        $serverResponse = '';
-        while (substr($serverResponse, 3, 1) != ' ') {
-            if (!($serverResponse = fgets($socket, 256))) return false;
-        }
-        if (!(substr($serverResponse, 0, 3) == $expected)) return false;
-        return true;
-    }
-    
-    serverParse($socket, '220');
-    fwrite($socket, "EHLO $host\r\n");
-    serverParse($socket, '250');
-    fwrite($socket, "AUTH LOGIN\r\n");
-    serverParse($socket, '334');
-    fwrite($socket, base64_encode($user) . "\r\n");
-    serverParse($socket, '334');
-    fwrite($socket, base64_encode($pass) . "\r\n");
-    serverParse($socket, '235');
-    fwrite($socket, "MAIL FROM: <$from_envelope>\r\n");
-    serverParse($socket, '250');
-    fwrite($socket, "RCPT TO: <$to>\r\n");
-    serverParse($socket, '250');
-    fwrite($socket, "DATA\r\n");
-    serverParse($socket, '354');
-    
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: =?UTF-8?B?" . base64_encode("Калькулятор Око") . "?= <$from_header>\r\n";
-    $headers .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
-    $headers .= "To: <$to>\r\n";
-    
-    fwrite($socket, $headers . "\r\n" . $htmlMessage . "\r\n.\r\n");
-    serverParse($socket, '250');
-    fwrite($socket, "QUIT\r\n");
-    fclose($socket);
-    return true;
+    // Используем нативную функцию mail() так как Beget блокирует исходящие порты 465 изнутри
+    $from = 'oko@ооко.рф';
+    $headers  = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=utf-8\r\n";
+    $headers .= "From: =?utf-8?B?" . base64_encode("Калькулятор Око") . "?= <$from>\r\n";
+    $headers .= "Reply-To: $from\r\n";
+    $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+
+    // -f устанавливает Return-Path, Beget требует точного совпадения с ящиком
+    return mail($to, $subject, $htmlMessage, $headers, "-f" . $from);
 }
 
 // === HELPER: IDN Email Normalizer ===
