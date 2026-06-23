@@ -278,6 +278,22 @@ function sendSmtpEmail($to, $subject, $htmlMessage) {
     return true;
 }
 
+// === HELPER: IDN Email Normalizer ===
+function normalizeEmail($email) {
+    $email = trim(mb_strtolower($email, 'UTF-8'));
+    $parts = explode('@', $email);
+    if (count($parts) === 2) {
+        $domain = $parts[1];
+        if (preg_match('/[А-Яа-яЁё]/u', $domain)) {
+            $punycode = idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            if ($punycode !== false) {
+                $email = $parts[0] . '@' . $punycode;
+            }
+        }
+    }
+    return $email;
+}
+
 // === ПУБЛИЧНЫЕ РОУТЫ ===
 
 // --- RBAC: Регистрация (шаг 1 — запрос OTP) ---
@@ -286,8 +302,7 @@ if ($action === 'register_request') {
     if (!$data || !isset($data['email']) || !isset($data['company_name'])) {
         echo json_encode(['error' => 'Укажите email и название компании']); exit;
     }
-    // FIX: Using mb_strtolower to not corrupt cyrillic domains
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $companyName = trim($data['company_name']);
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['error' => 'Некорректный email']); exit;
@@ -344,7 +359,7 @@ if ($action === 'register_verify') {
     if (!$data || !isset($data['email']) || !isset($data['otp_code'])) {
         echo json_encode(['error' => 'Укажите email и код']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $otp = trim($data['otp_code']);
     $stmt = $pdo->prepare("SELECT id, otp_code, otp_expires_at FROM oko_users WHERE email = ? AND password_hash = ''");
     $stmt->execute([$email]);
@@ -370,7 +385,7 @@ if ($action === 'register_set_password') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $password = $data['password'];
     if (strlen($password) < 6) {
         echo json_encode(['error' => 'Пароль должен быть не менее 6 символов']); exit;
@@ -409,7 +424,7 @@ if ($action === 'forgot_request') {
     if (!$data || !isset($data['email'])) {
         echo json_encode(['error' => 'Укажите email']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $stmt = $pdo->prepare("SELECT id FROM oko_users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -449,7 +464,7 @@ if ($action === 'forgot_verify') {
     if (!$data || !isset($data['email']) || !isset($data['otp_code'])) {
         echo json_encode(['error' => 'Укажите email и код']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $otp = trim($data['otp_code']);
     $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = ? AND otp_expires_at > NOW()");
     $stmt->execute([$email, $otp]);
@@ -468,7 +483,7 @@ if ($action === 'forgot_set_password') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFIED_FORGOT'");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -499,7 +514,7 @@ if ($action === 'login_email') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
-    $login = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $login = normalizeEmail($data['email']);
     $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? OR username = ?");
     $stmt->execute([$login, $data['email']]); // username is not lowercased in the input
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -570,7 +585,7 @@ if ($action === 'add_employee') {
     if (!$data || !isset($data['email']) || !isset($data['password'])) {
         echo json_encode(['error' => 'Укажите email и пароль сотрудника']); exit;
     }
-    $email = trim(mb_strtolower($data['email'], 'UTF-8'));
+    $email = normalizeEmail($data['email']);
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['error' => 'Некорректный email']); exit;
     }
