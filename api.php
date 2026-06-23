@@ -232,15 +232,17 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 // === MAIL SENDER ===
 function sendSmtpEmail($to, $subject, $htmlMessage) {
     // Используем нативную функцию mail() так как Beget блокирует исходящие порты 465 изнутри
-    $from = 'oko@ооко.рф';
+    $from = 'oko@xn--j1aabe.xn--p1ai'; // Punycode для заголовков
     $headers  = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=utf-8\r\n";
     $headers .= "From: =?utf-8?B?" . base64_encode("Калькулятор Око") . "?= <$from>\r\n";
     $headers .= "Reply-To: $from\r\n";
     $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
 
-    // -f устанавливает Return-Path, Beget требует точного совпадения с ящиком
-    return mail($to, $subject, $htmlMessage, $headers, "-f" . $from);
+    // ВАЖНО: Мы убираем параметр -f, так как без настроенного SPF/DKIM для ооко.рф, 
+    // почтовые сервисы (Gmail/Mail.ru) молча блокируют письма как спам. 
+    // Отправка от имени системного пользователя Beget гарантирует доставку.
+    return mail($to, $subject, $htmlMessage, $headers);
 }
 
 // === HELPER: IDN Email Normalizer ===
