@@ -308,7 +308,7 @@
                                    class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-12 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
                                    placeholder="Минимум 6 символов"
                                    onkeypress="if(event.key === 'Enter') document.getElementById('reg-password-confirm').focus()">
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('reg-password', 'reg-eye-icon')">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('reg-password,reg-password-confirm', 'reg-eye-icon')">
                                 <i id="reg-eye-icon" data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-brand-primary transition-colors"></i>
                             </div>
                         </div>
@@ -422,7 +422,7 @@
                                    class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 rounded-xl pl-12 pr-12 py-3.5 focus:outline-none focus:ring-0 focus:border-brand-primary focus:bg-white text-lg font-medium tracking-widest placeholder:text-slate-400 placeholder:tracking-normal placeholder:font-normal transition-all"
                                    placeholder="Минимум 6 символов"
                                    onkeypress="if(event.key === 'Enter') document.getElementById('forgot-password-confirm').focus()">
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('forgot-password', 'forgot-eye-icon')">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 cursor-pointer" onclick="togglePasswordVisibility('forgot-password,forgot-password-confirm', 'forgot-eye-icon')">
                                 <i id="forgot-eye-icon" data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-brand-primary transition-colors"></i>
                             </div>
                         </div>
@@ -2392,7 +2392,7 @@
     <script src="contract.js" defer></script>
     <script src="brand.js" defer></script>
     <script src="admin.js?v=9" defer></script>
-    <script src="script.js?v=22" defer></script>
+    <script src="script.js?v=23" defer></script>
 
     <!-- ПЕРЕКЛЮЧЕНИЕ ПО ENTER В ДОГОВОРЕ -->
     <script>

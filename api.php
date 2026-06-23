@@ -439,7 +439,7 @@ if ($action === 'forgot_verify') {
     if (!$user) {
         echo json_encode(['error' => 'Неверный или просроченный код']); exit;
     }
-    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFIED_FORGOT' WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFY_F' WHERE id = ?");
     $stmt->execute([$user['id']]);
     echo json_encode(['success' => true]);
     exit;
@@ -451,7 +451,7 @@ if ($action === 'forgot_set_password') {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
     $email = normalizeEmail($data['email']);
-    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFIED_FORGOT'");
+    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFY_F'");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {

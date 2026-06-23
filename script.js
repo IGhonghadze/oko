@@ -82,15 +82,29 @@ function showLoginError(errorEl, userInp, passInp) {
     }, 1500);
 }
 
-function togglePasswordVisibility(inputId, iconId) {
-    const input = document.getElementById(inputId);
+function togglePasswordVisibility(inputIds, iconId) {
+    const ids = inputIds.split(',');
+    let isPassword = false;
+    
+    ids.forEach(id => {
+        const input = document.getElementById(id.trim());
+        if (input) {
+            if (input.type === 'password') {
+                input.type = 'text';
+                isPassword = true; // Was password, now text
+            } else {
+                input.type = 'password';
+            }
+        }
+    });
+
     const icon = document.getElementById(iconId);
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-    } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
+    if (icon) {
+        if (isPassword) {
+            icon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            icon.setAttribute('data-lucide', 'eye');
+        }
     }
     if (window.lucide) window.lucide.createIcons();
 }
