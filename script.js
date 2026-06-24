@@ -471,17 +471,13 @@ function updateTrialCounter() {
         el.textContent = 'Подписка истекла';
         el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
         
-        // Show expiration modal
-        const modal = document.getElementById('subscription-expired-modal');
-        if (modal) {
-            modal.style.display = 'flex';
+        // Trigger module lock re-evaluation
+        if (!window._hasLockedModulesForExpiry) {
+            window._hasLockedModulesForExpiry = true;
+            applyModules();
         }
     } else {
-        // Hide expiration modal if it was somehow open
-        const modal = document.getElementById('subscription-expired-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        window._hasLockedModulesForExpiry = false;
         
         if (diffSec < 60) {
             el.textContent = 'Осталось: ' + diffSec + ' сек.';
@@ -542,6 +538,16 @@ function applyModules() {
     try {
         modules = JSON.parse(storedModules || '[]');
     } catch (e) {}
+    
+    // Check trial expiration
+    const subUntil = localStorage.getItem('oko_subscription_until');
+    if (subUntil) {
+        const diffMs = new Date(subUntil) - new Date();
+        if (diffMs <= 0) {
+            // Если подписка истекла, оставляем только раздел "Прочее"
+            modules = [];
+        }
+    }
     
     // Always allow custom
     if (!modules.includes('custom')) modules.push('custom');
