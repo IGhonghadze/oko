@@ -442,17 +442,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function updateTrialCounter() {
     const el = document.getElementById('trial-counter');
+    const extendBtn = document.getElementById('extend-access-btn');
     if (!el) return;
     
     let isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_is_admin') === '1' || localStorage.getItem('oko_username') === 'admin';
     if (isAdmin) {
         el.style.display = 'none';
+        if (extendBtn) extendBtn.style.display = 'none';
         return;
     }
     
     const subUntil = localStorage.getItem('oko_subscription_until');
     if (!subUntil) {
         el.style.display = 'none';
+        if (extendBtn) extendBtn.style.display = 'none';
         return;
     }
     
@@ -462,30 +465,45 @@ function updateTrialCounter() {
     const diffSec = Math.floor(diffMs / 1000);
     
     el.style.display = 'inline-block';
+    if (extendBtn) extendBtn.style.display = 'inline-block';
     
     if (diffMs <= 0) {
         el.textContent = 'Подписка истекла';
         el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
-    } else if (diffSec < 60) {
-        el.textContent = 'Осталось: ' + diffSec + ' сек.';
-        el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
-    } else if (diffSec < 3600) {
-        const min = Math.floor(diffSec / 60);
-        el.textContent = 'Осталось: ' + min + ' мин.';
-        el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
-    } else if (diffSec < 86400) {
-        const hours = Math.floor(diffSec / 3600);
-        const min = Math.floor((diffSec % 3600) / 60);
-        el.textContent = 'Осталось: ' + hours + ' ч. ' + min + ' мин.';
-        el.className = 'px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-md ml-2';
+        
+        // Show expiration modal
+        const modal = document.getElementById('subscription-expired-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
     } else {
-        const daysLeft = Math.ceil(diffMs / (1000*60*60*24));
-        if (daysLeft <= 3) {
-            el.textContent = 'Осталось: ' + daysLeft + ' дн.';
+        // Hide expiration modal if it was somehow open
+        const modal = document.getElementById('subscription-expired-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        
+        if (diffSec < 60) {
+            el.textContent = 'Осталось: ' + diffSec + ' сек.';
             el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
-        } else {
-            el.textContent = 'Пробный период: ' + daysLeft + ' дн.';
+        } else if (diffSec < 3600) {
+            const min = Math.floor(diffSec / 60);
+            el.textContent = 'Осталось: ' + min + ' мин.';
+            el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+        } else if (diffSec < 86400) {
+            const hours = Math.floor(diffSec / 3600);
+            const min = Math.floor((diffSec % 3600) / 60);
+            el.textContent = 'Осталось: ' + hours + ' ч. ' + min + ' мин.';
             el.className = 'px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-md ml-2';
+        } else {
+            const daysLeft = Math.ceil(diffMs / (1000*60*60*24));
+            if (daysLeft <= 3) {
+                el.textContent = 'Осталось: ' + daysLeft + ' дн.';
+                el.className = 'px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md ml-2';
+            } else {
+                el.textContent = 'Пробный период: ' + daysLeft + ' дн.';
+                el.className = 'px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-md ml-2';
+            }
         }
     }
 }
@@ -4407,3 +4425,6 @@ function initUserPrices() {
 }
 
 initUserPrices();
+
+// Запускаем периодическую проверку пробного периода
+setInterval(updateTrialCounter, 1000);

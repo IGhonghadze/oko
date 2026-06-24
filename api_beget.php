@@ -440,7 +440,7 @@ if ($action === 'forgot_verify') {
     if (!$user) {
         echo json_encode(['error' => 'Неверный или просроченный код']); exit;
     }
-    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFY_F' WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE oko_users SET otp_code = 'VERIFIED_FORGOT' WHERE id = ?");
     $stmt->execute([$user['id']]);
     echo json_encode(['success' => true]);
     exit;
@@ -452,7 +452,7 @@ if ($action === 'forgot_set_password') {
         echo json_encode(['error' => 'Укажите email и пароль']); exit;
     }
     $email = normalizeEmail($data['email']);
-    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFY_F'");
+    $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE email = ? AND otp_code = 'VERIFIED_FORGOT'");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
@@ -831,7 +831,6 @@ if ($action === 'admin_subscription') {
         }
     } else if ($actionType === 'set_date') {
         if (!isset($data['new_date'])) { echo json_encode(['error' => 'Дата не указана']); exit; }
-        // Принимаем дату в формате YYYY-MM-DD и устанавливаем время 23:59:59
         $newDate = date('Y-m-d 23:59:59', strtotime($data['new_date']));
     } else {
         echo json_encode(['error' => 'Неизвестное действие: ' . $actionType]); exit;
@@ -1056,32 +1055,4 @@ if ($action === 'admin_create_company_user') {
     exit;
 }
 
-// === УПРАВЛЕНИЕ АККАУНТОМ ===
-if ($action === 'get_account') {
-    echo json_encode(['success' => true, 'email' => isset($user['email']) ? $user['email'] : '']);
-    exit;
-}
-
-if ($action === 'update_account') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!isset($data['email'])) {
-        echo json_encode(['error' => 'Укажите email']); exit;
-    }
-    $newEmail = normalizeEmail($data['email']);
-    
-    // Проверка уникальности
-    if ($newEmail !== '') {
-        $stmt = $pdo->prepare("SELECT id FROM oko_users WHERE email = ? AND id != ?");
-        $stmt->execute([$newEmail, $user['id']]);
-        if ($stmt->fetch()) {
-            echo json_encode(['error' => 'Этот email уже используется другим аккаунтом']); exit;
-        }
-    }
-
-    $stmt = $pdo->prepare("UPDATE oko_users SET email = ? WHERE id = ?");
-    $stmt->execute([$newEmail, $user['id']]);
-    echo json_encode(['success' => true]);
-    exit;
-}
-
-echo json_encode(['error' => 'Неизвестное действие: "' . htmlspecialchars($action) . '"']);
+echo json_encode(['error' => 'Неизвестное действие']);
