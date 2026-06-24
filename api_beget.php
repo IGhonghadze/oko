@@ -831,7 +831,12 @@ if ($action === 'admin_subscription') {
         }
     } else if ($actionType === 'set_date') {
         if (!isset($data['new_date'])) { echo json_encode(['error' => 'Дата не указана']); exit; }
-        $newDate = date('Y-m-d 23:59:59', strtotime($data['new_date']));
+        // Если передана только дата (YYYY-MM-DD), ставим конец дня 23:59:59. Иначе сохраняем время.
+        $newDateStr = trim($data['new_date']);
+        if (strlen($newDateStr) <= 10) {
+            $newDateStr .= ' 23:59:59';
+        }
+        $newDate = date('Y-m-d H:i:s', strtotime($newDateStr));
     } else {
         echo json_encode(['error' => 'Неизвестное действие: ' . $actionType]); exit;
     }
