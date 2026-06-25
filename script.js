@@ -4459,6 +4459,12 @@ initUserPrices();
 // Запускаем периодическую проверку пробного периода
 setInterval(updateTrialCounter, 1000);
 
+function restartOkoTour() {
+    localStorage.removeItem('oko_tour_completed');
+    if (typeof closeAdminPanel === 'function') closeAdminPanel();
+    setTimeout(initOkoTour, 400);
+}
+
 // === OKO ONBOARDING TOUR ===
 function initOkoTour() {
     // Проверяем, проходил ли пользователь уже тур
