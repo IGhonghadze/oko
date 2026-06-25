@@ -425,6 +425,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('app').style.display = 'block';
         const el = document.getElementById('current-company-name');
         if (el) el.textContent = comp;
+        
+        try {
+            const res = await fetch(API_URL_AUTH + '?action=me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            if (data && !data.error) {
+                localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
+                if (data.subscription_until) {
+                    localStorage.setItem('oko_subscription_until', data.subscription_until);
+                } else {
+                    localStorage.removeItem('oko_subscription_until');
+                }
+            }
+        } catch (e) {
+            console.error('Ошибка проверки сессии:', e);
+        }
+        
         updateTrialCounter();
         applyModules();
         loadTabsOrder();

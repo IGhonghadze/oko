@@ -658,6 +658,7 @@ if ($action === 'me') {
         'company_name' => $user['company_name'],
         'is_admin' => ($user['id'] == 1),
         'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'subscription_until' => $user['subscription_until'],
         'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
     ]);
     exit;
