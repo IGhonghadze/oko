@@ -118,6 +118,16 @@ function renderAdminBrand() {
                 placeholder="Комплексные решения для дома и бизнеса">
             <p class="text-[10px] text-slate-400 mt-1">Используйте \\n для переноса строки.</p>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Телефон (под слоганом)</label>
+                <input type="text" id="brand-phone" value="${b.phone || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Email (под слоганом)</label>
+                <input type="text" id="brand-email" value="${b.email || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+            </div>
+        </div>
         <div class="mt-4">
             <label class="block text-xs font-bold text-slate-600 mb-1">QR-код для оплаты</label>
             <input type="file" id="brand-qr-file" accept="image/*" style="display:none"
@@ -189,16 +199,6 @@ function renderAdminBrand() {
             <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">Подпись (для КП)</label>
                 <input type="text" id="brand-sign-name" value="${b.signName || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none" placeholder="ИП Данелия Д.Т.">
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Телефон</label>
-                <input type="text" id="brand-phone" value="${b.phone || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Email</label>
-                <input type="text" id="brand-email" value="${b.email || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
             </div>
         </div>
     </div>
