@@ -3249,6 +3249,11 @@ function showProposal() {
         ).join('');
     }
     
+    // Применяем настройки бренда (логотип, цвета, реквизиты, QR и т.д.)
+    if (typeof applyBrandToKP === 'function') {
+        applyBrandToKP();
+    }
+    
     document.getElementById('calculator-screen').style.display = 'none';
     document.getElementById('proposal-screen').style.display = 'block';
     window.scrollTo(0, 0);
