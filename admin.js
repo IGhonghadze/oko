@@ -97,14 +97,14 @@ function switchAdminTab(tabId) {
     if (target) target.classList.remove('hidden');
 
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-        btn.classList.remove('bg-brand-primary', 'text-white', 'shadow-md');
-        btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50');
+        btn.classList.remove('bg-brand-primary', 'text-white', 'shadow-md', 'border-brand-primary');
+        btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50', 'border-slate-200', 'hover:border-slate-300', 'shadow-sm');
     });
 
     const activeBtn = document.querySelector(`.admin-tab-btn[data-target="${tabId}"]`);
     if (activeBtn) {
-        activeBtn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
-        activeBtn.classList.add('bg-brand-primary', 'text-white', 'shadow-md');
+        activeBtn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50', 'border-slate-200', 'hover:border-slate-300', 'shadow-sm');
+        activeBtn.classList.add('bg-brand-primary', 'text-white', 'shadow-md', 'border-brand-primary');
     }
 
     if (tabId === 'tab-admin-users') {
