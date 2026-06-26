@@ -1220,3 +1220,92 @@ async function saveAccountEmail() {
         msgEl.className = 'text-sm font-medium pl-1 text-red-500 mt-1';
     }
 }
+
+// ==========================================
+// ANALYTICS DASHBOARD
+// ==========================================
+function renderAnalyticsDashboard() {
+    // Ensure archive is loaded
+    if (typeof GLOBAL_ARCHIVE_CACHE === 'undefined' || GLOBAL_ARCHIVE_CACHE.length === 0) {
+        if (typeof fetchArchive === 'function') {
+            fetchArchive().then(() => drawAnalytics());
+        } else {
+            drawAnalytics();
+        }
+    } else {
+        drawAnalytics();
+    }
+}
+
+function drawAnalytics() {
+    let totalKp = 0;
+    let totalRevenue = 0;
+    let totalMargin = 0;
+    let totalBaseSum = 0;
+    
+    let recentRows = '';
+    
+    // Sort archive by date descending
+    let archive = (typeof GLOBAL_ARCHIVE_CACHE !== 'undefined') ? [...GLOBAL_ARCHIVE_CACHE] : [];
+    archive.sort((a, b) => b.id - a.id);
+    
+    archive.forEach((kp, idx) => {
+        totalKp++;
+        let rev = kp.totals ? kp.totals.finalTotal : 0;
+        let base = kp.totals ? kp.totals.baseSum : 0;
+        let margin = rev - base;
+        
+        totalRevenue += rev;
+        totalBaseSum += base;
+        totalMargin += margin;
+        
+        if (idx < 20) {
+            let clientName = kp.client ? `${kp.client.name} (${kp.client.phone || ''})` : 'Без клиента';
+            let dateStr = new Date(kp.id).toLocaleDateString('ru-RU');
+            
+            recentRows += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 font-medium text-slate-800">${kp.kpId || ('КП-'+kp.id.toString().slice(-4))}</td>
+                    <td class="px-4 py-3 text-slate-500">${dateStr}</td>
+                    <td class="px-4 py-3 text-slate-600">${clientName}</td>
+                    <td class="px-4 py-3 text-right font-bold text-slate-800">${rev.toLocaleString()} ₽</td>
+                    <td class="px-4 py-3 text-right font-bold text-emerald-600">+${margin.toLocaleString()} ₽</td>
+                </tr>
+            `;
+        }
+    });
+    
+    let avgCheck = totalKp > 0 ? Math.round(totalRevenue / totalKp) : 0;
+    let marginPercent = totalRevenue > 0 ? Math.round((totalMargin / totalRevenue) * 100) : 0;
+    
+    let summaryHtml = `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-sm text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="file-text" class="w-4 h-4"></i> Выставлено КП</div>
+            <div class="text-2xl font-black text-slate-800">${totalKp}</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-sm text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="banknote" class="w-4 h-4"></i> Общая выручка</div>
+            <div class="text-2xl font-black text-blue-600">${totalRevenue.toLocaleString()} ₽</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-sm text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="trending-up" class="w-4 h-4"></i> Прибыль (Маржа)</div>
+            <div class="text-2xl font-black text-emerald-600">${totalMargin.toLocaleString()} ₽ <span class="text-xs text-slate-400 font-normal ml-1">(${marginPercent}%)</span></div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-sm text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Средний чек</div>
+            <div class="text-2xl font-black text-indigo-600">${avgCheck.toLocaleString()} ₽</div>
+        </div>
+    `;
+    
+    document.getElementById('analytics-summary-cards').innerHTML = summaryHtml;
+    
+    if (recentRows === '') {
+        recentRows = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">Архив просчетов пока пуст</td></tr>`;
+    }
+    
+    document.getElementById('analytics-recent-table').innerHTML = recentRows;
+    
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
