@@ -112,7 +112,11 @@ function togglePasswordVisibility(inputIds, iconId) {
 }
 
 function doLogout() {
+    let tourCompleted = localStorage.getItem('oko_tour_completed');
     localStorage.clear();
+    if (tourCompleted) {
+        localStorage.setItem('oko_tour_completed', tourCompleted);
+    }
     location.reload();
 }
 
