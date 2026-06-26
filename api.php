@@ -184,36 +184,33 @@ try {
     exit;
 }
 
-// Функция для получения пользователя по токену
+// Функция для получения пользователя по токену (Strict Single Session)
 function getUser($pdo) {
     $headers = getallheaders();
     $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : '');
+    
+    if (empty($authHeader)) {
+        return null;
+    }
+
     if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
         $token = $matches[1];
-        $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE token = ?");
-        $stmt->execute([$token]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-    return null;
-}
-
-// === RBAC: Проверка session_token (Strict Single Session) ===
-function checkSessionSecure($pdo) {
-    $headers = getallheaders();
-    $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : '');
-    if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-        $clientToken = $matches[1];
-        // Проверяем и по session_token, и по старому token (обратная совместимость)
-        $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE session_token = ? OR token = ?");
-        $stmt->execute([$clientToken, $clientToken]);
+        
+        // Проверяем токен по базе (и token, и session_token для обратной совместимости)
+        $stmt = $pdo->prepare("SELECT * FROM oko_users WHERE token = ? OR session_token = ?");
+        $stmt->execute([$token, $token]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
         if ($user) {
             return $user;
+        } else {
+            // Токен передан, но не найден (значит пользователя выкинуло с другого устройства)
+            http_response_code(401);
+            echo json_encode(['error' => 'Выполнен вход с другого устройства', 'kicked' => true]);
+            exit;
         }
     }
-    http_response_code(401);
-    echo json_encode(['error' => 'Выполнен вход с другого устройства', 'kicked' => true]);
-    exit;
+    return null;
 }
 
 // Генерация криптостойкого токена
@@ -542,7 +539,7 @@ if ($action === 'login_email') {
 
 // --- RBAC: Добавление сотрудника (только для owner) ---
 if ($action === 'add_employee') {
-    $owner = checkSessionSecure($pdo);
+    $owner = getUser($pdo);
     if (!$owner || (isset($owner['role']) && $owner['role'] !== 'owner')) {
         echo json_encode(['error' => 'Только владелец может добавлять сотрудников']); exit;
     }
