@@ -1621,16 +1621,16 @@
                                     class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <i data-lucide="wrench" class="w-4 h-4 text-slate-400"></i> Дополнительные услуги
                                 </h3>
-                                <!-- Выбор прайса + авторасчёт -->
-                                <div class="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center gap-2">
-                                    <span class="text-xs text-slate-500 font-medium whitespace-nowrap">Прайс:</span>
-                                    <select id="srv-pricelist" class="flex-1 min-w-[100px] p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-medium">
+                                <!-- Выбор прайса (Скрыто по запросу) -->
+                                <div class="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center justify-end gap-2">
+                                    <span style="display:none;" class="text-xs text-slate-500 font-medium whitespace-nowrap">Прайс:</span>
+                                    <select style="display:none;" id="srv-pricelist" class="flex-1 min-w-[100px] p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-medium">
                                         <option value="office">Офис</option>
                                         <option value="vitalik">Монтажник</option>
                                         <option value="brigade">Бригада</option>
                                     </select>
-                                    <button onclick="clearServices()" class="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg transition-all" title="Очистить">
-                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    <button onclick="clearServices()" class="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg transition-all" title="Очистить все услуги">
+                                        <i data-lucide="trash" class="w-3.5 h-3.5"></i> Очистить услуги
                                     </button>
                                 </div>
                                 <div id="services-list" class="mb-2">
@@ -1727,6 +1727,7 @@
                 </div>
             </div>
             </div>
+            </div>
 
         <!-- ARCHIVE SCREEN -->
         <div id="archive-screen" class="min-h-screen bg-slate-50 font-sans hidden">
@@ -1764,7 +1765,6 @@
                     <!-- Cards will be injected here -->
                 </div>
             </div>
-        </div>
         </div>
         
         <!-- PROPOSAL SCREEN -->
