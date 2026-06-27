@@ -7,7 +7,7 @@ const DEFAULT_BRAND = {
     // Визуал
     primaryColor: '#2568a9',
     secondaryColors: ['#4bd3f8', '#4cffb4', '#18c366', '#21c59e'],
-    logoUrl: 'logo.png',
+    logoUrl: '',
     qrUrl: '',
     slogan: '',
     customText: '',
