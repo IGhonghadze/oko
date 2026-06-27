@@ -56,7 +56,7 @@ async function doLogin() {
             
             // Если нужно подтянуть другие данные, делаем это асинхронно
             if (typeof loadCompanyDataFromServer === 'function') {
-                loadCompanyDataFromServer().then(() => {
+                loadCompanyDataFromServer(true).then(() => {
                     setTimeout(initOkoTour, 500);
                 });
             }
@@ -300,7 +300,7 @@ async function doRegisterSetPassword() {
                 if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
             }
             
-            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer(true);
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
@@ -429,7 +429,7 @@ async function doForgotSetPassword() {
                 if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
             }
             
-            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer(true);
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         if (typeof loadCompanyDataFromServer === 'function') {
-            loadCompanyDataFromServer().then(() => {
+            loadCompanyDataFromServer(true).then(() => {
                 setTimeout(initOkoTour, 500);
             });
         } else {

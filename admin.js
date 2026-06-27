@@ -1170,13 +1170,15 @@ function applyServerPrices(prices) {
         shapeSelect.innerHTML = '';
         SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
     }
+    
+    console.log('DOM обновлен');
 }
 
 /**
  * Загружает ВСЕ данные компании с сервера (бренд + прайсы).
  * Вызывается после успешного логина.
  */
-async function loadCompanyDataFromServer() {
+async function loadCompanyDataFromServer(skipPrices = false) {
     console.log('[Multi-tenancy] Загружаю данные компании с сервера...');
     
     // Загружаем параллельно — бренд и прайсы
@@ -1185,7 +1187,12 @@ async function loadCompanyDataFromServer() {
     if (typeof loadBrandFromServer === 'function') {
         promises.push(loadBrandFromServer());
     }
-    promises.push(loadPricesFromServer());
+    
+    // Если цены уже применились из ответа логина (skipPrices), то мы не делаем повторный запрос, 
+    // чтобы не перезаписать их старыми данными из-за задержки репликации БД.
+    if (!skipPrices) {
+        promises.push(loadPricesFromServer());
+    }
     
     await Promise.all(promises);
     
