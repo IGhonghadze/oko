@@ -281,6 +281,7 @@ function toggleLayoutBlock(idx) {
         Oko_User_Brand.cpLayout[idx].visible = !Oko_User_Brand.cpLayout[idx].visible;
         renderLayoutBuilder();
         saveBrand();
+        if (typeof saveBrandToServer === 'function') saveBrandToServer();
     }
 }
 
@@ -292,6 +293,7 @@ function moveLayoutBlock(idx, direction) {
     [layout[idx], layout[newIdx]] = [layout[newIdx], layout[idx]];
     renderLayoutBuilder();
     saveBrand();
+    if (typeof saveBrandToServer === 'function') saveBrandToServer();
 }
 
 // --- SAVE BRAND FROM ADMIN INPUTS ---
