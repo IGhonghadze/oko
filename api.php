@@ -921,6 +921,29 @@ if ($action === 'save_company_settings') {
     exit;
 }
 
+// === Сохранение только cp_layout (порядка разделов КП) ===
+if ($action === 'save_cp_layout') {
+    if (!$companyId) { echo json_encode(['error' => 'Компания не привязана']); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['cp_layout'])) { echo json_encode(['error' => 'Нет данных cp_layout']); exit; }
+
+    $cpLayoutJson = json_encode($data['cp_layout'], JSON_UNESCAPED_UNICODE);
+
+    // Проверяем, есть ли запись
+    $check = $pdo->prepare("SELECT id FROM oko_company_settings WHERE company_id = ?");
+    $check->execute([$companyId]);
+
+    if ($check->fetch()) {
+        $stmt = $pdo->prepare("UPDATE oko_company_settings SET cp_layout = ? WHERE company_id = ?");
+        $stmt->execute([$cpLayoutJson, $companyId]);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO oko_company_settings (company_id, cp_layout) VALUES (?, ?)");
+        $stmt->execute([$companyId, $cpLayoutJson]);
+    }
+    echo json_encode(['success' => true, 'saved_layout' => $data['cp_layout']]);
+    exit;
+}
+
 // === MULTI-TENANCY: ЗАГРУЗКА ФАЙЛОВ (ЛОГОТИП / QR) ===
 
 if ($action === 'upload_logo' || $action === 'upload_qr') {

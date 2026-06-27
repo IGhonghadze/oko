@@ -281,7 +281,7 @@ function toggleLayoutBlock(idx) {
         Oko_User_Brand.cpLayout[idx].visible = !Oko_User_Brand.cpLayout[idx].visible;
         renderLayoutBuilder();
         saveBrand();
-        if (typeof saveBrandToServer === 'function') saveBrandToServer();
+        saveCpLayoutToServer();
     }
 }
 
@@ -293,7 +293,39 @@ function moveLayoutBlock(idx, direction) {
     [layout[idx], layout[newIdx]] = [layout[newIdx], layout[idx]];
     renderLayoutBuilder();
     saveBrand();
-    if (typeof saveBrandToServer === 'function') saveBrandToServer();
+    saveCpLayoutToServer();
+}
+
+/**
+ * Сохраняет ТОЛЬКО порядок разделов КП на сервер (лёгкий отдельный endpoint).
+ */
+async function saveCpLayoutToServer() {
+    try {
+        const token = localStorage.getItem('oko_token');
+        if (!token) { console.warn('[cpLayout] Нет токена, не сохраняю'); return; }
+
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        const payload = { cp_layout: Oko_User_Brand.cpLayout || [] };
+
+        console.log('[cpLayout] Отправляю на сервер:', JSON.stringify(payload.cp_layout.map(b => b.id)));
+
+        const resp = await fetch(apiUrl + '?action=save_cp_layout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            console.log('[cpLayout] ✅ Порядок разделов сохранён на сервер');
+        } else {
+            console.error('[cpLayout] ❌ Ошибка сохранения:', result.error);
+        }
+    } catch (e) {
+        console.error('[cpLayout] ❌ Сетевая ошибка:', e);
+    }
 }
 
 // --- SAVE BRAND FROM ADMIN INPUTS ---
@@ -606,11 +638,24 @@ async function loadBrandFromServer() {
             }
 
             // Конструктор КП
-            if (s.cp_layout && Array.isArray(s.cp_layout)) {
+            console.log('[cpLayout] Данные с сервера:', JSON.stringify(s.cp_layout));
+            if (s.cp_layout && Array.isArray(s.cp_layout) && s.cp_layout.length > 0) {
                 Oko_User_Brand.cpLayout = s.cp_layout;
+                console.log('[cpLayout] ✅ Загружен порядок разделов с сервера:', s.cp_layout.map(b => b.id));
+            } else if (typeof s.cp_layout === 'string' && s.cp_layout.length > 2) {
+                // Если сервер вернул строку (не декодировал JSON)
+                try {
+                    const parsed = JSON.parse(s.cp_layout);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        Oko_User_Brand.cpLayout = parsed;
+                        console.log('[cpLayout] ✅ Загружен порядок (из строки):', parsed.map(b => b.id));
+                    }
+                } catch(e) {
+                    console.warn('[cpLayout] Не удалось распарсить строку cp_layout');
+                }
+            } else {
+                console.warn('[cpLayout] ⚠️ cp_layout с сервера пуст или null, используется дефолт');
             }
-
-            // Сохраняем локально (кэш)
             saveBrand();
             console.log('[Multi-tenancy] Настройки бренда загружены с сервера');
         }
