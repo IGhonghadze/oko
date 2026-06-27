@@ -1609,50 +1609,34 @@
                             </div>
                         </div>
                         <div id="cart-items"
-                            class="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4 space-y-3 min-h-[200px]">
+                            class="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-2 space-y-3 min-h-[200px]">
                             <div class="text-center text-slate-400 py-12 flex flex-col items-center gap-3"><i
                                     data-lucide="package-open" class="w-10 h-10 text-slate-200"></i><span
                                     class="text-sm">Смета пуста.<br>Добавьте изделия слева.</span></div>
                         </div>
-<button onclick="clearCart()" class="w-full text-xs text-red-500 hover:text-red-600 font-bold py-1.5 mt-2 mb-2 transition-colors flex items-center justify-center gap-1.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Очистить смету</button>
-                        <div class="border-t border-slate-200 pt-4 space-y-4">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <h3
-                                    class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                    <i data-lucide="wrench" class="w-4 h-4 text-slate-400"></i> Дополнительные услуги
-                                </h3>
-                                <!-- Выбор прайса (Скрыто по запросу) -->
-                                <div class="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center justify-end gap-2">
-                                    <span style="display:none;" class="text-xs text-slate-500 font-medium whitespace-nowrap">Прайс:</span>
-                                    <select style="display:none;" id="srv-pricelist" class="flex-1 min-w-[100px] p-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-primary focus:outline-none font-medium">
-                                        <option value="office">Офис</option>
-                                        <option value="vitalik">Монтажник</option>
-                                        <option value="brigade">Бригада</option>
-                                    </select>
-                                    <button onclick="clearServices()" class="flex items-center gap-1 text-slate-400 hover:text-red-500 text-xs px-2 py-1.5 rounded-lg transition-all" title="Очистить все услуги">
-                                        <i data-lucide="trash" class="w-3.5 h-3.5"></i> Очистить услуги
-                                    </button>
-                                </div>
-                                <div id="services-list" class="mb-2">
-                                    <div class="text-center text-slate-400 text-xs py-3">Нет услуг</div>
-                                </div>
-                                <!-- Add new service row -->
-                                <div class="flex items-end gap-2 mt-2 pt-2 border-t border-slate-100">
-                                    <div class="flex-1">
-                                        <label class="block text-[10px] text-slate-400 mb-0.5">Название</label>
-                                        <input type="text" id="srv-new-name" placeholder="Монтаж, Доставка..."
-                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
-                                    </div>
-                                    <div class="w-28">
-                                        <label class="block text-[10px] text-slate-400 mb-0.5">Сумма ₽</label>
-                                        <input type="number" id="srv-new-amount" placeholder="0" min="0"
-                                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none">
-                                    </div>
-                                    <button onclick="addServiceFromInput()" class="flex items-center gap-1 bg-slate-100 hover:bg-brand-primary hover:text-white text-slate-600 text-xs font-bold px-3 py-2 rounded-lg transition-all whitespace-nowrap">
-                                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
+
+                        <!-- Manual Services (Compact) -->
+                        <div class="border-t border-slate-100 pt-3 mb-4">
+                            <!-- Hidden select to prevent JS errors -->
+                            <select style="display:none;" id="srv-pricelist"><option value="office">Офис</option></select>
+                            
+                            <div id="services-list" class="mb-2">
+                                <div class="text-center text-slate-400 text-[10px] py-1">Нет дополнительных услуг</div>
                             </div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="srv-new-name" placeholder="Название услуги (монтаж, доставка...)"
+                                    class="flex-1 p-2 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none transition-colors">
+                                <input type="number" id="srv-new-amount" placeholder="Сумма, ₽" min="0"
+                                    class="w-28 p-2 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-brand-primary focus:outline-none text-center transition-colors">
+                                <button onclick="addServiceFromInput()" class="flex items-center justify-center bg-brand-primary hover:bg-brand-dark text-white font-bold w-9 h-9 rounded-lg transition-all flex-shrink-0" title="Добавить">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="clearCart()" class="w-full text-xs text-red-500 hover:text-red-600 font-bold py-1.5 transition-colors flex items-center justify-center gap-1.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Очистить смету</button>
+
+                        <div class="border-t border-slate-200 pt-4 space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                                     <h3
