@@ -280,6 +280,7 @@ function toggleLayoutBlock(idx) {
     if (Oko_User_Brand.cpLayout && Oko_User_Brand.cpLayout[idx]) {
         Oko_User_Brand.cpLayout[idx].visible = !Oko_User_Brand.cpLayout[idx].visible;
         renderLayoutBuilder();
+        saveBrand();
     }
 }
 
@@ -290,6 +291,7 @@ function moveLayoutBlock(idx, direction) {
     if (newIdx < 0 || newIdx >= layout.length) return;
     [layout[idx], layout[newIdx]] = [layout[newIdx], layout[idx]];
     renderLayoutBuilder();
+    saveBrand();
 }
 
 // --- SAVE BRAND FROM ADMIN INPUTS ---
