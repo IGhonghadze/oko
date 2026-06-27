@@ -162,6 +162,9 @@ try {
     try {
         $pdo->exec("ALTER TABLE oko_users ADD COLUMN otp_expires_at DATETIME DEFAULT NULL");
     } catch(PDOException $e) { /* Колонка уже есть */ }
+    try {
+        $pdo->exec("ALTER TABLE oko_users ADD COLUMN tabs_order TEXT DEFAULT NULL");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
 
 
     // Создаем админа по умолчанию, если нет пользователей
@@ -942,6 +945,29 @@ if ($action === 'save_cp_layout') {
         $stmt->execute([$companyId, $cpLayoutJson]);
     }
     echo json_encode(['success' => true, 'saved_layout' => $data['cp_layout']]);
+    exit;
+}
+
+// === Сохранение порядка вкладок калькулятора (per user) ===
+if ($action === 'save_tabs_order') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!$data || !isset($data['tabs_order'])) { echo json_encode(['error' => 'Нет данных']); exit; }
+    $tabsJson = json_encode($data['tabs_order'], JSON_UNESCAPED_UNICODE);
+    $stmt = $pdo->prepare("UPDATE oko_users SET tabs_order = ? WHERE id = ?");
+    $stmt->execute([$tabsJson, $user['id']]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'get_tabs_order') {
+    $stmt = $pdo->prepare("SELECT tabs_order FROM oko_users WHERE id = ?");
+    $stmt->execute([$user['id']]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $order = null;
+    if ($row && $row['tabs_order']) {
+        $order = json_decode($row['tabs_order'], true);
+    }
+    echo json_encode(['success' => true, 'tabs_order' => $order]);
     exit;
 }
 

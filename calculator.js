@@ -272,13 +272,60 @@ function saveTabsOrder() {
     const tabs = container.querySelectorAll('.tab-btn');
     const order = Array.from(tabs).map(t => t.getAttribute('data-id'));
     localStorage.setItem('oko_tabs_order', JSON.stringify(order));
+    
+    // Сохраняем на сервер
+    const token = localStorage.getItem('oko_token');
+    if (token) {
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        fetch(apiUrl + '?action=save_tabs_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ tabs_order: order })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                console.log('[TabsOrder] ✅ Порядок вкладок сохранён на сервер');
+            } else {
+                console.error('[TabsOrder] ❌ Ошибка:', res.error);
+            }
+        })
+        .catch(e => console.error('[TabsOrder] ❌ Сетевая ошибка:', e));
+    }
 }
 
 function loadTabsOrder() {
     const saved = localStorage.getItem('oko_tabs_order');
-    if (!saved) return;
+    if (saved) {
+        applyTabsOrder(JSON.parse(saved));
+    }
+    
+    // Загружаем с сервера (перезапишет localStorage если есть данные)
+    const token = localStorage.getItem('oko_token');
+    if (token) {
+        const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
+        fetch(apiUrl + '?action=get_tabs_order', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.tabs_order && Array.isArray(res.tabs_order) && res.tabs_order.length > 0) {
+                console.log('[TabsOrder] ✅ Порядок вкладок загружен с сервера:', res.tabs_order);
+                localStorage.setItem('oko_tabs_order', JSON.stringify(res.tabs_order));
+                applyTabsOrder(res.tabs_order);
+            } else {
+                console.log('[TabsOrder] На сервере нет сохранённого порядка');
+            }
+        })
+        .catch(e => console.warn('[TabsOrder] Не удалось загрузить с сервера:', e));
+    }
+}
+
+function applyTabsOrder(order) {
     try {
-        const order = JSON.parse(saved);
         const container = document.getElementById('calc-tabs-container');
         if (!container) return;
         
@@ -289,7 +336,7 @@ function loadTabsOrder() {
             }
         });
     } catch (e) {
-        console.error('Ошибка загрузки порядка вкладок:', e);
+        console.error('Ошибка применения порядка вкладок:', e);
     }
 }
 
