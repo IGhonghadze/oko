@@ -447,6 +447,9 @@ function initSortable(wrapperElement, targetArray, renderFunction) {
             
             renderFunction();
             if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            // Перерисовываем UI с новым порядком
+            if (typeof forceRenderUI === 'function') forceRenderUI();
         }
     });
 }
@@ -960,16 +963,8 @@ function saveAdminPrices(silent = false) {
 
         if (!silent) alert('Настройки успешно сохранены!');
         
-        if (typeof initPresetServices === 'function') initPresetServices();
-        if (typeof updateDropdownPrices === 'function') updateDropdownPrices();
-        if (typeof initSillsTab === 'function') initSillsTab();
-        if (typeof initSlopesTab === 'function') initSlopesTab();
-        
-        let shapeSelect = document.getElementById('glass-shape');
-        if (shapeSelect && typeof SHAPES !== 'undefined') {
-            shapeSelect.innerHTML = '';
-            SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
-        }
+        // Используем единую мощную функцию перерисовки
+        if (typeof forceRenderUI === 'function') forceRenderUI();
         
         if (typeof renderCart === 'function') renderCart();
     } catch (err) {
@@ -1135,6 +1130,10 @@ function applyServerPrices(prices) {
     if (!prices) return;
     
     Oko_User_Prices = prices;
+    
+    // ФИКС: Сохраняем в localStorage, чтобы при следующей загрузке до ответа сервера не было старых данных
+    let username = localStorage.getItem('oko_username') || 'admin';
+    localStorage.setItem('oko_user_prices_' + username, JSON.stringify(Oko_User_Prices));
     
     // Синхронизируем глобальные массивы
     if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];

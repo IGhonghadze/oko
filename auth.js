@@ -51,12 +51,17 @@ async function doLogin() {
                 if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
             }
             if (data.tabs_order) {
+                localStorage.setItem('oko_tabs_order', JSON.stringify(data.tabs_order));
                 if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
             }
             
+            // Жестко перерисовываем UI сразу после получения данных
+            if (typeof forceRenderUI === 'function') forceRenderUI();
+            
             // Если нужно подтянуть другие данные, делаем это асинхронно
             if (typeof loadCompanyDataFromServer === 'function') {
-                loadCompanyDataFromServer(true).then(() => {
+                loadCompanyDataFromServer(false).then(() => {
+                    if (typeof forceRenderUI === 'function') forceRenderUI();
                     setTimeout(initOkoTour, 500);
                 });
             }
@@ -122,7 +127,19 @@ function doLogout() {
     if (tourCompleted) {
         localStorage.setItem('oko_tour_completed', tourCompleted);
     }
-    location.reload();
+    // SPA-логика: скрываем приложение и показываем экран входа (без перезагрузки)
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('pwd-screen').style.display = 'flex';
+    // Очищаем поля ввода
+    var loginUser = document.getElementById('login-username');
+    var loginPass = document.getElementById('login-password');
+    if (loginUser) loginUser.value = '';
+    if (loginPass) loginPass.value = '';
+    var loginErr = document.getElementById('login-error');
+    if (loginErr) loginErr.classList.add('hidden');
+    // Показываем форму логина (скрываем регистрацию и восстановление)
+    if (typeof showLoginForm === 'function') showLoginForm();
+    setTimeout(function() { if (loginUser) loginUser.focus(); }, 100);
 }
 
 // === RBAC: Переключение форм вход/регистрация ===
@@ -451,11 +468,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const el = document.getElementById('current-company-name');
         if (el) el.textContent = comp;
         
+        // ФИКС: data объявлена ДО try, чтобы быть доступной ниже
+        let data = null;
         try {
             const res = await fetch(API_URL_AUTH + '?action=me', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
-            const data = await res.json();
+            data = await res.json();
             if (data && !data.error) {
                 localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
                 if (data.subscription_until) {
@@ -470,16 +489,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         updateTrialCounter();
         applyModules();
-        // Если сервер вернул цены и порядок вкладок при загрузке страницы, применяем их мгновенно
+        
+        // Применяем цены и порядок вкладок из ответа сервера (data теперь доступна)
         if (data && data.prices) {
             if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
         }
         if (data && data.tabs_order) {
+            localStorage.setItem('oko_tabs_order', JSON.stringify(data.tabs_order));
             if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
         }
         
+        // Жестко перерисовываем UI после применения данных
+        if (typeof forceRenderUI === 'function') forceRenderUI();
+        
+        // Загружаем ВСЕ данные компании с сервера (skipPrices=false — загрузить и цены тоже)
         if (typeof loadCompanyDataFromServer === 'function') {
-            loadCompanyDataFromServer(true).then(() => {
+            loadCompanyDataFromServer(false).then(() => {
+                if (typeof forceRenderUI === 'function') forceRenderUI();
                 setTimeout(initOkoTour, 500);
             });
         } else {

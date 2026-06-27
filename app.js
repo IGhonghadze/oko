@@ -67,6 +67,55 @@ let currentPricesSource = 'built-in';
 let currentPricesDate = null;
 let googleSheetsUrl = localStorage.getItem('oko_gsheets_url') || '';
 
+// --- FORCE RENDER UI ---
+window.forceRenderUI = function() {
+    console.log('[forceRenderUI] Жесткая перерисовка интерфейса...');
+    
+    // 1. Очистка и перерисовка селектов (цены и списки)
+    if (typeof updateDropdownPrices === 'function') {
+        ['glass-type', 'hardware-select', 'sandwich-type', 'glasses-item', 'glass-layout', 'net-type', 'glass-shape'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
+        
+        let shapeSelect = document.getElementById('glass-shape');
+        if (shapeSelect && typeof SHAPES !== 'undefined') {
+            SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+        }
+        
+        updateDropdownPrices();
+    }
+    
+    // 2. Очистка и перерисовка вкладок (табы)
+    ['sills-container', 'slopes-container', 'blinds-container', 'roller-profiles-container'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+    
+    if (typeof initSillsTab === 'function') initSillsTab();
+    if (typeof initSlopesTab === 'function') initSlopesTab();
+    if (typeof initBlindsTab === 'function') initBlindsTab();
+    if (typeof updateRollerProfiles === 'function') updateRollerProfiles();
+    if (typeof updateDoorOptions === 'function') updateDoorOptions();
+    
+    // 3. Восстанавливаем порядок вкладок
+    if (typeof applyTabsOrder === 'function') {
+        const tabsOrderStr = localStorage.getItem('oko_tabs_order');
+        if (tabsOrderStr) {
+            try {
+                applyTabsOrder(JSON.parse(tabsOrderStr));
+            } catch(e) {}
+        }
+    }
+    
+    // 4. Дополнительные перерисовки модулей
+    if (typeof toggleFlOptions === 'function') toggleFlOptions();
+    if (typeof applyModules === 'function') applyModules();
+    if (typeof initPresetServices === 'function') initPresetServices();
+
+    console.log('[forceRenderUI] Интерфейс перерисован.');
+};
+
 // --- INIT ---
 window.onload = function () {
     lucide.createIcons();
@@ -89,6 +138,9 @@ window.onload = function () {
     toggleFlOptions(); // Initialize Partition/Salinox visibility
     handleSettingsChange();
     setupEnterKeys();
+    
+    // ФИКС: Явно загружаем порядок вкладок при инициализации (сначала из localStorage, затем с сервера)
+    if (typeof loadTabsOrder === 'function') loadTabsOrder();
 };
 
 function setupEnterKeys() {
