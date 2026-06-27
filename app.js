@@ -1942,7 +1942,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (priceTierEl) {
         priceTierEl.addEventListener('change', () => {
             initPresetServices();
-            if (typeof autoFillServices === 'function') autoFillServices();
+            
         });
     }
 });
@@ -2011,57 +2011,7 @@ function renderServicesList() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-function autoFillServices() {
-    let priceTier = document.getElementById('srv-pricelist').value;
-    let tierIdx = { office: 0, vitalik: 1, brigade: 2 }[priceTier] || 0;
-    let P = (key) => MOUNT_PRICES[key][tierIdx];
 
-    let glassArea = 0, framelessArea = 0, showerCount = 0;
-    let sillLengthCrystallitM = 0, sillLengthSimpleM = 0;
-    let netCount = 0, netPleatedCount = 0;
-
-    ITEMS.forEach(it => {
-        if (it.category === 'glass') {
-            glassArea += (it.area || 0) * (it.qty || 1);
-        } else if (it.category === 'frameless') {
-            framelessArea += (it.area || 0);
-        } else if (it.category === 'shower') {
-            showerCount += 1;
-        } else if (it.category === 'sill') {
-            let lenM = (it.h || 0) / 1000;
-            let qty = it.qty || 1;
-            if (it.type && it.type.includes('Crystallit')) sillLengthCrystallitM += lenM * qty;
-            else sillLengthSimpleM += lenM * qty;
-        } else if (it.category === 'net') {
-            let isPleated = it.type && it.type.toLowerCase().includes('\u043f\u043b\u0438\u0441\u0441');
-            if (isPleated) netPleatedCount += (it.qty || 1); else netCount += (it.qty || 1);
-        }
-    });
-
-    let totalArea = glassArea + framelessArea;
-    if (totalArea === 0 && showerCount === 0 && sillLengthCrystallitM === 0 && sillLengthSimpleM === 0 && netCount === 0 && netPleatedCount === 0) {
-        alert('\u041a\u043e\u0440\u0437\u0438\u043d\u0430 \u043f\u0443\u0441\u0442\u0430\u044f \u2014 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f \u043f\u0435\u0440\u0435\u0434 \u0430\u0432\u0442\u043e\u0440\u0430\u0441\u0447\u0451\u0442\u043e\u043c!'); return;
-    }
-
-    let installTotal = Math.ceil((glassArea * P('montaz58')) + (framelessArea * P('razdvizh')) + (showerCount * P('shower')));
-    let sillMount = Math.ceil((sillLengthCrystallitM * P('sill')) + (sillLengthSimpleM * P('sillSimple')));
-    let netMount = Math.ceil((netCount * P('net')) + (netPleatedCount * P('netPleated')));
-    let liftTotal = totalArea > 0 ? Math.ceil(totalArea * P('lift')) : 0;
-    let utilTotal = totalArea > 0 ? Math.ceil(totalArea * P('util')) : 0;
-
-    // Заполняем массив SERVICES
-    SERVICES = [];
-    if (installTotal > 0) SERVICES.push({ name: 'Монтаж изделий', amount: installTotal });
-    if (liftTotal > 0) SERVICES.push({ name: 'Подъём', amount: liftTotal });
-    if (utilTotal > 0) SERVICES.push({ name: 'Утилизация', amount: utilTotal });
-    if (sillMount + netMount > 0) SERVICES.push({ name: 'Штапики / Сетки', amount: sillMount + netMount });
-
-    let tierName = priceTier === 'office' ? '\u041e\u0444\u0438\u0441' : priceTier === 'vitalik' ? '\u041c\u043e\u043d\u0442\u0430\u0436\u043d\u0438\u043a' : '\u0411\u0440\u0438\u0433\u0430\u0434\u0430';
-    let total = SERVICES.reduce((s, srv) => s + srv.amount, 0);
-    alert(`\u2705 \u0410\u0432\u0442\u043e\u0440\u0430\u0441\u0447\u0451\u0442 (\u041f\u0440\u0430\u0439\u0441: ${tierName})\n\n\u0418\u0442\u043e\u0433 \u0443\u0441\u043b\u0443\u0433: ${total.toLocaleString()} \u20bd`);
-    renderServicesList();
-    renderCart();
-}
 
 function clearServices() {
     SERVICES = [];
