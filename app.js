@@ -307,7 +307,7 @@ function loadTabsOrder() {
     const token = localStorage.getItem('oko_token');
     if (token) {
         const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'api.php';
-        fetch(apiUrl + '?action=get_tabs_order', {
+        fetch(apiUrl + '?action=get_tabs_order&_cb=' + Date.now(), {
             headers: { 'Authorization': 'Bearer ' + token }
         })
         .then(r => r.json())

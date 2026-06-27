@@ -56,6 +56,11 @@ async function doLogin() {
                 });
             }
             
+            // Загружаем сохранённый порядок вкладок с задержкой (чтобы БД на сервере успела синхронизировать токен)
+            setTimeout(() => {
+                if (typeof loadTabsOrder === 'function') loadTabsOrder();
+            }, 800);
+            
             // Перезагрузим архив, если он есть
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
@@ -184,8 +189,11 @@ async function doRegisterRequest() {
     const errorEl = document.getElementById('reg-error-1');
     const btn = document.querySelector('#reg-step-1 button');
     
+    const agreeInp = document.getElementById('reg-agree-tos');
+    
     if (btn.disabled) return;
     if (!emailInp.value || !companyInp.value) { errorEl.textContent = 'Заполните все поля'; errorEl.classList.remove('hidden'); return; }
+    if (agreeInp && !agreeInp.checked) { errorEl.textContent = 'Необходимо согласие с Пользовательским соглашением'; errorEl.classList.remove('hidden'); return; }
     
     // Запускаем таймер
     startOtpTimer(btn.id || 'reg-btn-1', 'reg-btn-text' || btn.querySelector('span > span').id, 'Получить код');
@@ -284,6 +292,9 @@ async function doRegisterSetPassword() {
             document.getElementById('app').style.display = 'block';
             document.getElementById('current-company-name').textContent = data.company_name;
             applyModules();
+            setTimeout(() => {
+                if (typeof loadTabsOrder === 'function') loadTabsOrder();
+            }, 800);
             if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
@@ -405,6 +416,9 @@ async function doForgotSetPassword() {
             document.getElementById('app').style.display = 'block';
             document.getElementById('current-company-name').textContent = data.company_name;
             applyModules();
+            setTimeout(() => {
+                if (typeof loadTabsOrder === 'function') loadTabsOrder();
+            }, 800);
             if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {

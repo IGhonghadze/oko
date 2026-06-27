@@ -531,6 +531,7 @@ if ($action === 'login_email') {
     $sessionToken = generateSecureToken();
     $stmt = $pdo->prepare("UPDATE oko_users SET session_token = ?, token = ? WHERE id = ?");
     $stmt->execute([$sessionToken, $sessionToken, $user['id']]);
+    file_put_contents('tabs_debug.log', date('Y-m-d H:i:s') . " - Login: " . $user['id'] . "\n", FILE_APPEND);
     echo json_encode([
         'success' => true,
         'session_token' => $sessionToken,
@@ -966,6 +967,7 @@ if ($action === 'get_tabs_order') {
     if ($row && $row['tabs_order']) {
         $order = json_decode($row['tabs_order'], true);
     }
+    file_put_contents('tabs_debug.log', date('Y-m-d H:i:s') . " - User: " . $user['id'] . " - Order: " . json_encode($order) . "\n", FILE_APPEND);
     echo json_encode(['success' => true, 'tabs_order' => $order]);
     exit;
 }
