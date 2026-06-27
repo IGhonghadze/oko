@@ -46,22 +46,20 @@ async function doLogin() {
             
             applyModules();
             
-            // Multi-tenancy: сохраняем company_id и загружаем данные компании с сервера (с задержкой для репликации БД)
-            if (data.company_id) {
-                localStorage.setItem('oko_company_id', data.company_id);
+            // Инициализация интерфейса прямо из ответа сервера (без вторичных запросов)
+            if (data.prices) {
+                if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
             }
-            setTimeout(() => {
-                if (typeof loadCompanyDataFromServer === 'function') {
-                    loadCompanyDataFromServer().then(() => {
-                        setTimeout(initOkoTour, 500);
-                    });
-                }
-            }, 800);
+            if (data.tabs_order) {
+                if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
+            }
             
-            // Загружаем сохранённый порядок вкладок с задержкой (чтобы БД на сервере успела синхронизировать токен)
-            setTimeout(() => {
-                if (typeof loadTabsOrder === 'function') loadTabsOrder();
-            }, 800);
+            // Если нужно подтянуть другие данные, делаем это асинхронно
+            if (typeof loadCompanyDataFromServer === 'function') {
+                loadCompanyDataFromServer().then(() => {
+                    setTimeout(initOkoTour, 500);
+                });
+            }
             
             // Перезагрузим архив, если он есть
             if (typeof fetchArchive === 'function') fetchArchive();
@@ -294,12 +292,15 @@ async function doRegisterSetPassword() {
             document.getElementById('app').style.display = 'block';
             document.getElementById('current-company-name').textContent = data.company_name;
             applyModules();
-            setTimeout(() => {
-                if (typeof loadTabsOrder === 'function') loadTabsOrder();
-            }, 800);
-            setTimeout(() => {
-                if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
-            }, 800);
+            // Инициализация интерфейса прямо из ответа сервера
+            if (data.prices) {
+                if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
+            }
+            if (data.tabs_order) {
+                if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
+            }
+            
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
@@ -420,12 +421,15 @@ async function doForgotSetPassword() {
             document.getElementById('app').style.display = 'block';
             document.getElementById('current-company-name').textContent = data.company_name;
             applyModules();
-            setTimeout(() => {
-                if (typeof loadTabsOrder === 'function') loadTabsOrder();
-            }, 800);
-            setTimeout(() => {
-                if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
-            }, 800);
+            // Инициализация интерфейса прямо из ответа сервера
+            if (data.prices) {
+                if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
+            }
+            if (data.tabs_order) {
+                if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
+            }
+            
+            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
@@ -466,9 +470,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         updateTrialCounter();
         applyModules();
-        loadTabsOrder();
+        // Если сервер вернул цены и порядок вкладок при загрузке страницы, применяем их мгновенно
+        if (data && data.prices) {
+            if (typeof applyServerPrices === 'function') applyServerPrices(data.prices);
+        }
+        if (data && data.tabs_order) {
+            if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
+        }
         
-        // Multi-tenancy: загружаем данные компании с сервера при восстановлении сессии
         if (typeof loadCompanyDataFromServer === 'function') {
             loadCompanyDataFromServer().then(() => {
                 setTimeout(initOkoTour, 500);

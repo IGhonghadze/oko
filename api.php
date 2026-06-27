@@ -232,6 +232,18 @@ function generateSecureToken() {
     }
 }
 
+// Получение прайсов компании
+function getCompanyPricesData($pdo, $companyId) {
+    if (!$companyId) return null;
+    $stmt = $pdo->prepare("SELECT prices_json FROM oko_company_prices WHERE company_id = ?");
+    $stmt->execute([$companyId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row && $row['prices_json']) {
+        return json_decode($row['prices_json'], true);
+    }
+    return null;
+}
+
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // === MAIL SENDER ===
@@ -532,16 +544,19 @@ if ($action === 'login_email') {
     $stmt = $pdo->prepare("UPDATE oko_users SET session_token = ?, token = ? WHERE id = ?");
     $stmt->execute([$sessionToken, $sessionToken, $user['id']]);
     file_put_contents('tabs_debug.log', date('Y-m-d H:i:s') . " - Login: " . $user['id'] . "\n", FILE_APPEND);
+    $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
     echo json_encode([
         'success' => true,
         'session_token' => $sessionToken,
         'token' => $sessionToken,
         'company_name' => $user['company_name'],
-        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'company_id' => $companyId,
         'role' => isset($user['role']) ? $user['role'] : 'owner',
         'is_admin' => ($user['id'] == 1),
         'subscription_until' => $user['subscription_until'],
-        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true),
+        'tabs_order' => isset($user['tabs_order']) ? json_decode($user['tabs_order'], true) : null,
+        'prices' => getCompanyPricesData($pdo, $companyId)
     ]);
     exit;
 }
@@ -633,14 +648,17 @@ if ($action === 'login') {
             $updateStmt = $pdo->prepare("UPDATE oko_users SET token = ? WHERE id = ?");
             $updateStmt->execute([$token, $user['id']]);
             
+            $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
             echo json_encode([
                 'success' => true, 
                 'token' => $token, 
                 'company_name' => $user['company_name'],
                 'is_admin' => ($user['id'] == 1),
-                'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+                'company_id' => $companyId,
                 'subscription_until' => $user['subscription_until'],
-                'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+                'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true),
+                'tabs_order' => isset($user['tabs_order']) ? json_decode($user['tabs_order'], true) : null,
+                'prices' => getCompanyPricesData($pdo, $companyId)
             ]);
             exit;
         }
@@ -659,13 +677,16 @@ if (!$user) {
 $userId = $user['id'];
 
 if ($action === 'me') {
+    $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
     echo json_encode([
         'username' => $user['username'],
         'company_name' => $user['company_name'],
         'is_admin' => ($user['id'] == 1),
-        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'company_id' => $companyId,
         'subscription_until' => $user['subscription_until'],
-        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true),
+        'tabs_order' => isset($user['tabs_order']) ? json_decode($user['tabs_order'], true) : null,
+        'prices' => getCompanyPricesData($pdo, $companyId)
     ]);
     exit;
 }
