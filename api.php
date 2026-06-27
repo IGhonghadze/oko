@@ -138,6 +138,11 @@ try {
         $pdo->exec("ALTER TABLE oko_companies ADD COLUMN modules_access JSON DEFAULT NULL");
     } catch(PDOException $e) { /* Колонка уже есть */ }
 
+    // === Обновление таблицы oko_company_settings (добавление новых колонок) ===
+    try {
+        $pdo->exec("ALTER TABLE oko_company_settings ADD COLUMN cp_layout TEXT");
+    } catch(PDOException $e) { /* Колонка уже есть */ }
+
     // === RBAC: Новые колонки для oko_users ===
     try {
         $pdo->exec("ALTER TABLE oko_users ADD COLUMN email VARCHAR(255) DEFAULT NULL");
