@@ -631,10 +631,14 @@ async function loadBrandFromServer() {
             if (s.logo_path) {
                 const baseUrl = apiUrl.replace(/api\.php.*$/, '');
                 Oko_User_Brand.logoUrl = baseUrl + s.logo_path;
+            } else {
+                Oko_User_Brand.logoUrl = '';
             }
             if (s.qr_path) {
                 const baseUrl = apiUrl.replace(/api\.php.*$/, '');
                 Oko_User_Brand.qrUrl = baseUrl + s.qr_path;
+            } else {
+                Oko_User_Brand.qrUrl = '';
             }
 
             // Конструктор КП

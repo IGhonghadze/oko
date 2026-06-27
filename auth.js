@@ -127,6 +127,10 @@ function doLogout() {
     if (tourCompleted) {
         localStorage.setItem('oko_tour_completed', tourCompleted);
     }
+    
+    // Сброс состояния бренда в памяти, чтобы не было утечки между аккаунтами
+    if (typeof initBrand === 'function') initBrand();
+    
     // SPA-логика: скрываем приложение и показываем экран входа (без перезагрузки)
     document.getElementById('app').style.display = 'none';
     document.getElementById('pwd-screen').style.display = 'flex';

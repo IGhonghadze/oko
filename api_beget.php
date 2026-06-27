@@ -1004,7 +1004,8 @@ if ($action === 'upload_logo' || $action === 'upload_qr') {
 
     // Определяем имя файла
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'png';
-    $filename = ($action === 'upload_logo') ? 'logo.' . $ext : 'qr.' . $ext;
+    $timestamp = time();
+    $filename = ($action === 'upload_logo') ? 'logo_' . $timestamp . '.' . $ext : 'qr_' . $timestamp . '.' . $ext;
 
     // Удаляем старый файл (если другое расширение)
     $pattern = ($action === 'upload_logo') ? 'logo.*' : 'qr.*';
