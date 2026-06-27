@@ -55,8 +55,16 @@ async function doLogin() {
                 if (typeof applyTabsOrder === 'function') applyTabsOrder(data.tabs_order);
             }
             
-            // По просьбе пользователя: принудительное обновление страницы после входа
-            window.location.reload();
+            // Жестко перерисовываем UI сразу после получения данных
+            if (typeof forceRenderUI === 'function') forceRenderUI();
+            
+            // Если нужно подтянуть другие данные, делаем это асинхронно
+            if (typeof loadCompanyDataFromServer === 'function') {
+                loadCompanyDataFromServer(false).then(() => {
+                    if (typeof forceRenderUI === 'function') forceRenderUI();
+                    setTimeout(initOkoTour, 500);
+                });
+            }
             
             // Перезагрузим архив, если он есть
             if (typeof fetchArchive === 'function') fetchArchive();
