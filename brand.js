@@ -83,122 +83,132 @@ function renderAdminBrand() {
         <h4 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
             <i data-lucide="palette" class="w-4 h-4 text-brand-primary"></i> Визуал бренда
         </h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Логотип компании</label>
-                <input type="file" id="brand-logo-file" accept="image/*" style="display:none"
-                    onchange="handleBrandFileUpload('upload_logo', this, 'brand-logo-preview')">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Левая колонка (Файлы) -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Логотип</label>
+                    <input type="file" id="brand-logo-file" accept="image/*" style="display:none"
+                        onchange="handleBrandFileUpload('upload_logo', this, 'brand-logo-preview')">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button type="button" onclick="document.getElementById('brand-logo-file').click()"
+                            class="w-full py-1.5 bg-brand-primary text-white text-xs font-bold rounded hover:opacity-90 transition-opacity flex justify-center items-center gap-1">
+                            <i data-lucide="upload" class="w-3.5 h-3.5"></i> Загрузить
+                        </button>
+                    </div>
+                    <div class="p-1 bg-white rounded border border-slate-200 flex items-center justify-center h-16 relative group">
+                        <img id="brand-logo-preview" src="${b.logoUrl || ''}" class="max-h-14 max-w-full object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
+                        <span id="brand-logo-filename" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-400 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity">${b.logoUrl ? 'Файл загружен' : 'Нет файла'}</span>
+                    </div>
+                    <input type="hidden" id="brand-logo-url" value="${b.logoUrl || ''}">
+                </div>
+                
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">QR-код оплаты</label>
+                    <input type="file" id="brand-qr-file" accept="image/*" style="display:none"
+                        onchange="handleBrandFileUpload('upload_qr', this, 'brand-qr-preview')">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button type="button" onclick="document.getElementById('brand-qr-file').click()"
+                            class="w-full py-1.5 bg-slate-700 text-white text-xs font-bold rounded hover:opacity-90 transition-opacity flex justify-center items-center gap-1">
+                            <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Загрузить
+                        </button>
+                    </div>
+                    <div class="p-1 bg-white rounded border border-slate-200 flex items-center justify-center h-16 relative group">
+                        <img id="brand-qr-preview" src="${b.qrUrl || ''}" class="max-h-14 max-w-full object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
+                        <span id="brand-qr-filename" class="absolute inset-0 flex items-center justify-center text-[10px] text-slate-400 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity">${b.qrUrl ? 'Файл загружен' : 'Нет файла'}</span>
+                    </div>
+                    <input type="hidden" id="brand-qr-url" value="${b.qrUrl || ''}">
+                </div>
+            </div>
+
+            <!-- Правая колонка (Тексты) -->
+            <div class="space-y-3">
                 <div class="flex items-center gap-3">
-                    <button type="button" onclick="document.getElementById('brand-logo-file').click()"
-                        class="px-4 py-2.5 bg-brand-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
-                        <i data-lucide="upload" class="w-4 h-4"></i> Выбрать файл
-                    </button>
-                    <span id="brand-logo-filename" class="text-xs text-slate-400">${b.logoUrl ? 'Загружено' : 'Файл не выбран'}</span>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Цвет бренда (Hex)</label>
+                        <input type="text" id="brand-primary-color-hex" value="${b.primaryColor || '#2568a9'}" 
+                            class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs font-mono focus:ring-1 focus:ring-brand-primary focus:outline-none"
+                            oninput="document.getElementById('brand-primary-color').value = this.value">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 opacity-0">Цвет</label>
+                        <input type="color" id="brand-primary-color" value="${b.primaryColor || '#2568a9'}" class="w-10 h-8 rounded border border-slate-200 cursor-pointer p-0" oninput="document.getElementById('brand-primary-color-hex').value = this.value">
+                    </div>
                 </div>
-                <div class="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-center h-20">
-                    <img id="brand-logo-preview" src="${b.logoUrl || ''}" alt="Превью логотипа" class="max-h-16 max-w-[200px] object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Слоган / подпись</label>
+                    <input type="text" id="brand-slogan" value="${(b.slogan || '').replace(/\n/g, '\\n')}" 
+                        class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none"
+                        placeholder="Комплексные решения...">
                 </div>
-                <input type="hidden" id="brand-logo-url" value="${b.logoUrl || ''}">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Главный цвет бренда</label>
-                <div class="flex items-center gap-3">
-                    <input type="color" id="brand-primary-color" value="${b.primaryColor || '#2568a9'}" class="w-12 h-12 rounded border border-slate-200 cursor-pointer">
-                    <input type="text" id="brand-primary-color-hex" value="${b.primaryColor || '#2568a9'}" 
-                        class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-brand-primary focus:outline-none"
-                        oninput="document.getElementById('brand-primary-color').value = this.value">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Телефон</label>
+                        <input type="text" id="brand-phone" value="${b.phone || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Email</label>
+                        <input type="text" id="brand-email" value="${b.email || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
+                    </div>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-1">Этот цвет будет использоваться в КП: заголовки, рамки, акценты.</p>
             </div>
-        </div>
-        <div class="mt-4">
-            <label class="block text-xs font-bold text-slate-600 mb-1">Слоган / подпись под логотипом</label>
-            <input type="text" id="brand-slogan" value="${(b.slogan || '').replace(/\n/g, '\\n')}" 
-                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none"
-                placeholder="Комплексные решения для дома и бизнеса">
-            <p class="text-[10px] text-slate-400 mt-1">Используйте \\n для переноса строки.</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Телефон (под слоганом)</label>
-                <input type="text" id="brand-phone" value="${b.phone || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Email (под слоганом)</label>
-                <input type="text" id="brand-email" value="${b.email || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
-            </div>
-        </div>
-        <div class="mt-4">
-            <label class="block text-xs font-bold text-slate-600 mb-1">QR-код для оплаты</label>
-            <input type="file" id="brand-qr-file" accept="image/*" style="display:none"
-                onchange="handleBrandFileUpload('upload_qr', this, 'brand-qr-preview')">
-            <div class="flex items-center gap-3">
-                <button type="button" onclick="document.getElementById('brand-qr-file').click()"
-                    class="px-4 py-2.5 bg-brand-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
-                    <i data-lucide="upload" class="w-4 h-4"></i> Выбрать файл
-                </button>
-                <span id="brand-qr-filename" class="text-xs text-slate-400">${b.qrUrl ? 'Загружено' : 'Файл не выбран'}</span>
-            </div>
-            <div class="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex items-center justify-center h-20">
-                <img id="brand-qr-preview" src="${b.qrUrl || ''}" alt="Превью QR" class="max-h-16 max-w-[200px] object-contain" onerror="this.style.display='none'" onload="this.style.display=''">
-            </div>
-            <input type="hidden" id="brand-qr-url" value="${b.qrUrl || ''}">
         </div>
     </div>
 
-    <!-- Реквизиты компании -->
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
         <h4 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
             <i data-lucide="building-2" class="w-4 h-4 text-brand-primary"></i> Реквизиты компании
         </h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Краткое название</label>
-                <input type="text" id="brand-company-name" value="${b.companyName || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Краткое название</label>
+                <input type="text" id="brand-company-name" value="${b.companyName || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Полное наименование</label>
-                <input type="text" id="brand-company-name-full" value="${b.companyNameFull || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Полное наименование</label>
+                <input type="text" id="brand-company-name-full" value="${b.companyNameFull || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ИНН</label>
-                <input type="text" id="brand-inn" value="${b.inn || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">ИНН</label>
+                <input type="text" id="brand-inn" value="${b.inn || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ОГРНИП / ОГРН</label>
-                <input type="text" id="brand-ogrnip" value="${b.ogrnip || b.ogrn || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">ОГРНИП / ОГРН</label>
+                <input type="text" id="brand-ogrnip" value="${b.ogrnip || b.ogrn || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">КПП (если есть)</label>
-                <input type="text" id="brand-kpp" value="${b.kpp || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none" placeholder="Оставьте пустым для ИП">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">КПП (если есть)</label>
+                <input type="text" id="brand-kpp" value="${b.kpp || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none" placeholder="Для ИП - пусто">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Расчётный счёт</label>
-                <input type="text" id="brand-account" value="${b.account || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Расчётный счёт</label>
+                <input type="text" id="brand-account" value="${b.account || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Банк</label>
-                <input type="text" id="brand-bank-name" value="${b.bankName || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Банк</label>
+                <input type="text" id="brand-bank-name" value="${b.bankName || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">БИК</label>
-                <input type="text" id="brand-bik" value="${b.bik || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">БИК</label>
+                <input type="text" id="brand-bik" value="${b.bik || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Корр. счёт</label>
-                <input type="text" id="brand-corr-account" value="${b.corrAccount || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Корр. счёт</label>
+                <input type="text" id="brand-corr-account" value="${b.corrAccount || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ИНН банка</label>
-                <input type="text" id="brand-inn-bank" value="${b.innBank || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">ИНН банка</label>
+                <input type="text" id="brand-inn-bank" value="${b.innBank || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">КПП банка</label>
-                <input type="text" id="brand-kpp-bank" value="${b.kppBank || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">КПП банка</label>
+                <input type="text" id="brand-kpp-bank" value="${b.kppBank || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none">
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">Подпись (для КП)</label>
-                <input type="text" id="brand-sign-name" value="${b.signName || ''}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-primary focus:outline-none" placeholder="ИП Данелия Д.Т.">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Подпись в КП</label>
+                <input type="text" id="brand-sign-name" value="${b.signName || ''}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-brand-primary focus:outline-none" placeholder="ИП Данелия Д.Т.">
             </div>
         </div>
     </div>
