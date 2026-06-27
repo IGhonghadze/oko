@@ -1145,6 +1145,20 @@ async function loadPricesFromServer() {
             if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = Oko_User_Prices.blinds || [];
 
             console.log('[Multi-tenancy] Прайс-лист загружен с сервера');
+            
+            // ОБНОВЛЯЕМ ИНТЕРФЕЙС, ЧТОБЫ НОВЫЕ ПОЗИЦИИ ПОЯВИЛИСЬ В ВЫПАДАЮЩИХ СПИСКАХ
+            if (typeof initPresetServices === 'function') initPresetServices();
+            if (typeof updateDropdownPrices === 'function') updateDropdownPrices();
+            if (typeof initSillsTab === 'function') initSillsTab();
+            if (typeof initSlopesTab === 'function') initSlopesTab();
+            if (typeof updateRollerProfiles === 'function') updateRollerProfiles();
+            if (typeof initBlindsTab === 'function') initBlindsTab();
+            
+            let shapeSelect = document.getElementById('glass-shape');
+            if (shapeSelect && typeof SHAPES !== 'undefined') {
+                shapeSelect.innerHTML = '';
+                SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+            }
         }
     } catch (e) {
         console.warn('[Multi-tenancy] Не удалось загрузить прайсы с сервера:', e);

@@ -46,15 +46,17 @@ async function doLogin() {
             
             applyModules();
             
-            // Multi-tenancy: сохраняем company_id и загружаем данные компании с сервера
+            // Multi-tenancy: сохраняем company_id и загружаем данные компании с сервера (с задержкой для репликации БД)
             if (data.company_id) {
                 localStorage.setItem('oko_company_id', data.company_id);
             }
-            if (typeof loadCompanyDataFromServer === 'function') {
-                loadCompanyDataFromServer().then(() => {
-                    setTimeout(initOkoTour, 500);
-                });
-            }
+            setTimeout(() => {
+                if (typeof loadCompanyDataFromServer === 'function') {
+                    loadCompanyDataFromServer().then(() => {
+                        setTimeout(initOkoTour, 500);
+                    });
+                }
+            }, 800);
             
             // Загружаем сохранённый порядок вкладок с задержкой (чтобы БД на сервере успела синхронизировать токен)
             setTimeout(() => {
@@ -295,7 +297,9 @@ async function doRegisterSetPassword() {
             setTimeout(() => {
                 if (typeof loadTabsOrder === 'function') loadTabsOrder();
             }, 800);
-            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            setTimeout(() => {
+                if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            }, 800);
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
@@ -419,7 +423,9 @@ async function doForgotSetPassword() {
             setTimeout(() => {
                 if (typeof loadTabsOrder === 'function') loadTabsOrder();
             }, 800);
-            if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            setTimeout(() => {
+                if (typeof loadCompanyDataFromServer === 'function') loadCompanyDataFromServer();
+            }, 800);
             if (typeof fetchArchive === 'function') fetchArchive();
         } else {
             errorEl.textContent = data.error || 'Ошибка';
