@@ -2207,6 +2207,55 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Manage Subscription Modal -->
+            <div id="modal-manage-subscription" class="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center hidden">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h3 class="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2"><i data-lucide="calendar-clock" class="w-6 h-6 text-brand-primary"></i> Управление подпиской</h3>
+                    
+                    <input type="hidden" id="edit-sub-user-id">
+                    
+                    <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Статус аккаунта:</span>
+                        <div id="edit-sub-status" class="text-lg font-bold text-slate-800">Загрузка...</div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Продлить на период -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Продлить доступ на:</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="edit-sub-amount" class="w-20 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary font-medium" value="1" min="1">
+                                <select id="edit-sub-unit" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary font-medium">
+                                    <option value="days">Дней</option>
+                                    <option value="months" selected>Месяцев</option>
+                                    <option value="years">Лет</option>
+                                </select>
+                                <button onclick="manageSubscriptionFromModal('set_relative')" class="bg-brand-primary hover:bg-brand-dark text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">Продлить</button>
+                            </div>
+                        </div>
+
+                        <!-- Установить точную дату -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Или установить точную дату отключения:</label>
+                            <div class="flex gap-2">
+                                <input type="date" id="edit-sub-date" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-brand-primary text-sm font-medium">
+                                <button onclick="manageSubscriptionFromModal('set_date')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">Установить</button>
+                            </div>
+                        </div>
+
+                        <!-- Быстрые действия -->
+                        <div class="pt-4 border-t border-slate-100 flex gap-2">
+                            <button onclick="manageSubscriptionFromModal('infinite')" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-1"><i data-lucide="infinity" class="w-4 h-4"></i> Бессрочно</button>
+                            <button onclick="manageSubscriptionFromModal('expire')" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-1"><i data-lucide="ban" class="w-4 h-4"></i> Заблокировать</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="closeSubscriptionModal()" class="px-5 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-bold transition-colors w-full border border-slate-200">Отмена / Закрыть</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

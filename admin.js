@@ -179,35 +179,16 @@ async function loadAdminUsers() {
                     <td class="p-3 border-b border-slate-100">${u.created_at}</td>
                     <td class="p-3 border-b border-slate-100 text-right">
                         ${u.id != 1 ? `
-                            <div class="flex flex-col gap-2">
-                                <div class="flex flex-wrap items-center gap-1 justify-end">
-                                    <span class="text-xs text-slate-500 mr-1">Дать доступ на:</span>
-                                    <input id="sub-amount-${u.id}" type="number" value="1" min="1" class="w-12 text-xs border border-slate-200 rounded px-1 py-0.5 bg-white text-center">
-                                    <select id="sub-unit-${u.id}" class="text-xs border border-slate-200 rounded px-1 py-0.5 bg-white">
-                                        <option value="days" selected>Дн.</option>
-                                        <option value="minutes">Мин.</option>
-                                        <option value="seconds">Сек.</option>
-                                    </select>
-                                    <button onclick="manageSubscription(${u.id}, 'set_relative')" class="text-white hover:bg-blue-600 bg-blue-500 px-2 py-1 rounded transition-colors text-xs font-bold" title="Установить время от текущего момента">Применить</button>
-                                    
-                                    <span class="text-slate-300 mx-1">|</span>
-                                    
-                                    <button onclick="manageSubscription(${u.id}, 'infinite')" class="text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded transition-colors text-xs font-bold" title="Сделать бессрочным">Безлимит</button>
-                                    <button onclick="manageSubscription(${u.id}, 'expire')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors text-xs font-bold" title="Заблокировать немедленно">Блок</button>
-                                </div>
-                                <div class="flex items-center gap-1 justify-end">
-                                    <span class="text-xs text-slate-500 mr-1">Или до даты:</span>
-                                    <input type="date" id="sub-date-${u.id}" class="text-xs border border-slate-200 rounded px-1 py-0.5 bg-white">
-                                    <button onclick="manageSubscription(${u.id}, 'set_date')" class="text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition-colors text-xs font-bold">ОК</button>
-                                    
-                                    <span class="text-slate-300 mx-1">|</span>
-                                    <button onclick="openModulesModal(${u.id}, '${userModulesStr}')" class="text-brand-primary hover:text-brand-dark bg-brand-primary/10 hover:bg-brand-primary/20 px-2 py-1 rounded transition-colors text-xs font-bold">Доступ</button>
-                                    <button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors text-xs font-bold">Удалить</button>
-                                </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="openSubscriptionModal(${u.id}, '${subText}', '${subClass}')" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1 shadow-sm"><i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i> Подписка</button>
+                                <button onclick="openModulesModal(${u.id}, '${userModulesStr}')" class="text-brand-primary hover:text-brand-dark bg-brand-primary/10 hover:bg-brand-primary/20 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1 shadow-sm"><i data-lucide="blocks" class="w-3.5 h-3.5"></i> Доступ</button>
+                                <button onclick="deleteUser(${u.id})" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1 shadow-sm"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Удалить</button>
                             </div>
-                        ` : '<span class="text-xs text-slate-400">Суперадмин</span>'}
+                        ` : '<span class="text-xs text-slate-400 font-bold">👑 Суперадмин</span>'}
                     </td>
                 </tr>`;
+            // Call lucide icons update after adding to DOM
+            setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 10);
         });
     } catch (e) {
         list.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Ошибка сети</td></tr>';
@@ -344,24 +325,39 @@ async function deleteUser(id) {
     }
 }
 
-async function manageSubscription(userId, actionType) {
-    const unitNames = { days: 'дн.', minutes: 'мин.', seconds: 'сек.' };
+function openSubscriptionModal(userId, currentStatusText, currentStatusClass) {
+    document.getElementById('edit-sub-user-id').value = userId;
+    const statusDiv = document.getElementById('edit-sub-status');
+    statusDiv.innerHTML = `<span class="px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm ${currentStatusClass}">${currentStatusText}</span>`;
+    
+    // Сброс полей
+    document.getElementById('edit-sub-amount').value = '1';
+    document.getElementById('edit-sub-unit').value = 'months';
+    document.getElementById('edit-sub-date').value = '';
+
+    document.getElementById('modal-manage-subscription').classList.remove('hidden');
+    if(window.lucide) window.lucide.createIcons();
+}
+
+function closeSubscriptionModal() {
+    document.getElementById('modal-manage-subscription').classList.add('hidden');
+}
+
+async function manageSubscriptionFromModal(actionType) {
+    const userId = document.getElementById('edit-sub-user-id').value;
+    if (!userId) return;
+
     let body = { user_id: userId, action_type: actionType };
     
     if (actionType === 'set_relative') {
-        const amountEl = document.getElementById('sub-amount-' + userId);
-        const unitEl = document.getElementById('sub-unit-' + userId);
-        if (!amountEl || !unitEl) return;
-        const amount = parseInt(amountEl.value);
-        const unit = unitEl.value;
+        const amount = parseInt(document.getElementById('edit-sub-amount').value);
+        const unit = document.getElementById('edit-sub-unit').value;
         if (!amount || amount <= 0) { alert('Введите число больше 0'); return; }
-        const label = 'Установить доступ ровно на ' + amount + ' ' + unitNames[unit] + ' от текущего момента?';
-        if (!confirm(label)) return;
         
         let msToAdd = 0;
         if (unit === 'days') msToAdd = amount * 86400000;
-        else if (unit === 'minutes') msToAdd = amount * 60000;
-        else if (unit === 'seconds') msToAdd = amount * 1000;
+        else if (unit === 'months') msToAdd = amount * 30 * 86400000; // Приблизительно 30 дней
+        else if (unit === 'years') msToAdd = amount * 365 * 86400000;
         
         const newDate = new Date(Date.now() + msToAdd);
         
@@ -375,14 +371,12 @@ async function manageSubscription(userId, actionType) {
         
         const dateString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         
-        // Меняем действие на set_date, так как мы вычислили точную дату
         body.action_type = 'set_date';
         body.new_date = dateString;
     } else if (actionType === 'set_date') {
-        const dateEl = document.getElementById('sub-date-' + userId);
-        if (!dateEl || !dateEl.value) { alert('Пожалуйста, выберите дату'); return; }
-        if (!confirm('Установить окончание подписки на ' + dateEl.value + '?')) return;
-        body.new_date = dateEl.value;
+        const dateEl = document.getElementById('edit-sub-date').value;
+        if (!dateEl) { alert('Пожалуйста, выберите дату'); return; }
+        body.new_date = dateEl;
     } else if (actionType === 'expire') {
         if (!confirm('Заблокировать пользователя (обнулить подписку)?')) return;
     } else if (actionType === 'infinite') {
@@ -400,6 +394,7 @@ async function manageSubscription(userId, actionType) {
         });
         const data = await res.json();
         if (data.success) {
+            closeSubscriptionModal();
             loadAdminUsers();
         } else {
             alert(data.error || 'Ошибка');
