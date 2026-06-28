@@ -131,6 +131,23 @@ function doLogout() {
     // Сброс состояния бренда в памяти, чтобы не было утечки между аккаунтами
     if (typeof initBrand === 'function') initBrand();
     
+    // Сброс сметы в памяти
+    if (typeof ITEMS !== 'undefined') ITEMS = [];
+    if (typeof SERVICES !== 'undefined') SERVICES = [];
+    
+    // Очистка полей сметы
+    if(document.getElementById("client-name")) document.getElementById("client-name").value = "";
+    if(document.getElementById("kp-number-input")) document.getElementById("kp-number-input").value = "";
+    if(document.getElementById("manual-markup-rub")) document.getElementById("manual-markup-rub").value = "";
+    if(document.getElementById("manual-markup-pct")) document.getElementById("manual-markup-pct").value = "";
+    if(document.getElementById("manual-discount-rub")) document.getElementById("manual-discount-rub").value = "";
+    if(document.getElementById("manual-discount-pct")) document.getElementById("manual-discount-pct").value = "";
+    if(document.getElementById("srv-new-name")) document.getElementById("srv-new-name").value = "";
+    if(document.getElementById("srv-new-amount")) document.getElementById("srv-new-amount").value = "";
+
+    if (typeof renderCart === 'function') renderCart();
+    if (typeof renderServicesList === 'function') renderServicesList();
+    
     // SPA-логика: скрываем приложение и показываем экран входа (без перезагрузки)
     document.getElementById('app').style.display = 'none';
     document.getElementById('pwd-screen').style.display = 'flex';
