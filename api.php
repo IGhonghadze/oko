@@ -758,7 +758,7 @@ if ($action === 'admin_users') {
     if ($userId != 1) { echo json_encode(['error' => 'Доступ запрещен']); exit; }
     
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        $stmt = $pdo->query("SELECT id, username, company_name, subscription_until, is_active, modules, created_at FROM oko_users ORDER BY id DESC");
+        $stmt = $pdo->query("SELECT id, username, company_name, subscription_until, is_active, modules, created_at FROM oko_users WHERE password_hash != '' ORDER BY id DESC");
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         exit;
     }

@@ -357,7 +357,7 @@ async function manageSubscriptionFromModal(actionType) {
         let msToAdd = 0;
         if (unit === 'days') msToAdd = amount * 86400000;
         else if (unit === 'months') msToAdd = amount * 30 * 86400000; // Приблизительно 30 дней
-        else if (unit === 'years') msToAdd = amount * 365 * 86400000;
+        else if (unit === 'minutes') msToAdd = amount * 60000;
         
         const newDate = new Date(Date.now() + msToAdd);
         
