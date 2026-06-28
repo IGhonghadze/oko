@@ -766,6 +766,14 @@ function handleBrandFileUpload(action, inputEl, previewId) {
     const file = inputEl.files && inputEl.files[0];
     if (!file) return;
 
+    // Проверка размера файла (оптимально до 2 МБ)
+    const MAX_SIZE_MB = 2;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        alert(`Файл слишком большой! Оптимальный размер логотипа/QR-кода не должен превышать ${MAX_SIZE_MB} МБ.\nТекущий размер: ${(file.size / (1024 * 1024)).toFixed(2)} МБ.`);
+        inputEl.value = ''; // Сбрасываем выбранный файл
+        return;
+    }
+
     // Мгновенное локальное превью
     const preview = document.getElementById(previewId);
     if (preview) {

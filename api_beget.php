@@ -996,6 +996,11 @@ if ($action === 'upload_logo' || $action === 'upload_qr') {
         echo json_encode(['error' => 'Недопустимый тип файла. Разрешены: PNG, JPG, GIF, WebP, SVG']); exit;
     }
 
+    // Проверяем размер файла (не более 2 МБ)
+    if ($file['size'] > 2 * 1024 * 1024) {
+        echo json_encode(['error' => 'Файл слишком большой. Максимальный размер 2 МБ.']); exit;
+    }
+
     // Создаём изолированную директорию для компании
     $uploadDir = __DIR__ . '/uploads/company_' . $companyId . '/';
     if (!is_dir($uploadDir)) {
