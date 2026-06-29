@@ -1133,6 +1133,13 @@ async function loadPricesFromServer() {
 function applyServerPrices(prices) {
     if (!prices) return;
     
+    // PHP может отдать объект вместо массива, если ключи не 0,1,2... Конвертируем обратно в массив.
+    function ensureArray(val) {
+        if (Array.isArray(val)) return val;
+        if (val && typeof val === 'object' && !Array.isArray(val)) return Object.values(val);
+        return [];
+    }
+    
     Oko_User_Prices = prices;
     
     // ФИКС: Сохраняем в localStorage, чтобы при следующей загрузке до ответа сервера не было старых данных
@@ -1140,23 +1147,23 @@ function applyServerPrices(prices) {
     localStorage.setItem('oko_user_prices_' + username, JSON.stringify(Oko_User_Prices));
     
     // Синхронизируем глобальные массивы
-    if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = Oko_User_Prices.glasses || [];
-    if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = Oko_User_Prices.raw_glasses || [];
-    if (typeof SHAPES !== 'undefined') SHAPES = Oko_User_Prices.shapes || [];
-    if (typeof LAYOUTS !== 'undefined') LAYOUTS = Oko_User_Prices.layouts || [];
-    if (typeof NET_TYPES !== 'undefined') NET_TYPES = Oko_User_Prices.nets || [];
-    if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || [];
+    if (typeof GLASS_TYPES !== 'undefined') GLASS_TYPES = ensureArray(Oko_User_Prices.glasses);
+    if (typeof RAW_GLASS_TYPES !== 'undefined') RAW_GLASS_TYPES = ensureArray(Oko_User_Prices.raw_glasses);
+    if (typeof SHAPES !== 'undefined') SHAPES = ensureArray(Oko_User_Prices.shapes);
+    if (typeof LAYOUTS !== 'undefined') LAYOUTS = ensureArray(Oko_User_Prices.layouts);
+    if (typeof NET_TYPES !== 'undefined') NET_TYPES = ensureArray(Oko_User_Prices.nets);
+    if (typeof SALINOX_PRICES !== 'undefined') SALINOX_PRICES = Oko_User_Prices.salinox || {};
     if (typeof OPTIONS !== 'undefined') OPTIONS = Oko_User_Prices.options || [];
-    if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = Oko_User_Prices.sills || [];
-    if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = Oko_User_Prices.slopes || [];
+    if (typeof SILLS_DATA !== 'undefined') SILLS_DATA = ensureArray(Oko_User_Prices.sills);
+    if (typeof SLOPES_DATA !== 'undefined') SLOPES_DATA = ensureArray(Oko_User_Prices.slopes);
     if (typeof SLOPES_PROF_PRICES !== 'undefined') SLOPES_PROF_PRICES = Oko_User_Prices.slopesProf || {};
     if (typeof PARTITION_PRICES !== 'undefined') PARTITION_PRICES = Oko_User_Prices.partition || [];
     if (typeof MOUNT_PRICES !== 'undefined') MOUNT_PRICES = Oko_User_Prices.mount || {};
-    if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = Oko_User_Prices.presetServices || [];
-    if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = Oko_User_Prices.sandwiches || [];
-    if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = Oko_User_Prices.hardware || [];
-    if (typeof BLINDS_TYPES !== 'undefined') BLINDS_TYPES = Oko_User_Prices.blinds || [];
-    if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = Oko_User_Prices.blinds || [];
+    if (typeof PRESET_SERVICES_DB !== 'undefined') PRESET_SERVICES_DB = ensureArray(Oko_User_Prices.presetServices);
+    if (typeof SANDWICH_TYPES !== 'undefined') SANDWICH_TYPES = ensureArray(Oko_User_Prices.sandwiches);
+    if (typeof HARDWARE_TYPES !== 'undefined') HARDWARE_TYPES = ensureArray(Oko_User_Prices.hardware);
+    if (typeof BLINDS_TYPES !== 'undefined') BLINDS_TYPES = ensureArray(Oko_User_Prices.blinds);
+    if (typeof BLINDS_FABRICS !== 'undefined') BLINDS_FABRICS = ensureArray(Oko_User_Prices.blinds);
 
     console.log('[Multi-tenancy] Прайс-лист применён из ответа сервера');
     

@@ -314,7 +314,7 @@ if ($action === 'register_request') {
     } else {
         // Создаём временную запись (без пароля), по умолчанию даем 5 дней пробного периода
         $trialEnd = date('Y-m-d H:i:s', time() + 5 * 86400);
-        $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, otp_code, otp_expires_at, role, subscription_until, modules) VALUES (?, ?, '', ?, ?, ?, 'owner', ?, '[\"all\"]')");
+        $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, otp_code, otp_expires_at, role, subscription_until, modules) VALUES (?, ?, '', ?, ?, ?, 'owner', ?, '[]')");
         $stmt->execute([$email, $email, $companyName, $otp, $otpExpires, $trialEnd]);
     }
     // Отправка красивого HTML OTP на email
