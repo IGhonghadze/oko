@@ -574,24 +574,24 @@ if ($action === 'add_employee') {
         echo json_encode(['error' => 'Только владелец может добавлять сотрудников']); exit;
     }
     $data = json_decode(file_get_contents('php://input'), true);
-    if (!$data || !isset($data['email']) || !isset($data['password'])) {
-        echo json_encode(['error' => 'Укажите email и пароль сотрудника']); exit;
+    if (!$data || !isset($data['username']) || !isset($data['password'])) {
+        echo json_encode(['error' => 'Укажите логин и пароль сотрудника']); exit;
     }
-    $email = normalizeEmail($data['email']);
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['error' => 'Некорректный email']); exit;
+    $username = trim($data['username']);
+    if (empty($username)) {
+        echo json_encode(['error' => 'Логин не может быть пустым']); exit;
     }
-    // Проверяем что email не занят
-    $check = $pdo->prepare("SELECT id FROM oko_users WHERE email = ?");
-    $check->execute([$email]);
+    // Проверяем что username не занят
+    $check = $pdo->prepare("SELECT id FROM oko_users WHERE username = ? OR email = ?");
+    $check->execute([$username, $username]);
     if ($check->fetch()) {
-        echo json_encode(['error' => 'Этот email уже используется']); exit;
+        echo json_encode(['error' => 'Пользователь с таким логином уже существует']); exit;
     }
     $hash = password_hash($data['password'], PASSWORD_DEFAULT);
     $ownerCompanyId = intval($owner['company_id']);
     $stmt = $pdo->prepare("INSERT INTO oko_users (email, username, password_hash, company_name, company_id, role, subscription_until, modules) VALUES (?, ?, ?, ?, ?, 'employee', ?, ?)");
     $stmt->execute([
-        $email, $email, $hash,
+        $username, $username, $hash,
         $owner['company_name'], $ownerCompanyId,
         $owner['subscription_until'],
         $owner['modules'] ? $owner['modules'] : '[]'
@@ -599,6 +599,31 @@ if ($action === 'add_employee') {
     echo json_encode(['success' => true, 'employee_id' => intval($pdo->lastInsertId())]);
     exit;
 }
+
+if ($action === 'reset_manager_password') {
+    $owner = getUser($pdo);
+    if (!$owner || (isset($owner['role']) && $owner['role'] !== 'owner')) {
+        echo json_encode(['error' => 'Только владелец может сбрасывать пароли сотрудников']); exit;
+    }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (empty($data['id']) || empty($data['password'])) {
+        echo json_encode(['error' => 'Укажите ID сотрудника и новый пароль']); exit;
+    }
+    // Убедимся, что этот сотрудник принадлежит той же компании
+    $check = $pdo->prepare("SELECT id FROM oko_users WHERE id = ? AND company_id = ? AND role = 'employee'");
+    $check->execute([$data['id'], intval($owner['company_id'])]);
+    if (!$check->fetch()) {
+        echo json_encode(['error' => 'Менеджер не найден или доступ запрещен']); exit;
+    }
+    
+    $hash = password_hash($data['password'], PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("UPDATE oko_users SET password_hash = ? WHERE id = ?");
+    $stmt->execute([$hash, $data['id']]);
+    
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 
 if ($action === 'get_employees') {
     $owner = getUser($pdo);

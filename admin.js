@@ -1372,6 +1372,9 @@ async function loadManagers() {
                 <td class="p-4 text-slate-500">#${user.id}</td>
                 <td class="p-4 font-bold text-slate-800">${user.username}</td>
                 <td class="p-4 text-right">
+                    <button onclick="promptResetManagerPassword(${user.id})" class="p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-500 rounded-lg transition-colors mr-1" title="Сбросить пароль">
+                        <i data-lucide="key" class="w-4 h-4"></i>
+                    </button>
                     <button onclick="deleteManager(${user.id})" class="p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors" title="Удалить">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
@@ -1396,7 +1399,7 @@ async function createManager() {
     }
     
     try {
-        const res = await fetch(getApiUrl() + '?action=create_manager', {
+        const res = await fetch(getApiUrl() + '?action=add_employee', {
             method: 'POST',
             body: JSON.stringify({ username: login, password: pass }),
             headers: { 
@@ -1437,6 +1440,31 @@ async function deleteManager(id) {
             loadManagers();
         } else {
             alert(data.error || 'Ошибка удаления');
+        }
+    } catch(e) {
+        alert("Ошибка сети");
+    }
+}
+
+async function promptResetManagerPassword(id) {
+    const newPass = prompt("Введите новый пароль для менеджера:");
+    if (!newPass) return;
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=reset_manager_password', {
+            method: 'POST',
+            body: JSON.stringify({ id: id, password: newPass }),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert("Пароль успешно изменен!");
+        } else {
+            alert(data.error || 'Ошибка при изменении пароля');
         }
     } catch(e) {
         alert("Ошибка сети");
