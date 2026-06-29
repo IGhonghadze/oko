@@ -436,8 +436,25 @@ function applyBrandToKP() {
     const proposalContent = document.getElementById('proposal-content');
     if (proposalContent) {
         const logoImg = proposalContent.querySelector('img[alt="Логотип"]');
-        if (logoImg && logoUrl) logoImg.src = logoUrl;
+        if (logoImg) {
+            if (logoUrl) {
+                logoImg.src = logoUrl;
+                logoImg.style.display = '';
+            } else {
+                logoImg.style.display = 'none';
+            }
+        }
     }
+
+    const appLogos = document.querySelectorAll('img[alt="Company Logo"], img[alt="Oko"]');
+    appLogos.forEach(img => {
+        if (logoUrl) {
+            img.src = logoUrl;
+            img.style.display = '';
+        } else {
+            img.style.display = 'none';
+        }
+    });
 
     // 2. Apply slogan
     const sloganEl = proposalContent ? proposalContent.querySelector('.text-\\[11px\\].font-bold.text-slate-800.uppercase') : null;
@@ -473,7 +490,13 @@ function applyBrandToKP() {
 
     // 4. Apply QR code
     const qrImg = proposalContent ? proposalContent.querySelector('#kp-payment-block img[alt*="QR"]') : null;
-    if (qrImg && qrUrl) qrImg.src = qrUrl;
+    const qrBlock = document.getElementById('kp-qr-block');
+    if (qrUrl) {
+        if (qrImg) qrImg.src = qrUrl;
+        if (qrBlock) qrBlock.style.display = '';
+    } else {
+        if (qrBlock) qrBlock.style.display = 'none';
+    }
 
     // 5. Apply brand requisites to bank block
     const bankReqContainer = document.getElementById('kp-bank-requisites');
