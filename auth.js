@@ -40,7 +40,13 @@ async function doLogin() {
             localStorage.setItem('oko_modules', JSON.stringify(data.modules || []));
             document.getElementById('pwd-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
-            document.getElementById('current-company-name').textContent = data.company_name;
+            
+            let displayName = data.company_name;
+            if (data.role === 'employee') {
+                displayName += ' (Менеджер)';
+            }
+            document.getElementById('current-company-name').textContent = displayName;
+            
             updateTrialCounter();
             errorEl.classList.add('hidden');
             

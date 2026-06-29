@@ -540,16 +540,30 @@ if ($action === 'login_email') {
     $sessionToken = generateSecureToken();
     $stmt = $pdo->prepare("UPDATE oko_users SET session_token = ?, token = ? WHERE id = ?");
     $stmt->execute([$sessionToken, $sessionToken, $user['id']]);
+    $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
+    
+    $actualSub = $user['subscription_until'];
+    $actualMods = $user['modules'] ? $user['modules'] : '[]';
+    
+    if (isset($user['role']) && $user['role'] === 'employee' && $companyId > 0) {
+        $ownerStmt = $pdo->prepare("SELECT subscription_until, modules FROM oko_users WHERE company_id = ? AND (role = 'owner' OR role IS NULL) ORDER BY id ASC LIMIT 1");
+        $ownerStmt->execute([$companyId]);
+        if ($ownerRow = $ownerStmt->fetch()) {
+            $actualSub = $ownerRow['subscription_until'];
+            $actualMods = $ownerRow['modules'] ? $ownerRow['modules'] : '[]';
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'session_token' => $sessionToken,
         'token' => $sessionToken,
         'company_name' => $user['company_name'],
-        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
+        'company_id' => $companyId,
         'role' => isset($user['role']) ? $user['role'] : 'owner',
         'is_admin' => ($user['id'] == 1),
-        'subscription_until' => $user['subscription_until'],
-        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+        'subscription_until' => $actualSub,
+        'modules' => json_decode($actualMods, true)
     ]);
     exit;
 }
@@ -720,12 +734,27 @@ $userId = $user['id'];
 $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
 
 if ($action === 'me') {
+    $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
+    $actualSub = $user['subscription_until'];
+    $actualMods = $user['modules'] ? $user['modules'] : '[]';
+    
+    if (isset($user['role']) && $user['role'] === 'employee' && $companyId > 0) {
+        $ownerStmt = $pdo->prepare("SELECT subscription_until, modules FROM oko_users WHERE company_id = ? AND (role = 'owner' OR role IS NULL) ORDER BY id ASC LIMIT 1");
+        $ownerStmt->execute([$companyId]);
+        if ($ownerRow = $ownerStmt->fetch()) {
+            $actualSub = $ownerRow['subscription_until'];
+            $actualMods = $ownerRow['modules'] ? $ownerRow['modules'] : '[]';
+        }
+    }
+
     echo json_encode([
         'username' => $user['username'],
         'company_name' => $user['company_name'],
         'is_admin' => ($user['id'] == 1),
-        'company_id' => isset($user['company_id']) ? intval($user['company_id']) : 0,
-        'modules' => json_decode($user['modules'] ? $user['modules'] : '[]', true)
+        'company_id' => $companyId,
+        'role' => isset($user['role']) ? $user['role'] : 'owner',
+        'subscription_until' => $actualSub,
+        'modules' => json_decode($actualMods, true)
     ]);
     exit;
 }
