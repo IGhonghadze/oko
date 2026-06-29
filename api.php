@@ -738,6 +738,36 @@ if ($action === 'login') {
     exit;
 }
 
+
+// === TELEGRAM WEBHOOK (БЕЗ АВТОРИЗАЦИИ) ===
+$tg_bot_token = "8901851039:AAEiUpCXmaMRP9NP0LuNinncT-Twjido7bA";
+$tg_admin_chat_id = "8901851039"; // Ваш Telegram ID
+
+if ($action === 'tg_webhook') {
+    $input = file_get_contents('php://input');
+    $update = json_decode($input, true);
+    
+    if (isset($update['message']['reply_to_message'])) {
+        $reply_to = $update['message']['reply_to_message']['message_id'];
+        $text = $update['message']['text'];
+        
+        $stmt = $pdo->prepare("SELECT company_id FROM oko_support WHERE telegram_msg_id = ?");
+        $stmt->execute([$reply_to]);
+        $row = $stmt->fetch();
+        
+        if ($row) {
+            $comp_id = $row['company_id'];
+            $ins = $pdo->prepare("INSERT INTO oko_support (company_id, topic, message_text, sender) VALUES (?, 'Ответ', ?, 'admin')");
+            $ins->execute([$comp_id, $text]);
+        }
+    } else if (isset($update['message']['text']) && strpos($update['message']['text'], '/start') !== false) {
+        // Simple start message
+        file_get_contents("https://api.telegram.org/bot$tg_bot_token/sendMessage?chat_id={$update['message']['chat']['id']}&text=" . urlencode("Бот поддержки Oko подключен! Отвечайте (Reply) на сообщения пользователей прямо здесь."));
+    }
+    echo "OK";
+    exit;
+}
+
 // === ЗАЩИЩЕННЫЕ РОУТЫ ===
 $user = getUser($pdo);
 if (!$user) {
@@ -746,6 +776,63 @@ if (!$user) {
 }
 $userId = $user['id'];
 $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
+
+
+// === ЧАТ ПОДДЕРЖКИ ===
+if ($action === 'support_send') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (empty($data['message_text']) || empty($data['topic'])) {
+        echo json_encode(['error' => 'Заполните все поля']); exit;
+    }
+    
+    $topic = mb_substr(trim($data['topic']), 0, 50);
+    $text = trim($data['message_text']);
+    
+    // Save to DB
+    $ins = $pdo->prepare("INSERT INTO oko_support (company_id, topic, message_text, sender) VALUES (?, ?, ?, 'user')");
+    $ins->execute([$companyId, $topic, $text]);
+    $dbId = $pdo->lastInsertId();
+    
+    // Send to Telegram
+    $compName = $user['company_name'];
+    $tgText = "Новое обращение от $compName\nТема: $topic\n\n$text";
+    
+    $url = "https://api.telegram.org/bot$tg_bot_token/sendMessage";
+    $post_data = http_build_query([
+        'chat_id' => $tg_admin_chat_id,
+        'text' => $tgText
+    ]);
+    
+    $opts = [
+        'http' => [
+            'method'  => 'POST',
+            'header'  => 'Content-type: application/x-www-form-urlencoded',
+            'content' => $post_data
+        ]
+    ];
+    $context  = stream_context_create($opts);
+    $result = file_get_contents($url, false, $context);
+    
+    if ($result) {
+        $tgRes = json_decode($result, true);
+        if (isset($tgRes['result']['message_id'])) {
+            $msgId = $tgRes['result']['message_id'];
+            $upd = $pdo->prepare("UPDATE oko_support SET telegram_msg_id = ? WHERE id = ?");
+            $upd->execute([$msgId, $dbId]);
+        }
+    }
+    
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'support_get') {
+    $stmt = $pdo->prepare("SELECT topic, message_text, sender, created_at FROM oko_support WHERE company_id = ? ORDER BY id ASC");
+    $stmt->execute([$companyId]);
+    $msgs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode($msgs);
+    exit;
+}
 
 if ($action === 'me') {
     $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
