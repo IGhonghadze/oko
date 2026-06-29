@@ -1,6 +1,13 @@
 // ==========================================
 // GLOBALS & STATE — Все цены ДИЛЕРСКИЕ
 // ==========================================
+// Глобальная защита: PHP может отдать объект вместо массива (если удалялись позиции).
+// Эта функция конвертирует объект обратно в массив.
+function ensureArray(val) {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') return Object.values(val);
+    return [];
+}
 let GLASS_TYPES = [];
 let RAW_GLASS_TYPES = [];
 let SANDWICH_TYPES = [];

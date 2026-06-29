@@ -79,7 +79,7 @@ window.onload = function () {
 
     let shapeSelect = document.getElementById('glass-shape');
     shapeSelect.innerHTML = '';
-    SHAPES.forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
+    ensureArray(SHAPES).forEach((s, i) => shapeSelect.innerHTML += `<option value="${i}">${s.name}</option>`);
 
     updateDropdownPrices();
     initSillsTab();
@@ -2723,8 +2723,8 @@ function savePricesToStorage() {
     }
 }
 function applyPrices(glassData, shapesData, layoutsData, netsData, salinoxData, optionsData) {
-    if (glassData) GLASS_TYPES = glassData; if (shapesData) SHAPES = shapesData;
-    if (layoutsData) LAYOUTS = layoutsData; if (netsData) NET_TYPES = netsData;
+    if (glassData) GLASS_TYPES = ensureArray(glassData); if (shapesData) SHAPES = ensureArray(shapesData);
+    if (layoutsData) LAYOUTS = ensureArray(layoutsData); if (netsData) NET_TYPES = ensureArray(netsData);
     if (salinoxData) SALINOX_PRICES = salinoxData; if (optionsData) OPTIONS = optionsData;
     const glassShape = document.getElementById('glass-shape');
     if (glassShape) { glassShape.innerHTML = ''; SHAPES.forEach((s, i) => glassShape.innerHTML += `<option value="${i}">${s.name}</option>`); }
