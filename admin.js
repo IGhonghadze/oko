@@ -48,10 +48,19 @@ function openAdminPanel() {
     
     // Скрыть вкладку «Пользователи» для не-админов
     const isAdmin = localStorage.getItem('oko_is_admin') === 'true' || localStorage.getItem('oko_username') === 'admin';
+    const isOwner = localStorage.getItem('oko_role') !== 'employee';
+    
     const usersTabBtn = document.querySelector('.admin-tab-btn[data-target="tab-admin-users"]');
     if (usersTabBtn) usersTabBtn.style.display = isAdmin ? '' : 'none';
     const usersTabContent = document.getElementById('tab-admin-users');
     if (usersTabContent && !isAdmin) usersTabContent.classList.add('hidden');
+    
+    // Скрыть вкладки владельца (Менеджеры, Бренд, Аналитика) для сотрудников
+    const ownerTabs = ['tab-admin-managers', 'tab-admin-brand', 'tab-admin-analytics'];
+    ownerTabs.forEach(tabId => {
+        const btn = document.querySelector(`.admin-tab-btn[data-target="${tabId}"]`);
+        if (btn) btn.style.display = isOwner ? '' : 'none';
+    });
 }
 
 function closeAdminPanel() {
@@ -1331,3 +1340,106 @@ function drawAnalytics() {
         lucide.createIcons();
     }
 }
+
+// === УПРАВЛЕНИЕ МЕНЕДЖЕРАМИ (Для владельцев) ===
+async function loadManagers() {
+    const list = document.getElementById('admin-managers-table-body');
+    if (!list) return;
+    
+    list.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">Загрузка...</td></tr>';
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=get_employees', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('oko_token') }
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+            list.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-red-500">${data.error}</td></tr>`;
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            list.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">У вас пока нет менеджеров</td></tr>';
+            return;
+        }
+        
+        list.innerHTML = '';
+        data.forEach(user => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 transition-colors';
+            tr.innerHTML = `
+                <td class="p-4 text-slate-500">#${user.id}</td>
+                <td class="p-4 font-bold text-slate-800">${user.username}</td>
+                <td class="p-4 text-right">
+                    <button onclick="deleteManager(${user.id})" class="p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors" title="Удалить">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            `;
+            list.appendChild(tr);
+        });
+        
+        if (window.lucide) window.lucide.createIcons();
+    } catch (e) {
+        list.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-500">Ошибка сети</td></tr>';
+    }
+}
+
+async function createManager() {
+    const login = document.getElementById('new-manager-login').value.trim();
+    const pass = document.getElementById('new-manager-pass').value.trim();
+    
+    if (!login || !pass) {
+        alert("Пожалуйста, заполните логин и пароль");
+        return;
+    }
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=create_manager', {
+            method: 'POST',
+            body: JSON.stringify({ username: login, password: pass }),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            document.getElementById('new-manager-login').value = '';
+            document.getElementById('new-manager-pass').value = '';
+            document.getElementById('add-manager-modal').classList.add('hidden');
+            loadManagers();
+        } else {
+            alert(data.error || 'Ошибка при создании менеджера');
+        }
+    } catch(e) {
+        alert("Ошибка сети");
+    }
+}
+
+async function deleteManager(id) {
+    if (!confirm("Вы действительно хотите удалить этого менеджера? Это действие необратимо.")) return;
+    
+    try {
+        const res = await fetch(getApiUrl() + '?action=delete_manager', {
+            method: 'POST',
+            body: JSON.stringify({ id: id }),
+            headers: { 
+                'Authorization': 'Bearer ' + localStorage.getItem('oko_token'),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            loadManagers();
+        } else {
+            alert(data.error || 'Ошибка удаления');
+        }
+    } catch(e) {
+        alert("Ошибка сети");
+    }
+}
+

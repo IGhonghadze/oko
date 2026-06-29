@@ -57,6 +57,12 @@ try {
         $pdo->exec("ALTER TABLE oko_archive ADD COLUMN user_id INT NOT NULL DEFAULT 0");
     } catch(PDOException $e) { /* Игнорируем, если колонка уже есть */ }
 
+    // Добавляем company_id для шаринга архива внутри компании
+    try {
+        $pdo->exec("ALTER TABLE oko_archive ADD COLUMN company_id INT NOT NULL DEFAULT 0");
+        $pdo->exec("UPDATE oko_archive a JOIN oko_users u ON a.user_id = u.id SET a.company_id = u.company_id WHERE a.company_id = 0");
+    } catch(PDOException $e) { /* Игнорируем, если колонка уже есть */ }
+
     // Создаем таблицу пользователей
     $pdo->exec("CREATE TABLE IF NOT EXISTS oko_users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -594,6 +600,32 @@ if ($action === 'add_employee') {
     exit;
 }
 
+if ($action === 'get_employees') {
+    $owner = getUser($pdo);
+    if (!$owner || (isset($owner['role']) && $owner['role'] !== 'owner')) {
+        echo json_encode(['error' => 'Только владелец может просматривать сотрудников']); exit;
+    }
+    $stmt = $pdo->prepare("SELECT id, username, email, is_active FROM oko_users WHERE company_id = ? AND role = 'employee'");
+    $stmt->execute([intval($owner['company_id'])]);
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
+
+if ($action === 'delete_employee') {
+    $owner = getUser($pdo);
+    if (!$owner || (isset($owner['role']) && $owner['role'] !== 'owner')) {
+        echo json_encode(['error' => 'Только владелец может удалять сотрудников']); exit;
+    }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (empty($data['id'])) {
+        echo json_encode(['error' => 'Не указан ID сотрудника']); exit;
+    }
+    $stmt = $pdo->prepare("DELETE FROM oko_users WHERE id = ? AND company_id = ? AND role = 'employee'");
+    $stmt->execute([$data['id'], intval($owner['company_id'])]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 if ($action === 'login') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (!$data || !isset($data['username']) || !isset($data['password'])) {
@@ -675,6 +707,7 @@ if (!$user) {
     exit;
 }
 $userId = $user['id'];
+$companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
 
 if ($action === 'me') {
     $companyId = isset($user['company_id']) ? intval($user['company_id']) : 0;
@@ -692,9 +725,9 @@ if ($action === 'me') {
 }
 
 if ($action === 'list') {
-    // Получаем записи ТОЛЬКО текущего пользователя
-    $stmt = $pdo->prepare("SELECT id, name, date_str as date, item_count as itemCount, total_sum as totalSum, state_json FROM oko_archive WHERE user_id = ? ORDER BY created_at DESC LIMIT 200");
-    $stmt->execute([$userId]);
+    // Получаем записи ТОЛЬКО текущей компании
+    $stmt = $pdo->prepare("SELECT id, name, date_str as date, item_count as itemCount, total_sum as totalSum, state_json FROM oko_archive WHERE company_id = ? ORDER BY created_at DESC LIMIT 200");
+    $stmt->execute([$companyId]);
     $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($records as &$rec) {
@@ -714,19 +747,19 @@ if ($action === 'save') {
         echo json_encode(['error' => 'Неверные данные']); exit;
     }
     
-    // Проверка, что если запись существует, она принадлежит текущему юзеру
-    $checkStmt = $pdo->prepare("SELECT user_id FROM oko_archive WHERE id = ?");
+    // Проверка, что если запись существует, она принадлежит текущей компании
+    $checkStmt = $pdo->prepare("SELECT company_id FROM oko_archive WHERE id = ?");
     $checkStmt->execute([$data['id']]);
     $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
-    if ($existing && $existing['user_id'] != $userId) {
+    if ($existing && $existing['company_id'] != $companyId) {
         echo json_encode(['error' => 'Отказано в доступе']); exit;
     }
     
-    $stmt = $pdo->prepare("INSERT INTO oko_archive (id, name, date_str, item_count, total_sum, state_json, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)
-                           ON DUPLICATE KEY UPDATE name=VALUES(name), date_str=VALUES(date_str), item_count=VALUES(item_count), total_sum=VALUES(total_sum), state_json=VALUES(state_json), user_id=VALUES(user_id)");
+    $stmt = $pdo->prepare("INSERT INTO oko_archive (id, name, date_str, item_count, total_sum, state_json, user_id, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                           ON DUPLICATE KEY UPDATE name=VALUES(name), date_str=VALUES(date_str), item_count=VALUES(item_count), total_sum=VALUES(total_sum), state_json=VALUES(state_json), user_id=VALUES(user_id), company_id=VALUES(company_id)");
                            
     $state_json = json_encode($data['state'], JSON_UNESCAPED_UNICODE);
-    $stmt->execute([$data['id'], $data['name'], $data['date'], $data['itemCount'], isset($data['totalSum']) ? $data['totalSum'] : 0, $state_json, $userId]);
+    $stmt->execute([$data['id'], $data['name'], $data['date'], $data['itemCount'], isset($data['totalSum']) ? $data['totalSum'] : 0, $state_json, $userId, $companyId]);
     echo json_encode(['success' => true]);
     exit;
 }
@@ -736,8 +769,8 @@ if ($action === 'rename') {
     if (!$data || !isset($data['id']) || !isset($data['name'])) {
         echo json_encode(['error' => 'Неверные данные']); exit;
     }
-    $stmt = $pdo->prepare("UPDATE oko_archive SET name = ? WHERE id = ? AND user_id = ?");
-    $stmt->execute([$data['name'], $data['id'], $userId]);
+    $stmt = $pdo->prepare("UPDATE oko_archive SET name = ? WHERE id = ? AND company_id = ?");
+    $stmt->execute([$data['name'], $data['id'], $companyId]);
     echo json_encode(['success' => true]);
     exit;
 }
@@ -747,8 +780,8 @@ if ($action === 'delete') {
     if (!$data || !isset($data['id'])) {
         echo json_encode(['error' => 'Неверные данные']); exit;
     }
-    $stmt = $pdo->prepare("DELETE FROM oko_archive WHERE id = ? AND user_id = ?");
-    $stmt->execute([$data['id'], $userId]);
+    $stmt = $pdo->prepare("DELETE FROM oko_archive WHERE id = ? AND company_id = ?");
+    $stmt->execute([$data['id'], $companyId]);
     echo json_encode(['success' => true]);
     exit;
 }
