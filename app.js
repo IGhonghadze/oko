@@ -156,7 +156,6 @@ function setupEnterKeys() {
                 }
                 if (typeof actionFunc === 'function') {
                     actionFunc();
-                    // Keep focus logically if it's the last element and added an item
                     if (!nextId) {
                         setTimeout(() => el.focus(), 10);
                     }
