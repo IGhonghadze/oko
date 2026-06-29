@@ -665,7 +665,7 @@ function applyModules() {
         if (match) {
             const tabId = match[1];
             btn.style.display = ''; // Всегда показываем все вкладки
-            if (modules.includes(tabId)) {
+            if (modules.includes('all') || modules.includes(tabId)) {
                 btn.classList.remove('tab-locked');
                 if (!firstUnlockedTab) firstUnlockedTab = tabId;
             } else {
@@ -705,7 +705,7 @@ function applyLockedOverlays(modules) {
         const tabId = content.id.replace('tab-', '');
         const existingOverlay = content.querySelector('.locked-overlay');
         
-        if (modules.includes(tabId)) {
+        if (modules.includes('all') || modules.includes(tabId)) {
             // Модуль доступен — убираем замочек
             content.classList.remove('module-locked');
             if (existingOverlay) existingOverlay.remove();

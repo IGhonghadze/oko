@@ -462,6 +462,7 @@ function addGlassItem() {
     let w = parseFloat(document.getElementById('glass-w').value);
     let h = parseFloat(document.getElementById('glass-h').value);
     if (!w || !h) { alert('Введите ширину и высоту!'); return; }
+    if (!GLASS_TYPES || GLASS_TYPES.length === 0 || !SHAPES || SHAPES.length === 0) { alert('Цены на стеклопакеты или формы не заданы! Добавьте их в настройках.'); return; }
 
     let glass = GLASS_TYPES[document.getElementById('glass-type').value];
     let shape = SHAPES[document.getElementById('glass-shape').value];
@@ -641,6 +642,7 @@ function addGlassesItem() {
 // --- NETS LOGIC ---
 function toggleNetOptions() {
     let typeIdx = document.getElementById('net-type').value;
+    if (!NET_TYPES || NET_TYPES.length === 0 || typeIdx === 'none' || typeIdx === '') { alert('Цены на москитные сетки не заданы!'); return; }
     let netType = NET_TYPES[typeIdx];
     if (!netType) return;
     let isWindow = netType.id.startsWith('window_');
@@ -672,6 +674,7 @@ function addNetItem() {
 
     let isLumen = document.getElementById('net-is-lumen').checked;
     let typeIdx = document.getElementById('net-type').value;
+    if (!NET_TYPES || NET_TYPES.length === 0 || typeIdx === 'none' || typeIdx === '') { alert('Цены на москитные сетки не заданы!'); return; }
     let netDef = NET_TYPES[typeIdx];
     if (!netDef) return;
     let type = netDef.id;
@@ -804,6 +807,7 @@ function addFramelessItem() {
     if (!totalW || !h) { alert('Введите корректные размеры!'); return; }
 
     let system = document.getElementById('fl-system').value;
+    if (!SALINOX_PRICES || Object.keys(SALINOX_PRICES).length === 0 || !PARTITION_PRICES || Object.keys(PARTITION_PRICES).length === 0) { alert('Цены на безрамное остекление не заданы!'); return; }
     let comment = document.getElementById('fl-comment').value.trim();
     let area = (totalW * h) / 1000000;
     
@@ -1199,6 +1203,7 @@ function addSillItem() {
     let lenIn = parseFloat(document.getElementById('sill-length').value);
     let qty = parseInt(document.getElementById('sill-qty').value) || 1;
     if (!lenIn || lenIn <= 0) { alert('Введите длину подоконника!'); return; }
+    if (!SILLS_DATA || SILLS_DATA.length === 0) { alert('Цены на подоконники не заданы!'); return; }
 
     let brandIdx = parseInt(document.getElementById('sill-brand').value) || 0;
     let colorIdx = parseInt(document.getElementById('sill-color').value) || 0;
@@ -2811,4 +2816,4 @@ function downloadExcelTemplate() {
         alert('Техническая ошибка: ' + e.message + '\nСкриншот этого окна поможет разработчику!');
     }
 }
-
+
