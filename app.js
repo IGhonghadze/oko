@@ -144,129 +144,69 @@ window.onload = function () {
 };
 
 function setupEnterKeys() {
-    document.getElementById('glass-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('glass-h').focus();
-    });
-    document.getElementById('glass-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('glass-qty').focus();
-    });
-    document.getElementById('glass-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addGlassItem();
-    });
-    document.getElementById('net-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('net-h').focus();
-    });
-    document.getElementById('net-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('net-qty').focus();
-    });
-    document.getElementById('net-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('net-w').focus();
-            addNetItem();
-        }
-    });
-    document.getElementById('fl-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('fl-h').focus();
-    });
-    document.getElementById('fl-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('fl-panels').focus();
-    });
-    document.getElementById('fl-panels').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('fl-w').focus();
-            addFramelessItem();
-        }
-    });
-    document.getElementById('sill-length').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sill-qty').focus();
-    });
-    document.getElementById('sill-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sill-cap').focus();
-    });
-    document.getElementById('sill-cap').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sill-conn90').focus();
-    });
-    document.getElementById('sill-conn90').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sill-conn150').focus();
-    });
-    document.getElementById('sill-conn150').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('sill-length').focus();
-            addSillItem();
-        }
-    });
-    // Slopes
-    document.getElementById('slope-width').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('slope-length').focus();
-    });
-    document.getElementById('slope-length').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('slope-qty').focus();
-    });
-    document.getElementById('slope-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addSlopeItem();
-    });
-    // Rollers
-    document.getElementById('roller-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('roller-h').focus();
-    });
-    document.getElementById('roller-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('roller-qty').focus();
-    });
-    document.getElementById('roller-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('roller-price').focus();
-    });
-    document.getElementById('roller-price').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('roller-w').focus();
-            addRollerItem();
-        }
-    });
-    // Blinds
-    document.getElementById('blinds-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('blinds-h').focus();
-    });
-    document.getElementById('blinds-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('blinds-qty').focus();
-    });
-    document.getElementById('blinds-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('blinds-w').focus();
-            addBlindsItem();
-        }
-    });
-    // Sandwich panels
-    document.getElementById('sandwich-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sandwich-h').focus();
-    });
-    document.getElementById('sandwich-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('sandwich-qty').focus();
-    });
-    document.getElementById('sandwich-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addSandwichItem();
-    });
-    // Glasses
-    document.getElementById('glasses-w').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('glasses-h').focus();
-    });
-    document.getElementById('glasses-h').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('glasses-qty').focus();
-    });
-    document.getElementById('glasses-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addGlassesItem();
-    });
-    // Hardware
-    document.getElementById('hardware-name').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('hardware-price').focus();
-    });
-    document.getElementById('hardware-price').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') document.getElementById('hardware-qty').focus();
-    });
-    document.getElementById('hardware-qty').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            document.getElementById('hardware-name').focus();
-            addHardwareItem();
-        }
-    });
+    const bindEnter = (id, nextId, actionFunc) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (nextId) {
+                    const nextEl = document.getElementById(nextId);
+                    if (nextEl) nextEl.focus();
+                }
+                if (typeof actionFunc === 'function') {
+                    actionFunc();
+                    // Keep focus logically if it's the last element and added an item
+                    if (!nextId) {
+                        setTimeout(() => el.focus(), 10);
+                    }
+                }
+            }
+        });
+    };
+
+    bindEnter('glass-w', 'glass-h');
+    bindEnter('glass-h', 'glass-qty');
+    bindEnter('glass-qty', null, () => { if (typeof addGlassItem === 'function') addGlassItem(); });
+
+    bindEnter('net-w', 'net-h');
+    bindEnter('net-h', 'net-qty');
+    bindEnter('net-qty', 'net-w', () => { if (typeof addNetItem === 'function') addNetItem(); });
+
+    bindEnter('fl-w', 'fl-h');
+    bindEnter('fl-h', 'fl-panels');
+    bindEnter('fl-panels', 'fl-w', () => { if (typeof addFramelessItem === 'function') addFramelessItem(); });
+
+    bindEnter('sill-length', 'sill-qty');
+    bindEnter('sill-qty', 'sill-cap');
+    bindEnter('sill-cap', 'sill-conn90');
+    bindEnter('sill-conn90', 'sill-conn150');
+    bindEnter('sill-conn150', 'sill-length', () => { if (typeof addSillItem === 'function') addSillItem(); });
+
+    bindEnter('slope-width', 'slope-length');
+    bindEnter('slope-length', 'slope-qty');
+    bindEnter('slope-qty', null, () => { if (typeof addSlopeItem === 'function') addSlopeItem(); });
+
+    bindEnter('roller-w', 'roller-h');
+    bindEnter('roller-h', 'roller-qty');
+    bindEnter('roller-qty', 'roller-price');
+    bindEnter('roller-price', 'roller-w', () => { if (typeof addRollerItem === 'function') addRollerItem(); });
+
+    bindEnter('blinds-w', 'blinds-h');
+    bindEnter('blinds-h', 'blinds-qty');
+    bindEnter('blinds-qty', 'blinds-w', () => { if (typeof addBlindsItem === 'function') addBlindsItem(); });
+
+    bindEnter('sandwich-w', 'sandwich-h');
+    bindEnter('sandwich-h', 'sandwich-qty');
+    bindEnter('sandwich-qty', null, () => { if (typeof addSandwichItem === 'function') addSandwichItem(); });
+
+    bindEnter('glasses-w', 'glasses-h');
+    bindEnter('glasses-h', 'glasses-qty');
+    bindEnter('glasses-qty', null, () => { if (typeof addGlassesItem === 'function') addGlassesItem(); });
+
+    bindEnter('hardware-name', 'hardware-price');
+    bindEnter('hardware-price', 'hardware-qty');
+    bindEnter('hardware-qty', 'hardware-name', () => { if (typeof addHardwareItem === 'function') addHardwareItem(); });
 }
 
 // --- UI & TAB LOGIC ---
@@ -436,12 +376,15 @@ function getGlobalMarkup() { return parseFloat(document.getElementById('select-g
 function updateDropdownPrices() {
     const markup = getGlobalMarkup();
     
-    let gSel = document.getElementById('glass-type'); let prevG = gSel.value; gSel.innerHTML = '';
-    if (!GLASS_TYPES || GLASS_TYPES.length === 0) {
-        gSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
-    } else {
-        GLASS_TYPES.forEach((g, i) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
-        if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+    let gSel = document.getElementById('glass-type');
+    if (gSel) {
+        let prevG = gSel.value; gSel.innerHTML = '';
+        if (!GLASS_TYPES || GLASS_TYPES.length === 0) {
+            gSel.innerHTML = '<option value="none" disabled selected>Задайте цены в админке</option>';
+        } else {
+            GLASS_TYPES.forEach((g, i) => gSel.innerHTML += `<option value="${i}">${g.name} — ${Math.ceil(g.price * markup)} ₽/м²</option>`);
+            if (prevG && prevG !== 'loading' && prevG !== 'none') gSel.value = prevG;
+        }
     }
 
     let hwSel = document.getElementById('hardware-select');

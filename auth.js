@@ -42,10 +42,14 @@ async function doLogin() {
             document.getElementById('app').style.display = 'block';
             
             let displayName = data.company_name;
+            if (data.company_id) {
+                displayName += ' (ID: ' + data.company_id + ')';
+            }
             if (data.role === 'employee') {
                 displayName += ' (Менеджер)';
             }
-            document.getElementById('current-company-name').textContent = displayName;
+            const compNameEl = document.getElementById('current-company-name');
+            if (compNameEl) compNameEl.textContent = displayName;
             
             updateTrialCounter();
             errorEl.classList.add('hidden');
@@ -334,7 +338,10 @@ async function doRegisterSetPassword() {
             if (data.company_id) localStorage.setItem('oko_company_id', data.company_id);
             document.getElementById('pwd-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
-            document.getElementById('current-company-name').textContent = data.company_name;
+            let displayName = data.company_name;
+            if (data.company_id) displayName += ' (ID: ' + data.company_id + ')';
+            const compNameEl = document.getElementById('current-company-name');
+            if (compNameEl) compNameEl.textContent = displayName;
             applyModules();
             // Инициализация интерфейса прямо из ответа сервера
             if (data.prices) {
@@ -463,7 +470,10 @@ async function doForgotSetPassword() {
             if (data.company_id) localStorage.setItem('oko_company_id', data.company_id);
             document.getElementById('pwd-screen').style.display = 'none';
             document.getElementById('app').style.display = 'block';
-            document.getElementById('current-company-name').textContent = data.company_name;
+            let displayName = data.company_name;
+            if (data.company_id) displayName += ' (ID: ' + data.company_id + ')';
+            const compNameEl = document.getElementById('current-company-name');
+            if (compNameEl) compNameEl.textContent = displayName;
             applyModules();
             // Инициализация интерфейса прямо из ответа сервера
             if (data.prices) {
@@ -493,7 +503,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('pwd-screen').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         const el = document.getElementById('current-company-name');
-        if (el) el.textContent = comp;
+        if (el) {
+            let displayName = comp;
+            const compId = localStorage.getItem('oko_company_id');
+            if (compId) displayName += ' (ID: ' + compId + ')';
+            el.textContent = displayName;
+        }
         
         // ФИКС: data объявлена ДО try, чтобы быть доступной ниже
         let data = null;

@@ -404,7 +404,7 @@ if ($action === 'register_set_password') {
         'company_id' => intval($companyId),
         'role' => 'owner',
         'is_admin' => false,
-        'modules' => ['all']
+        'modules' => []
     ]);
     exit;
 }
