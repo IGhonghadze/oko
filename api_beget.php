@@ -781,12 +781,13 @@ if ($action === 'support_send') {
     
     // Send to Telegram
     $compName = $user['company_name'];
-    $tgText = "Новое обращение от $compName\nТема: $topic\n\n$text";
+    $tgText = "Новое обращение от <b>$compName</b> (ID: $companyId)\nТема: $topic\n\n$text";
     
     $url = "https://api.telegram.org/bot$tg_bot_token/sendMessage";
     $post_data = http_build_query([
         'chat_id' => $tg_admin_chat_id,
-        'text' => $tgText
+        'text' => $tgText,
+        'parse_mode' => 'HTML'
     ]);
     
     $opts = [
