@@ -806,6 +806,7 @@ if ($action === 'support_send') {
     $opts = [
         'http' => [
             'method'  => 'POST',
+            'ignore_errors' => true,
             'header'  => 'Content-type: application/x-www-form-urlencoded',
             'content' => $post_data
         ]
