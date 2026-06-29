@@ -446,15 +446,15 @@ function applyBrandToKP() {
         }
     }
 
-    const appLogos = document.querySelectorAll('img[alt="Company Logo"], img[alt="Oko"]');
-    appLogos.forEach(img => {
+    const headerLogo = document.getElementById('header-company-logo');
+    if (headerLogo) {
         if (logoUrl) {
-            img.src = logoUrl;
-            img.style.display = '';
+            headerLogo.src = logoUrl;
         } else {
-            img.style.display = 'none';
+            // Если логотип не загружен, показываем стандартный
+            headerLogo.src = 'logo_new.png';
         }
-    });
+    }
 
     // 2. Apply slogan
     const sloganEl = proposalContent ? proposalContent.querySelector('.text-\\[11px\\].font-bold.text-slate-800.uppercase') : null;
