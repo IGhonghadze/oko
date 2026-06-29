@@ -741,7 +741,7 @@ if ($action === 'login') {
 
 // === TELEGRAM WEBHOOK (БЕЗ АВТОРИЗАЦИИ) ===
 $tg_bot_token = "8901851039:AAEiUpCXmaMRP9NP0LuNinncT-Twjido7bA";
-$tg_admin_chat_id = "8901851039"; // Ваш Telegram ID
+$tg_admin_chat_id = "718003266"; // Ваш Telegram ID
 
 if ($action === 'tg_webhook') {
     $input = file_get_contents('php://input');
