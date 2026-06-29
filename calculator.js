@@ -988,6 +988,7 @@ function autoFillSlopeProfiles() {
 function addSlopeItem() {
     let _capturedData = captureRawData("tab-slopes");
     let _commitItems = [];
+    if (!SLOPES_DATA || SLOPES_DATA.length === 0) { alert('Цены на откосы не заданы!'); return; }
     let wIn = parseFloat(document.getElementById('slope-width').value);
     let lenIn = parseFloat(document.getElementById('slope-length').value);
     let qty = parseInt(document.getElementById('slope-qty').value) || 1;
@@ -1582,6 +1583,7 @@ function handleHardwareSelectChange() {
 function addHardwareItem() {
     let _capturedData = captureRawData("tab-hardware");
     let _commitItems = [];
+    if (!HARDWARE_TYPES || HARDWARE_TYPES.length === 0) { alert('Цены на фурнитуру не заданы!'); return; }
     let name = document.getElementById('hardware-name').value.trim();
     let price = parseFloat(document.getElementById('hardware-price').value) || 0;
     let qty = parseInt(document.getElementById('hardware-qty').value) || 1;
@@ -1705,6 +1707,7 @@ function toggleBlindsSystem() {
 function addBlindsItem() {
     let _capturedData = captureRawData("tab-blinds");
     let _commitItems = [];
+    if (!BLINDS_FABRICS || BLINDS_FABRICS.length === 0) { alert('Цены на жалюзи не заданы!'); return; }
     let widthMm = parseFloat(document.getElementById('blinds-w').value);
     let heightMm = parseFloat(document.getElementById('blinds-h').value);
     let qty = parseInt(document.getElementById('blinds-qty').value) || 1;
